@@ -4,7 +4,7 @@ const App = () => {
   return (
     <main>
       <h1>Miralab Management System</h1>
-      <Button>Click me</Button>
+      <Button>poop</Button>
     </main>
   );
 };
