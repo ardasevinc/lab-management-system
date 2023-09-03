@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 /** @type {import('tailwindcss').Config} */
 /*eslint-env node*/
+const defaultTheme = require('tailwindcss/defaultTheme');
 module.exports = {
   darkMode: ['class'],
   content: ['index.html', './src/**/*.{ts,tsx}'],
@@ -12,6 +14,10 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter Variable', ...defaultTheme.fontFamily.sans],
+        title: ['Ibm Plex Sans Condensed', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
