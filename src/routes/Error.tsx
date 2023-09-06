@@ -1,9 +1,10 @@
-import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
+import { useRouteError, isRouteErrorResponse, Link } from 'react-router-dom';
+import LinkButton from '@/components/primitives/LinkButton';
 
 const RouteError = (error) => {
   return (
     <>
-      <h1 className='scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-center'>
+      <h1 className='scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-center mb-10'>
         Oopsie Woopsie!
       </h1>
       <div className='flex flex-col justify-center items-center'>
@@ -32,7 +33,7 @@ const RouteError = (error) => {
 const OtherError = (error) => {
   return (
     <>
-      <h1 className='scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl'>
+      <h1 className='scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-10'>
         What was that?
       </h1>
       <div className='flex'>
@@ -60,11 +61,16 @@ const Error = () => {
   const error = useRouteError();
   return (
     <main className='container flex flex-col justify-center items-center h-screen gap-y-16'>
-      {isRouteErrorResponse(error) ? (
-        <RouteError error={error} />
-      ) : (
-        <OtherError error={error} />
-      )}
+      <div>
+        {isRouteErrorResponse(error) ? (
+          <RouteError error={error} />
+        ) : (
+          <OtherError error={error} />
+        )}
+        <LinkButton to='/' className='mt-6 block mx-auto w-fit p-2'>
+          Go back to dashboard
+        </LinkButton>
+      </div>
     </main>
   );
 };
