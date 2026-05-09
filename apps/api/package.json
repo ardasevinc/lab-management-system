@@ -1,0 +1,16 @@
+{
+  "name": "@lab/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@lab/config": "workspace:*",
+    "@lab/db": "workspace:*",
+    "@lab/domain": "workspace:*",
+    "hono": "^4.10.6"
+  }
+}

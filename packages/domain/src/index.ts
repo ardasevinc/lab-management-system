@@ -1,0 +1,38 @@
+import { z } from "zod"
+
+export const machineSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  description: z.string(),
+  specs: z.array(z.string()),
+  accessNotes: z.string(),
+  active: z.boolean(),
+})
+
+export type Machine = z.infer<typeof machineSchema>
+
+export const bookingSchema = z.object({
+  id: z.string(),
+  machineId: z.string(),
+  userId: z.string(),
+  title: z.string().min(1),
+  notes: z.string().optional(),
+  type: z.enum(["normal", "maintenance"]),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+})
+
+export type Booking = z.infer<typeof bookingSchema>
+
+export const machines: Machine[] = [
+  {
+    id: "tohum",
+    slug: "tohum",
+    name: "tohum",
+    description: "MIRALAB GPU workstation for remote AI training and research sessions.",
+    specs: ["NVIDIA GPU workstation"],
+    accessNotes: "Remote access details are shared by lab admins.",
+    active: true,
+  },
+]
