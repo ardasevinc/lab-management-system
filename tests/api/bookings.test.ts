@@ -4,10 +4,12 @@ import { createTestDb } from "../helpers/db"
 
 let testDb: Awaited<ReturnType<typeof createTestDb>>
 let app: ReturnType<typeof createApiApp>
+let authHeaders: HeadersInit
 
 beforeEach(async () => {
   testDb = await createTestDb()
   app = createApiApp({ db: testDb.db })
+  authHeaders = await login("admin@miralab.tr")
 })
 
 afterEach(() => {
@@ -16,7 +18,7 @@ afterEach(() => {
 
 describe("booking API", () => {
   it("lists seeded machines", async () => {
-    const response = await app.request("/machines")
+    const response = await app.request("/machines", { headers: authHeaders })
     const body = await response.json()
 
     expect(response.status).toBe(200)
@@ -32,7 +34,7 @@ describe("booking API", () => {
   it("creates and lists a booking", async () => {
     const createResponse = await app.request("/bookings", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         machineId: "tohum",
         userId: "member-local",
@@ -46,6 +48,7 @@ describe("booking API", () => {
 
     const listResponse = await app.request(
       "/machines/tohum/bookings?start=2026-05-10T00:00:00.000Z&end=2026-05-11T00:00:00.000Z",
+      { headers: authHeaders },
     )
     const body = await listResponse.json()
 
@@ -70,12 +73,12 @@ describe("booking API", () => {
 
     const first = await app.request("/bookings", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify(booking),
     })
     const second = await app.request("/bookings", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         ...booking,
         title: "Overlap",
@@ -92,7 +95,7 @@ describe("booking API", () => {
   it("updates and deletes bookings", async () => {
     const createResponse = await app.request("/bookings", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         machineId: "tohum",
         userId: "member-local",
@@ -105,7 +108,7 @@ describe("booking API", () => {
 
     const updateResponse = await app.request(`/bookings/${booking.id}`, {
       method: "PATCH",
-      headers: { "content-type": "application/json" },
+      headers: { ...authHeaders, "content-type": "application/json" },
       body: JSON.stringify({
         title: "Updated",
         startsAt: "2026-05-10T11:00:00.000Z",
@@ -114,10 +117,33 @@ describe("booking API", () => {
     })
     const deleteResponse = await app.request(`/bookings/${booking.id}`, {
       method: "DELETE",
+      headers: authHeaders,
     })
 
     expect(updateResponse.status).toBe(200)
     expect((await updateResponse.json()).booking.title).toBe("Updated")
     expect(deleteResponse.status).toBe(200)
   })
+
+  it("rejects unauthenticated machine access", async () => {
+    const response = await app.request("/machines")
+    expect(response.status).toBe(401)
+  })
 })
+
+async function login(email: string) {
+  const request = await app.request("/auth/request-otp", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email }),
+  })
+  const { devCode } = await request.json()
+  const verify = await app.request("/auth/verify-otp", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, code: devCode }),
+  })
+  const { token } = await verify.json()
+
+  return { authorization: `Bearer ${token}` }
+}

@@ -35,6 +35,59 @@ export const machines = sqliteTable(
   }),
 )
 
+export const invites = sqliteTable(
+  "invites",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    name: text("name").notNull(),
+    role: text("role", { enum: ["admin", "member"] })
+      .notNull()
+      .default("member"),
+    invitedByUserId: text("invited_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    acceptedAt: integer("accepted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    emailIdx: uniqueIndex("invites_email_idx").on(table.email),
+  }),
+)
+
+export const otpCodes = sqliteTable(
+  "otp_codes",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    code: text("code").notNull(),
+    consumedAt: integer("consumed_at", { mode: "timestamp" }),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    emailIdx: index("otp_codes_email_idx").on(table.email),
+  }),
+)
+
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    tokenHashIdx: uniqueIndex("sessions_token_hash_idx").on(table.tokenHash),
+    userIdx: index("sessions_user_idx").on(table.userId),
+  }),
+)
+
 export const bookings = sqliteTable(
   "bookings",
   {
