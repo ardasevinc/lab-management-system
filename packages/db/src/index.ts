@@ -4,7 +4,7 @@ import { type Client, createClient } from "@libsql/client"
 import { drizzle } from "drizzle-orm/libsql"
 import * as schema from "./schema"
 
-export function createDatabaseClient(url = "file:data/lab.sqlite") {
+export function createDatabaseClient(url: string) {
   if (url.startsWith("file:") && !url.startsWith("file::memory:")) {
     mkdirSync(dirname(url.replace(/^file:/, "")), { recursive: true })
   }
@@ -16,7 +16,7 @@ export function createDbFromClient(client: Client) {
   return drizzle(client, { schema })
 }
 
-export function createDb(url = "file:data/lab.sqlite") {
+export function createDb(url: string) {
   return createDbFromClient(createDatabaseClient(url))
 }
 

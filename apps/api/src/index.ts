@@ -3,7 +3,8 @@ import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } fr
 import { serveStatic } from "hono/bun"
 import { createApiApp } from "./app"
 
-const databaseUrl = Bun.env.DATABASE_URL ?? "file:data/lab.sqlite"
+const defaultDatabaseUrl = `file:${fileURLToPath(new URL("../data/lab.sqlite", import.meta.url))}`
+const databaseUrl = Bun.env.DATABASE_URL ?? defaultDatabaseUrl
 const client = createDatabaseClient(databaseUrl)
 const db = createDbFromClient(client)
 

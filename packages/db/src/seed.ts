@@ -1,6 +1,8 @@
+import { fileURLToPath } from "node:url"
 import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "."
 
-const databaseUrl = Bun.env.DATABASE_URL ?? "file:data/lab.sqlite"
+const defaultDatabaseUrl = `file:${fileURLToPath(new URL("../../../apps/api/data/lab.sqlite", import.meta.url))}`
+const databaseUrl = Bun.env.DATABASE_URL ?? defaultDatabaseUrl
 const client = createDatabaseClient(databaseUrl)
 const db = createDbFromClient(client)
 
