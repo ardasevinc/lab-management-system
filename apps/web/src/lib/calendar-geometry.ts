@@ -95,6 +95,18 @@ export function resizeRangeEnd(range: CalendarRange, endMinutes: number) {
   }
 }
 
+export function resizeRangeStart(range: CalendarRange, startMinutes: number) {
+  const end = new Date(range.endsAt)
+  const endMinutes = minutesSinceDayStart(end)
+  const snappedStart = clampMinutesToDay(snapMinutes(startMinutes))
+  const maximumStart = endMinutes - snapStepMinutes
+
+  return {
+    startsAt: dateAtMinutes(end, Math.min(snappedStart, maximumStart)).toISOString(),
+    endsAt: range.endsAt,
+  }
+}
+
 export function rangesOverlap(a: CalendarRange, b: CalendarRange) {
   return new Date(a.startsAt) < new Date(b.endsAt) && new Date(a.endsAt) > new Date(b.startsAt)
 }

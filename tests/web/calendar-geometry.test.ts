@@ -7,6 +7,7 @@ import {
   normalizeRange,
   packOverlaps,
   resizeRangeEnd,
+  resizeRangeStart,
   snapMinutes,
 } from "../../apps/web/src/lib/calendar-geometry"
 
@@ -53,6 +54,18 @@ describe("calendar geometry", () => {
     )
 
     expect(range.endsAt).toBe(iso(10 * 60 + 30))
+  })
+
+  it("resizes the start with minimum duration", () => {
+    const range = resizeRangeStart(
+      {
+        startsAt: iso(10 * 60),
+        endsAt: iso(12 * 60),
+      },
+      11 * 60 + 55,
+    )
+
+    expect(range.startsAt).toBe(iso(11 * 60 + 30))
   })
 
   it("detects overlaps while allowing adjacent ranges", () => {

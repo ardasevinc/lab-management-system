@@ -15,6 +15,7 @@ import {
   normalizeRange,
   packOverlaps,
   resizeRangeEnd,
+  resizeRangeStart,
   yToMinutes,
 } from "@/lib/calendar-geometry"
 import { formatDate, formatTime } from "@/lib/time"
@@ -47,6 +48,12 @@ type Draft =
     }
   | {
       kind: "resize-end"
+      booking: Booking
+      startY: number
+      currentY: number
+    }
+  | {
+      kind: "resize-start"
       booking: Booking
       startY: number
       currentY: number
@@ -111,6 +118,14 @@ export function WeekCalendar({
         const originalEndMinutes = minutesSinceDayStart(end)
         const deltaMinutes = yToMinutes(draft.currentY - draft.startY) - dayStartHour * 60
         const range = resizeRangeEnd(draft.booking, originalEndMinutes + deltaMinutes)
+        onResizeBooking(draft.booking, range)
+      }
+
+      if (draft.kind === "resize-start" && moved) {
+        const start = new Date(draft.booking.startsAt)
+        const originalStartMinutes = minutesSinceDayStart(start)
+        const deltaMinutes = yToMinutes(draft.currentY - draft.startY) - dayStartHour * 60
+        const range = resizeRangeStart(draft.booking, originalStartMinutes + deltaMinutes)
         onResizeBooking(draft.booking, range)
       }
 
@@ -270,6 +285,22 @@ function DayColumn({
               })
             }}
           >
+            <span
+              className="absolute top-0 right-1 left-1 h-2 cursor-ns-resize rounded-t-md"
+              onPointerDown={(event) => {
+                if (event.button !== 0) {
+                  return
+                }
+
+                event.stopPropagation()
+                onDraft({
+                  kind: "resize-start",
+                  booking,
+                  startY: event.clientY,
+                  currentY: event.clientY,
+                })
+              }}
+            />
             <div className="truncate font-medium">{booking.title}</div>
             <div className="truncate text-muted-foreground">
               {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
