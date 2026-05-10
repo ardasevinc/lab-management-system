@@ -1,3 +1,5 @@
+import { format, parseISO } from "date-fns"
+
 export function toLocalInputValue(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value
   const offsetMs = date.getTimezoneOffset() * 60_000
@@ -9,16 +11,13 @@ export function fromLocalInputValue(value: string) {
 }
 
 export function formatTime(value: string | Date) {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(typeof value === "string" ? new Date(value) : value)
+  return format(toDate(value), "HH:mm")
 }
 
 export function formatDate(value: string | Date) {
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(typeof value === "string" ? new Date(value) : value)
+  return format(toDate(value), "EEE, MMM d")
+}
+
+function toDate(value: string | Date) {
+  return typeof value === "string" ? parseISO(value) : value
 }

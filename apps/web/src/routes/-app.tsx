@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { WeekCalendar } from "@/components/week-calendar"
 import {
   apiFetch,
   type Booking,
@@ -17,7 +18,7 @@ import {
   requestOtp,
   verifyOtp,
 } from "@/lib/api"
-import { formatDate, formatTime } from "@/lib/time"
+import { formatDate } from "@/lib/time"
 
 export function App() {
   const queryClient = useQueryClient()
@@ -224,50 +225,32 @@ export function App() {
               </Button>
             </div>
 
-            <div className="min-h-[520px] p-4">
-              <div className="space-y-2">
-                {bookings.length === 0 ? (
-                  <div className="grid min-h-[360px] place-items-center rounded-md border border-dashed">
-                    <div className="max-w-md text-center">
-                      <div className="mx-auto mb-4 grid size-12 place-items-center rounded-md bg-primary/10 text-primary">
-                        <CalendarDays className="size-6" />
-                      </div>
-                      <h3 className="font-medium">No bookings this week</h3>
-                      <p className="mt-2 text-muted-foreground text-sm">
-                        Create a booking to reserve machine access.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  bookings.map((booking) => (
-                    <button
-                      key={booking.id}
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-md border border-border bg-background p-3 text-left hover:bg-muted"
-                      onClick={() => {
-                        setDialogError(null)
-                        setDialogState({ mode: "edit", booking, range: null })
-                      }}
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{booking.title}</span>
-                          {booking.type === "maintenance" ? (
-                            <Badge variant="outline">maintenance</Badge>
-                          ) : null}
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          {formatDate(booking.startsAt)}, {formatTime(booking.startsAt)} -{" "}
-                          {formatTime(booking.endsAt)}
-                        </p>
-                      </div>
-                      <Badge variant="secondary">
-                        {booking.userId === user.id ? "you" : booking.userId}
-                      </Badge>
-                    </button>
-                  ))
-                )}
-              </div>
+            <div className="p-4">
+              <WeekCalendar
+                bookings={bookings}
+                weekDate={new Date(weekRange.start)}
+                pendingBookingId={updateBookingMutation.variables?.id ?? null}
+                onCreateRange={(range) => {
+                  setDialogError(null)
+                  setDialogState({ mode: "create", booking: null, range })
+                }}
+                onEditBooking={(booking) => {
+                  setDialogError(null)
+                  setDialogState({ mode: "edit", booking, range: null })
+                }}
+                onMoveBooking={(booking, range) => {
+                  updateBookingMutation.mutate({
+                    id: booking.id,
+                    value: bookingToDialogValue(booking, range),
+                  })
+                }}
+                onResizeBooking={(booking, range) => {
+                  updateBookingMutation.mutate({
+                    id: booking.id,
+                    value: bookingToDialogValue(booking, range),
+                  })
+                }}
+              />
             </div>
           </section>
         </div>
@@ -303,6 +286,20 @@ export function App() {
       />
     </main>
   )
+}
+
+function bookingToDialogValue(
+  booking: Booking,
+  range: { startsAt: string; endsAt: string },
+): BookingDialogValue {
+  return {
+    title: booking.title,
+    notes: booking.notes ?? "",
+    type: booking.type,
+    startsAt: range.startsAt,
+    endsAt: range.endsAt,
+    reason: "",
+  }
 }
 
 function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
