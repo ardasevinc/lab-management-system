@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 export const users = sqliteTable(
   "users",
@@ -35,24 +35,35 @@ export const machines = sqliteTable(
   }),
 )
 
-export const bookings = sqliteTable("bookings", {
-  id: text("id").primaryKey(),
-  machineId: text("machine_id")
-    .notNull()
-    .references(() => machines.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  notes: text("notes"),
-  type: text("type", { enum: ["normal", "maintenance"] })
-    .notNull()
-    .default("normal"),
-  startsAt: integer("starts_at", { mode: "timestamp" }).notNull(),
-  endsAt: integer("ends_at", { mode: "timestamp" }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
-})
+export const bookings = sqliteTable(
+  "bookings",
+  {
+    id: text("id").primaryKey(),
+    machineId: text("machine_id")
+      .notNull()
+      .references(() => machines.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    type: text("type", { enum: ["normal", "maintenance"] })
+      .notNull()
+      .default("normal"),
+    startsAt: integer("starts_at", { mode: "timestamp" }).notNull(),
+    endsAt: integer("ends_at", { mode: "timestamp" }).notNull(),
+    deletedAt: integer("deleted_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    machineRangeIdx: index("bookings_machine_range_idx").on(
+      table.machineId,
+      table.startsAt,
+      table.endsAt,
+    ),
+  }),
+)
 
 export const bookingAuditEvents = sqliteTable("booking_audit_events", {
   id: text("id").primaryKey(),

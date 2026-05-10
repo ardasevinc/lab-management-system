@@ -1,13 +1,25 @@
-import { Database } from "bun:sqlite"
-import { drizzle } from "drizzle-orm/bun-sqlite"
+import { mkdirSync } from "node:fs"
+import { dirname } from "node:path"
+import { type Client, createClient } from "@libsql/client"
+import { drizzle } from "drizzle-orm/libsql"
 import * as schema from "./schema"
 
-export function createDb(path = "data/lab.sqlite") {
-  const sqlite = new Database(path)
-  sqlite.exec("PRAGMA journal_mode = WAL")
-  sqlite.exec("PRAGMA foreign_keys = ON")
+export function createDatabaseClient(url = "file:data/lab.sqlite") {
+  if (url.startsWith("file:") && !url.startsWith("file::memory:")) {
+    mkdirSync(dirname(url.replace(/^file:/, "")), { recursive: true })
+  }
 
-  return drizzle(sqlite, { schema })
+  return createClient({ url })
+}
+
+export function createDbFromClient(client: Client) {
+  return drizzle(client, { schema })
+}
+
+export function createDb(url = "file:data/lab.sqlite") {
+  return createDbFromClient(createDatabaseClient(url))
 }
 
 export type Db = ReturnType<typeof createDb>
+export * from "./migrate"
+export * from "./repository"

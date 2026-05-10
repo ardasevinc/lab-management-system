@@ -9,9 +9,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "seed": "bun src/seed.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.3",
     "drizzle-orm": "^0.45.1"
   },
   "devDependencies": {

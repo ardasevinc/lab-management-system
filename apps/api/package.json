@@ -2,6 +2,10 @@
   "name": "@lab/api",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./app": "./src/app.ts"
+  },
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "build": "tsc -p tsconfig.json --noEmit",
@@ -11,6 +15,7 @@
     "@lab/config": "workspace:*",
     "@lab/db": "workspace:*",
     "@lab/domain": "workspace:*",
-    "hono": "^4.10.6"
+    "hono": "^4.10.6",
+    "zod": "^4.4.3"
   }
 }
