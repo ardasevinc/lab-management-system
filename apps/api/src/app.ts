@@ -73,6 +73,8 @@ export type ApiAppOptions = {
 export function createApiApp({ db, assetMiddleware, webMiddleware }: ApiAppOptions) {
   const app = new Hono<{ Variables: { user: CurrentUser } }>()
 
+  app.onError((error, c) => apiErrorResponse(c, error))
+
   app.use(
     "*",
     cors({
@@ -331,26 +333,30 @@ async function handleApiResult(c: Context, fn: () => Promise<Response>) {
   try {
     return await fn()
   } catch (error) {
-    if (error instanceof BookingConflictError) {
-      return c.json({ error: error.message }, 409)
-    }
-
-    if (error instanceof InvalidBookingRangeError) {
-      return c.json({ error: error.message }, 400)
-    }
-
-    if (error instanceof NotFoundError) {
-      return c.json({ error: error.message }, 404)
-    }
-
-    if (error instanceof AuthError) {
-      return c.json({ error: error.message }, 401)
-    }
-
-    if (error instanceof ForbiddenError) {
-      return c.json({ error: error.message }, 403)
-    }
-
-    throw error
+    return apiErrorResponse(c, error)
   }
+}
+
+function apiErrorResponse(c: Context, error: unknown) {
+  if (error instanceof BookingConflictError) {
+    return c.json({ error: error.message }, 409)
+  }
+
+  if (error instanceof InvalidBookingRangeError) {
+    return c.json({ error: error.message }, 400)
+  }
+
+  if (error instanceof NotFoundError) {
+    return c.json({ error: error.message }, 404)
+  }
+
+  if (error instanceof AuthError) {
+    return c.json({ error: error.message }, 401)
+  }
+
+  if (error instanceof ForbiddenError) {
+    return c.json({ error: error.message }, 403)
+  }
+
+  throw error
 }

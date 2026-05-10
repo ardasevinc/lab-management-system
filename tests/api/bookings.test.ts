@@ -129,6 +129,25 @@ describe("booking API", () => {
     const response = await app.request("/machines")
     expect(response.status).toBe(401)
   })
+
+  it("requires admin role for maintenance bookings and admin routes", async () => {
+    const memberHeaders = await login("member@miralab.tr")
+    const maintenanceResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Maintenance",
+        type: "maintenance",
+        startsAt: "2026-05-10T14:00:00.000Z",
+        endsAt: "2026-05-10T15:00:00.000Z",
+      }),
+    })
+    const adminResponse = await app.request("/admin/users", { headers: memberHeaders })
+
+    expect(maintenanceResponse.status).toBe(403)
+    expect(adminResponse.status).toBe(403)
+  })
 })
 
 async function login(email: string) {

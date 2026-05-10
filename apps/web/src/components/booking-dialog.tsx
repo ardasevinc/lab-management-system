@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { Booking, Machine } from "@/lib/api"
+import type { AuditEvent, Booking, Machine } from "@/lib/api"
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/time"
 
 export type BookingDialogValue = {
@@ -31,6 +31,7 @@ type BookingDialogProps = {
   initialRange?: { startsAt: string; endsAt: string } | null
   pending: boolean
   error: string | null
+  auditEvents?: AuditEvent[]
   onOpenChange: (open: boolean) => void
   onSubmit: (value: BookingDialogValue) => void
   onDelete: () => void
@@ -45,6 +46,7 @@ export function BookingDialog({
   initialRange,
   pending,
   error,
+  auditEvents,
   onOpenChange,
   onSubmit,
   onDelete,
@@ -131,6 +133,21 @@ export function BookingDialog({
           ) : null}
 
           {error ? <p className="text-destructive text-sm">{error}</p> : null}
+
+          {auditEvents?.length ? (
+            <div className="rounded-md border border-border bg-muted/30 p-3">
+              <div className="mb-2 font-medium text-sm">Audit history</div>
+              <div className="space-y-2">
+                {auditEvents.map((event) => (
+                  <div key={event.id} className="text-muted-foreground text-xs">
+                    <span className="font-medium text-foreground">{event.eventType}</span> by{" "}
+                    {event.actorUserId} at {new Date(event.createdAt).toLocaleString()}
+                    {event.reason ? <span> ({event.reason})</span> : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <DialogFooter className="gap-2 sm:justify-between">
             {mode === "edit" ? (

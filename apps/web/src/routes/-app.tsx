@@ -10,12 +10,14 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { WeekCalendar } from "@/components/week-calendar"
 import {
+  type AuditEvent,
   apiFetch,
   type Booking,
   getStoredToken,
   logout,
   type Machine,
   requestOtp,
+  type User,
   verifyOtp,
 } from "@/lib/api"
 import { formatDate } from "@/lib/time"
@@ -62,6 +64,19 @@ export function App() {
         )}&end=${encodeURIComponent(weekRange.end)}`,
       ),
     enabled: Boolean(selectedMachine),
+  })
+
+  const auditQuery = useQuery({
+    queryKey: ["booking-audit", dialogState?.booking?.id],
+    queryFn: () =>
+      apiFetch<{ events: AuditEvent[] }>(`/bookings/${dialogState?.booking?.id}/audit`),
+    enabled: userCanViewAudit(meQuery.data?.user) && Boolean(dialogState?.booking),
+  })
+
+  const usersQuery = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => apiFetch<{ users: User[] }>("/admin/users"),
+    enabled: meQuery.data?.user.role === "admin",
   })
 
   const invalidateBookings = () => {
@@ -119,6 +134,24 @@ export function App() {
       invalidateBookings()
     },
     onError: (error) => setDialogError(error.message),
+  })
+
+  const inviteMutation = useMutation({
+    mutationFn: (form: FormData) =>
+      apiFetch<{ invite: { id: string; email: string; name: string; role: "admin" | "member" } }>(
+        "/admin/invites",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            email: String(form.get("email") ?? ""),
+            name: String(form.get("name") ?? ""),
+            role: String(form.get("role") ?? "member"),
+          }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+    },
   })
 
   if (!meQuery.data) {
@@ -208,6 +241,43 @@ export function App() {
                 Signed in as <span className="font-medium text-foreground">{user.role}</span>.
               </p>
             </section>
+
+            {user.role === "admin" ? (
+              <section className="rounded-lg border border-border bg-card p-4">
+                <div className="mb-3 font-medium">Admin</div>
+                <form
+                  className="space-y-2"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    inviteMutation.mutate(new FormData(event.currentTarget))
+                    event.currentTarget.reset()
+                  }}
+                >
+                  <Input name="email" type="email" placeholder="user@miralab.tr" required />
+                  <Input name="name" placeholder="Name" required />
+                  <select
+                    name="role"
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    defaultValue="member"
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
+                    Invite user
+                  </Button>
+                </form>
+                <Separator className="my-3" />
+                <div className="space-y-1">
+                  {usersQuery.data?.users.map((listedUser) => (
+                    <div key={listedUser.id} className="flex items-center justify-between text-sm">
+                      <span className="truncate">{listedUser.name}</span>
+                      <Badge variant="outline">{listedUser.role}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </aside>
 
           <section className="rounded-lg border border-border bg-card">
@@ -265,6 +335,7 @@ export function App() {
         initialRange={dialogState?.range ?? null}
         pending={pending}
         error={dialogError}
+        auditEvents={auditQuery.data?.events}
         onOpenChange={(open) => {
           if (!open) {
             setDialogState(null)
@@ -286,6 +357,10 @@ export function App() {
       />
     </main>
   )
+}
+
+function userCanViewAudit(user?: User) {
+  return user?.role === "admin"
 }
 
 function bookingToDialogValue(
