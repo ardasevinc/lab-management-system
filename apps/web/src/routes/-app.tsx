@@ -24,6 +24,7 @@ import { formatDate } from "@/lib/time"
 
 export function App() {
   const queryClient = useQueryClient()
+  const [authVersion, setAuthVersion] = useState(0)
   const [selectedMachineSlug, setSelectedMachineSlug] = useState("tohum")
   const [dialogState, setDialogState] = useState<{
     mode: "create" | "edit"
@@ -33,7 +34,7 @@ export function App() {
   const [dialogError, setDialogError] = useState<string | null>(null)
 
   const meQuery = useQuery({
-    queryKey: ["me"],
+    queryKey: ["me", authVersion],
     queryFn: () =>
       apiFetch<{ user: { id: string; email: string; name: string; role: "admin" | "member" } }>(
         "/auth/me",
@@ -155,7 +156,14 @@ export function App() {
   })
 
   if (!meQuery.data) {
-    return <LoginScreen onLoggedIn={() => queryClient.invalidateQueries({ queryKey: ["me"] })} />
+    return (
+      <LoginScreen
+        onLoggedIn={() => {
+          setAuthVersion((version) => version + 1)
+          queryClient.invalidateQueries({ queryKey: ["me"] })
+        }}
+      />
+    )
   }
 
   const user = meQuery.data.user
