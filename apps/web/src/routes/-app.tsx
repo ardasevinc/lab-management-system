@@ -1,14 +1,12 @@
 import { labConfig } from "@lab/config"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CalendarDays, Cpu, LogOut, ShieldCheck, UserRound } from "lucide-react"
+import { addDays, isSameDay, startOfWeek } from "date-fns"
 import { useMemo, useState } from "react"
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
-import { Badge } from "@/components/ui/badge"
+import { DashboardShell } from "@/components/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { WeekCalendar } from "@/components/week-calendar"
 import {
   type AuditEvent,
   apiFetch,
@@ -20,7 +18,6 @@ import {
   type User,
   verifyOtp,
 } from "@/lib/api"
-import { formatDate } from "@/lib/time"
 
 export function App() {
   const queryClient = useQueryClient()
@@ -168,171 +165,72 @@ export function App() {
 
   const user = meQuery.data.user
   const bookings = bookingsQuery.data?.bookings ?? []
+  const users = usersQuery.data?.users ?? []
+  const dashboardStats = getDashboardStats(bookings)
+  const upcomingBookings = getUpcomingBookings(bookings)
   const pending =
     createBookingMutation.isPending ||
     updateBookingMutation.isPending ||
     deleteBookingMutation.isPending
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-8">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-border border-b pb-6">
-          <div>
-            <p className="text-muted-foreground text-sm">{labConfig.shortName}</p>
-            <h1 className="font-semibold text-3xl tracking-tight">{labConfig.appTitle}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-1">
-              <UserRound className="size-3" />
-              {user.name}
-            </Badge>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                logout().finally(() => {
-                  queryClient.clear()
-                  window.location.reload()
-                })
-              }}
-            >
-              <LogOut className="size-4" />
-              Log out
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setDialogError(null)
-                setDialogState({ mode: "create", booking: null, range: null })
-              }}
-            >
-              <CalendarDays className="size-4" />
-              New booking
-            </Button>
-          </div>
-        </header>
-
-        <div className="grid flex-1 gap-6 py-8 lg:grid-cols-[280px_1fr]">
-          <aside className="space-y-4">
-            <section className="rounded-lg border border-border bg-card p-4">
-              <div className="mb-3 flex items-center gap-2 font-medium">
-                <Cpu className="size-4 text-primary" />
-                Machines
-              </div>
-              <div className="space-y-2">
-                {machinesQuery.data?.machines.map((machine) => (
-                  <button
-                    key={machine.id}
-                    type="button"
-                    className="w-full rounded-md border border-border bg-muted/40 p-3 text-left transition hover:bg-muted"
-                    data-active={machine.slug === selectedMachineSlug}
-                    onClick={() => setSelectedMachineSlug(machine.slug)}
-                  >
-                    <div className="font-medium">{machine.name}</div>
-                    <p className="mt-1 text-muted-foreground text-sm">{machine.description}</p>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-lg border border-border bg-card p-4">
-              <div className="mb-2 flex items-center gap-2 font-medium">
-                <ShieldCheck className="size-4 text-primary" />
-                Access
-              </div>
-              <p className="text-muted-foreground text-sm">
-                Invite-only booking portal. Admins can edit maintenance windows and resolve
-                conflicts.
-              </p>
-              <Separator className="my-3" />
-              <p className="text-muted-foreground text-sm">
-                Signed in as <span className="font-medium text-foreground">{user.role}</span>.
-              </p>
-            </section>
-
-            {user.role === "admin" ? (
-              <section className="rounded-lg border border-border bg-card p-4">
-                <div className="mb-3 font-medium">Admin</div>
-                <form
-                  className="space-y-2"
-                  onSubmit={(event) => {
-                    event.preventDefault()
-                    inviteMutation.mutate(new FormData(event.currentTarget))
-                    event.currentTarget.reset()
-                  }}
-                >
-                  <Input name="email" type="email" placeholder="user@miralab.tr" required />
-                  <Input name="name" placeholder="Name" required />
-                  <select
-                    name="role"
-                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    defaultValue="member"
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
-                    Invite user
-                  </Button>
-                </form>
-                <Separator className="my-3" />
-                <div className="space-y-1">
-                  {usersQuery.data?.users.map((listedUser) => (
-                    <div key={listedUser.id} className="flex items-center justify-between text-sm">
-                      <span className="truncate">{listedUser.name}</span>
-                      <Badge variant="outline">{listedUser.role}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-          </aside>
-
-          <section className="rounded-lg border border-border bg-card">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-border border-b p-4">
-              <div>
-                <h2 className="font-semibold text-lg">
-                  {selectedMachine?.name ?? "Machine"} calendar
-                </h2>
-                <p className="text-muted-foreground text-sm">
-                  {formatDate(weekRange.start)} - {formatDate(weekRange.end)}
-                </p>
-              </div>
-              <Button type="button" variant="outline">
-                This week
-              </Button>
-            </div>
-
-            <div className="p-4">
-              <WeekCalendar
-                bookings={bookings}
-                weekDate={new Date(weekRange.start)}
-                pendingBookingId={updateBookingMutation.variables?.id ?? null}
-                onCreateRange={(range) => {
-                  setDialogError(null)
-                  setDialogState({ mode: "create", booking: null, range })
-                }}
-                onEditBooking={(booking) => {
-                  setDialogError(null)
-                  setDialogState({ mode: "edit", booking, range: null })
-                }}
-                onMoveBooking={(booking, range) => {
-                  updateBookingMutation.mutate({
-                    id: booking.id,
-                    value: bookingToDialogValue(booking, range),
-                  })
-                }}
-                onResizeBooking={(booking, range) => {
-                  updateBookingMutation.mutate({
-                    id: booking.id,
-                    value: bookingToDialogValue(booking, range),
-                  })
-                }}
-              />
-            </div>
-          </section>
-        </div>
-      </section>
+    <>
+      <DashboardShell
+        user={user}
+        machines={machinesQuery.data?.machines ?? []}
+        selectedMachine={selectedMachine}
+        selectedMachineSlug={selectedMachineSlug}
+        weekRange={weekRange}
+        bookings={bookings}
+        upcomingBookings={upcomingBookings}
+        users={users}
+        dashboardStats={dashboardStats}
+        pendingBookingId={updateBookingMutation.variables?.id ?? null}
+        invitePending={inviteMutation.isPending}
+        onSelectMachine={setSelectedMachineSlug}
+        onLogout={() => {
+          logout().finally(() => {
+            queryClient.clear()
+            window.location.reload()
+          })
+        }}
+        onNewBooking={() => {
+          setDialogError(null)
+          setDialogState({ mode: "create", booking: null, range: null })
+        }}
+        onAddMaintenance={() => {
+          setDialogError(null)
+          setDialogState({
+            mode: "create",
+            booking: null,
+            range: {
+              startsAt: new Date().toISOString(),
+              endsAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+            },
+          })
+        }}
+        onInvite={(form) => inviteMutation.mutate(form)}
+        onCreateRange={(range) => {
+          setDialogError(null)
+          setDialogState({ mode: "create", booking: null, range })
+        }}
+        onEditBooking={(booking) => {
+          setDialogError(null)
+          setDialogState({ mode: "edit", booking, range: null })
+        }}
+        onMoveBooking={(booking, range) => {
+          updateBookingMutation.mutate({
+            id: booking.id,
+            value: bookingToDialogValue(booking, range),
+          })
+        }}
+        onResizeBooking={(booking, range) => {
+          updateBookingMutation.mutate({
+            id: booking.id,
+            value: bookingToDialogValue(booking, range),
+          })
+        }}
+      />
 
       <BookingDialog
         open={Boolean(dialogState)}
@@ -363,10 +261,9 @@ export function App() {
           }
         }}
       />
-    </main>
+    </>
   )
 }
-
 function userCanViewAudit(user?: User) {
   return user?.role === "admin"
 }
@@ -412,10 +309,11 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
 
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
-      <section className="w-full max-w-sm rounded-lg border border-border bg-card p-5">
+      <section className="w-full max-w-sm rounded-lg border border-border bg-card p-5 shadow-sm">
         <div className="mb-5">
           <p className="text-muted-foreground text-sm">{labConfig.shortName}</p>
           <h1 className="font-semibold text-2xl tracking-tight">{labConfig.appTitle}</h1>
+          <p className="mt-1 text-muted-foreground text-sm">GPU booking portal</p>
         </div>
         <form
           className="space-y-4"
@@ -429,8 +327,11 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
             <Input
               id="email"
               type="email"
+              name="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email"
+              spellCheck={false}
               required
             />
           </div>
@@ -439,6 +340,9 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
               <Label htmlFor="code">Code</Label>
               <Input
                 id="code"
+                name="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
                 required
@@ -469,13 +373,35 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
 }
 
 function getWeekRange(date: Date) {
-  const start = new Date(date)
-  const day = start.getDay() || 7
-  start.setDate(start.getDate() - day + 1)
+  const start = startOfWeek(date, { weekStartsOn: 1 })
   start.setHours(0, 0, 0, 0)
-
-  const end = new Date(start)
-  end.setDate(start.getDate() + 7)
+  const end = addDays(start, 7)
 
   return { start: start.toISOString(), end: end.toISOString() }
+}
+
+function getDashboardStats(bookings: Booking[]) {
+  const now = new Date()
+  const weekMinutes = bookings.reduce((total, booking) => {
+    const startsAt = new Date(booking.startsAt).getTime()
+    const endsAt = new Date(booking.endsAt).getTime()
+    return total + Math.max(0, endsAt - startsAt) / 60_000
+  }, 0)
+
+  return {
+    maintenanceCount: bookings.filter((booking) => booking.type === "maintenance").length,
+    todayBookings: bookings.filter((booking) => isSameDay(new Date(booking.startsAt), now)).length,
+    weekBookings: bookings.length,
+    weekHours: Math.round(weekMinutes / 60),
+  }
+}
+
+function getUpcomingBookings(bookings: Booking[]): Booking[] {
+  const now = Date.now()
+  return [...bookings]
+    .filter((booking) => new Date(booking.endsAt).getTime() >= now)
+    .sort((first, second) => {
+      return new Date(first.startsAt).getTime() - new Date(second.startsAt).getTime()
+    })
+    .slice(0, 5)
 }

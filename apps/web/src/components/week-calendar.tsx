@@ -1,3 +1,4 @@
+import { format } from "date-fns"
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { Booking } from "@/lib/api"
 import {
@@ -18,7 +19,7 @@ import {
   resizeRangeStart,
   yToMinutes,
 } from "@/lib/calendar-geometry"
-import { formatDate, formatTime } from "@/lib/time"
+import { formatTime } from "@/lib/time"
 
 type WeekCalendarProps = {
   bookings: Booking[]
@@ -146,25 +147,25 @@ export function WeekCalendar({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[860px]">
-        <div className="grid grid-cols-[64px_repeat(7,minmax(104px,1fr))] border-border border-b">
+      <div className="min-w-[760px]">
+        <div className="grid grid-cols-[52px_repeat(7,minmax(92px,1fr))] border-border border-b bg-card">
           <div />
           {days.map((day) => (
-            <div key={day.toISOString()} className="border-border border-l px-3 py-2">
-              <div className="font-medium text-sm">{formatDate(day)}</div>
+            <div key={day.toISOString()} className="border-border border-l px-2.5 py-2">
+              <div className="truncate font-medium text-sm">{format(day, "EEE d")}</div>
             </div>
           ))}
         </div>
 
         <div
-          className="grid grid-cols-[64px_repeat(7,minmax(104px,1fr))]"
+          className="grid grid-cols-[52px_repeat(7,minmax(92px,1fr))]"
           style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
         >
-          <div className="relative border-border border-r">
+          <div className="relative border-border border-r bg-muted/25">
             {hours.slice(0, -1).map((hour) => (
               <div
                 key={hour}
-                className="absolute right-2 -translate-y-2 text-muted-foreground text-xs"
+                className="absolute right-2 -translate-y-2 text-muted-foreground text-[11px] tabular-nums"
                 style={{ top: (hour - dayStartHour) * hourHeightPx }}
               >
                 {hour}:00
@@ -214,7 +215,7 @@ function DayColumn({
   return (
     <div
       ref={ref}
-      className="relative border-border border-l bg-background"
+      className="relative touch-none select-none border-border border-l bg-background"
       onPointerDown={(event) => {
         if (event.button !== 0 || event.target !== event.currentTarget) {
           return
@@ -250,7 +251,7 @@ function DayColumn({
           <button
             key={booking.id}
             type="button"
-            className="absolute rounded-md border px-2 py-1 text-left text-xs shadow-sm transition hover:ring-2 hover:ring-ring"
+            className="absolute overflow-hidden rounded-[6px] border px-2 py-1 text-left text-xs shadow-sm transition-[box-shadow,transform,opacity] duration-150 hover:shadow-md hover:ring-2 hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
             data-booking-id={booking.id}
             data-pending={pendingBookingId === booking.id || undefined}
             style={{
@@ -258,8 +259,7 @@ function DayColumn({
               height: style.height,
               left: `calc(${style.left}% + 2px)`,
               width: `calc(${style.width}% - 4px)`,
-              background:
-                booking.type === "maintenance" ? "var(--color-muted)" : "var(--color-card)",
+              background: booking.type === "maintenance" ? "var(--color-muted)" : "white",
               borderColor: conflicts ? "var(--color-destructive)" : "var(--color-border)",
               opacity: pendingBookingId === booking.id ? 0.55 : 1,
             }}
@@ -301,8 +301,8 @@ function DayColumn({
                 })
               }}
             />
-            <div className="truncate font-medium">{booking.title}</div>
-            <div className="truncate text-muted-foreground">
+            <div className="truncate font-medium leading-tight">{booking.title}</div>
+            <div className="truncate text-muted-foreground tabular-nums">
               {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
             </div>
             <span
@@ -327,7 +327,7 @@ function DayColumn({
 
       {draftRange ? (
         <div
-          className="pointer-events-none absolute right-1 left-1 rounded-md border border-primary bg-primary/10"
+          className="pointer-events-none absolute right-1 left-1 rounded-md border border-primary bg-primary/12 shadow-sm"
           style={{
             top: draftRange.top,
             height: draftRange.height,
