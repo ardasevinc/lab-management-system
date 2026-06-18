@@ -13,8 +13,15 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { AuditEvent, Booking, Machine } from "@/lib/api"
 import { fromLocalDateTimeParts, toLocalDateValue, toLocalTimeValue } from "@/lib/time"
@@ -128,16 +135,17 @@ export function BookingDialog({
 
             <Field>
               <FieldLabel htmlFor="type">Type</FieldLabel>
-              <NativeSelect
-                id="type"
-                name="type"
-                className="w-full"
-                defaultValue={defaults.type}
-                disabled={!isAdmin}
-              >
-                <NativeSelectOption value="normal">Normal</NativeSelectOption>
-                <NativeSelectOption value="maintenance">Maintenance</NativeSelectOption>
-              </NativeSelect>
+              <Select name="type" defaultValue={defaults.type} disabled={!isAdmin}>
+                <SelectTrigger id="type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field>

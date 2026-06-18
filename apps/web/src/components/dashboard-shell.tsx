@@ -19,7 +19,14 @@ import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Field, FieldGroup, FieldLabel } from "./ui/field"
 import { Input } from "./ui/input"
-import { NativeSelect, NativeSelectOption } from "./ui/native-select"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select"
 import { Separator } from "./ui/separator"
 import { WeekCalendar } from "./week-calendar"
 
@@ -327,15 +334,17 @@ export function DashboardShell({
                         <FieldLabel htmlFor="invite-role" className="sr-only">
                           Invite role
                         </FieldLabel>
-                        <NativeSelect
-                          id="invite-role"
-                          name="role"
-                          className="w-full"
-                          defaultValue="member"
-                        >
-                          <NativeSelectOption value="member">Member</NativeSelectOption>
-                          <NativeSelectOption value="admin">Admin</NativeSelectOption>
-                        </NativeSelect>
+                        <Select name="role" defaultValue="member">
+                          <SelectTrigger id="invite-role" className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
                       </Field>
                     </FieldGroup>
                     <Button type="submit" className="w-full" disabled={invitePending}>
