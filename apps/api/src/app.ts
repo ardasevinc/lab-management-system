@@ -76,6 +76,8 @@ export type ApiAppOptions = {
 }
 
 const defaultRuntimeConfig: ApiRuntimeConfig = {
+  appEnv: "development",
+  publicAppUrl: "http://localhost:5173",
   corsOrigins: ["http://localhost:5173"],
   sessionCookieSecure: false,
   devShowOtp: true,
