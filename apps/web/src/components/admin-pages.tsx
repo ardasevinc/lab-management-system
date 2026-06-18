@@ -214,12 +214,13 @@ export function AdminUsersPage() {
       </section>
 
       <section className="rounded-lg border border-border bg-card">
-        <div className="border-border border-b px-4 py-3">
+        <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
           <h2 className="font-medium text-sm">Members</h2>
+          <Badge variant="outline">{workspace.users.length}</Badge>
         </div>
-        <div className="grid gap-2 p-3 md:hidden">
+        <div className="divide-y divide-border md:hidden">
           {workspace.users.map((user) => (
-            <div key={user.id} className="rounded-md border border-border bg-muted/20 px-3 py-2">
+            <div key={user.id} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate font-medium text-sm">{user.name}</div>
