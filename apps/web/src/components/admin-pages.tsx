@@ -167,7 +167,7 @@ export function AdminUsersPage() {
           <h2 className="font-medium text-sm">Invite user</h2>
         </div>
         <form
-          className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px_auto]"
+          className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px_auto]"
           onSubmit={(event) => {
             event.preventDefault()
             workspace.inviteUser(new FormData(event.currentTarget))
