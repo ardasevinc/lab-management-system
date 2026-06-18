@@ -7,8 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
 import type { AuditEvent, Booking, Machine } from "@/lib/api"
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/time"
@@ -57,7 +58,7 @@ export function BookingDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <form
-          className="space-y-4"
+          className="flex flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -78,66 +79,68 @@ export function BookingDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" name="title" defaultValue={defaults.title} required />
-          </div>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="title">Title</FieldLabel>
+              <Input id="title" name="title" defaultValue={defaults.title} required />
+            </Field>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="startsAt">Starts</Label>
-              <Input
-                id="startsAt"
-                name="startsAt"
-                type="datetime-local"
-                defaultValue={defaults.startsAt}
-                required
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="startsAt">Starts</FieldLabel>
+                <Input
+                  id="startsAt"
+                  name="startsAt"
+                  type="datetime-local"
+                  defaultValue={defaults.startsAt}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="endsAt">Ends</FieldLabel>
+                <Input
+                  id="endsAt"
+                  name="endsAt"
+                  type="datetime-local"
+                  defaultValue={defaults.endsAt}
+                  required
+                />
+              </Field>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="endsAt">Ends</Label>
-              <Input
-                id="endsAt"
-                name="endsAt"
-                type="datetime-local"
-                defaultValue={defaults.endsAt}
-                required
-              />
-            </div>
-          </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="type">Type</Label>
-            <select
-              id="type"
-              name="type"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              defaultValue={defaults.type}
-              disabled={!isAdmin}
-            >
-              <option value="normal">Normal</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
-          </div>
+            <Field>
+              <FieldLabel htmlFor="type">Type</FieldLabel>
+              <NativeSelect
+                id="type"
+                name="type"
+                className="w-full"
+                defaultValue={defaults.type}
+                disabled={!isAdmin}
+              >
+                <NativeSelectOption value="normal">Normal</NativeSelectOption>
+                <NativeSelectOption value="maintenance">Maintenance</NativeSelectOption>
+              </NativeSelect>
+            </Field>
 
-          <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" name="notes" defaultValue={defaults.notes} />
-          </div>
+            <Field>
+              <FieldLabel htmlFor="notes">Notes</FieldLabel>
+              <Textarea id="notes" name="notes" defaultValue={defaults.notes} />
+            </Field>
 
-          {isAdmin ? (
-            <div className="grid gap-2">
-              <Label htmlFor="reason">Admin reason</Label>
-              <Input id="reason" name="reason" defaultValue="" />
-            </div>
-          ) : null}
+            {isAdmin ? (
+              <Field>
+                <FieldLabel htmlFor="reason">Admin reason</FieldLabel>
+                <Input id="reason" name="reason" defaultValue="" />
+              </Field>
+            ) : null}
 
-          {error ? <p className="text-destructive text-sm">{error}</p> : null}
+            {error ? <FieldError>{error}</FieldError> : null}
+          </FieldGroup>
 
           {auditEvents?.length ? (
             <div className="rounded-md border border-border bg-muted/30 p-3">
               <div className="mb-2 font-medium text-sm">Audit history</div>
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 {auditEvents.map((event) => (
                   <div key={event.id} className="text-muted-foreground text-xs">
                     <span className="font-medium text-foreground">{event.eventType}</span> by{" "}

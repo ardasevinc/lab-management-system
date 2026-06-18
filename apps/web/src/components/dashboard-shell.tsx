@@ -17,8 +17,9 @@ import type { CalendarRange } from "@/lib/calendar-geometry"
 import { formatDate, formatTime } from "@/lib/time"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
+import { Field, FieldGroup, FieldLabel } from "./ui/field"
 import { Input } from "./ui/input"
-import { Label } from "./ui/label"
+import { NativeSelect, NativeSelectOption } from "./ui/native-select"
 import { Separator } from "./ui/separator"
 import { WeekCalendar } from "./week-calendar"
 
@@ -120,14 +121,14 @@ export function DashboardShell({
           </div>
         </header>
 
-        <div className="grid flex-1 lg:grid-cols-[220px_minmax(0,1fr)_292px]">
-          <aside className="border-border border-b bg-sidebar/70 p-3 lg:border-r lg:border-b-0">
+        <div className="grid flex-1 xl:grid-cols-[232px_minmax(0,1fr)_304px]">
+          <aside className="border-border border-b bg-sidebar/70 p-3 sm:p-4 xl:border-r xl:border-b-0">
             <section className="flex flex-col gap-3">
               <div className="flex items-center justify-between px-1">
                 <div className="font-medium text-sm">Machines</div>
                 <Badge variant="outline">{machines.length}</Badge>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                 {machines.map((machine) => (
                   <button
                     key={machine.id}
@@ -168,7 +169,7 @@ export function DashboardShell({
             </section>
           </aside>
 
-          <section id="calendar-workspace" className="min-w-0 bg-background p-3 lg:p-4">
+          <section id="calendar-workspace" className="min-w-0 bg-background p-3 sm:p-4">
             <div className="mb-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -181,8 +182,7 @@ export function DashboardShell({
                   </Badge>
                 </div>
                 <p className="mt-1 max-w-3xl text-muted-foreground text-sm">
-                  Drag on the grid to book time. Move or resize existing reservations directly on
-                  the calendar.
+                  Drag to book. Move or resize reservations directly on the calendar.
                 </p>
               </div>
 
@@ -221,8 +221,8 @@ export function DashboardShell({
             </section>
           </section>
 
-          <aside className="border-border border-t bg-sidebar/70 p-3 lg:border-t-0 lg:border-l">
-            <div className="grid gap-3">
+          <aside className="border-border border-t bg-sidebar/70 p-3 sm:p-4 xl:border-t-0 xl:border-l">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1">
               <section className="rounded-lg border border-border bg-card p-3">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div>
@@ -289,47 +289,55 @@ export function DashboardShell({
                     <UsersRound className="size-4 text-muted-foreground" aria-hidden="true" />
                   </div>
                   <form
-                    className="grid gap-2"
+                    className="grid gap-3"
                     onSubmit={(event) => {
                       event.preventDefault()
                       onInvite(new FormData(event.currentTarget))
                       event.currentTarget.reset()
                     }}
                   >
-                    <Label htmlFor="invite-email" className="sr-only">
-                      Invite email
-                    </Label>
-                    <Input
-                      id="invite-email"
-                      name="email"
-                      type="email"
-                      placeholder="user@miralab.tr"
-                      autoComplete="email"
-                      spellCheck={false}
-                      required
-                    />
-                    <Label htmlFor="invite-name" className="sr-only">
-                      Invite name
-                    </Label>
-                    <Input
-                      id="invite-name"
-                      name="name"
-                      placeholder="Researcher name"
-                      autoComplete="name"
-                      required
-                    />
-                    <Label htmlFor="invite-role" className="sr-only">
-                      Invite role
-                    </Label>
-                    <select
-                      id="invite-role"
-                      name="role"
-                      className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      defaultValue="member"
-                    >
-                      <option value="member">Member</option>
-                      <option value="admin">Admin</option>
-                    </select>
+                    <FieldGroup className="gap-3">
+                      <Field>
+                        <FieldLabel htmlFor="invite-email" className="sr-only">
+                          Invite email
+                        </FieldLabel>
+                        <Input
+                          id="invite-email"
+                          name="email"
+                          type="email"
+                          placeholder="user@miralab.tr"
+                          autoComplete="email"
+                          spellCheck={false}
+                          required
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="invite-name" className="sr-only">
+                          Invite name
+                        </FieldLabel>
+                        <Input
+                          id="invite-name"
+                          name="name"
+                          placeholder="Researcher name"
+                          autoComplete="name"
+                          required
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="invite-role" className="sr-only">
+                          Invite role
+                        </FieldLabel>
+                        <NativeSelect
+                          id="invite-role"
+                          name="role"
+                          className="w-full"
+                          defaultValue="member"
+                        >
+                          <NativeSelectOption value="member">Member</NativeSelectOption>
+                          <NativeSelectOption value="admin">Admin</NativeSelectOption>
+                        </NativeSelect>
+                      </Field>
+                    </FieldGroup>
                     <Button type="submit" className="w-full" disabled={invitePending}>
                       <MailPlus className="size-4" aria-hidden="true" />
                       Invite user
@@ -356,7 +364,7 @@ export function DashboardShell({
                 <Button
                   type="button"
                   variant="outline"
-                  className="justify-start"
+                  className="justify-start md:self-start xl:self-auto"
                   onClick={onAddMaintenance}
                 >
                   <Wrench className="size-4" aria-hidden="true" />

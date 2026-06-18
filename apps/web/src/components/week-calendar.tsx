@@ -259,8 +259,13 @@ function DayColumn({
               height: style.height,
               left: `calc(${style.left}% + 2px)`,
               width: `calc(${style.width}% - 4px)`,
-              background: booking.type === "maintenance" ? "var(--color-muted)" : "white",
-              borderColor: conflicts ? "var(--color-destructive)" : "var(--color-border)",
+              background:
+                booking.type === "maintenance" ? "var(--color-muted)" : "var(--color-card)",
+              borderColor: conflicts
+                ? "var(--color-destructive)"
+                : booking.type === "maintenance"
+                  ? "var(--color-border)"
+                  : "color-mix(in oklch, var(--color-primary) 34%, var(--color-border))",
               opacity: pendingBookingId === booking.id ? 0.55 : 1,
             }}
             onClick={() => {
