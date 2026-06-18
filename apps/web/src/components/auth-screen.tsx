@@ -61,17 +61,15 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
           </div>
 
           <div className="max-w-xl">
-            <p className="font-medium text-white/52 text-sm uppercase tracking-[0.18em]">
-              booking system
-            </p>
+            <p className="font-medium text-white/52 text-sm uppercase tracking-[0.18em]">Tohum</p>
             <h2 className="mt-3 max-w-lg font-semibold text-4xl leading-tight tracking-tight">
-              Tohum access, without calendar drift.
+              GPU reservations for MIRALAB.
             </h2>
           </div>
 
           <div className="flex max-w-xl items-center gap-3 border-white/12 border-t pt-5 text-white/58 text-sm">
             <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>Invite-only access for MIRALAB researchers and admins.</span>
+            <span>Invite-only access.</span>
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import {
 export function App() {
   const queryClient = useQueryClient()
   const [authVersion, setAuthVersion] = useState(0)
+  const hasStoredToken = Boolean(getStoredToken())
   const [selectedMachineSlug, setSelectedMachineSlug] = useState("tohum")
   const [dialogState, setDialogState] = useState<{
     mode: "create" | "edit"
@@ -32,7 +33,7 @@ export function App() {
         "/auth/me",
       ),
     retry: false,
-    enabled: Boolean(getStoredToken()),
+    enabled: hasStoredToken,
   })
 
   const machinesQuery = useQuery({
@@ -147,6 +148,10 @@ export function App() {
     },
   })
 
+  if (hasStoredToken && !meQuery.data && !meQuery.isError) {
+    return <AppBootstrap />
+  }
+
   if (!meQuery.data) {
     return (
       <AuthScreen
@@ -186,7 +191,7 @@ export function App() {
         onLogout={() => {
           logout().finally(() => {
             queryClient.clear()
-            window.location.reload()
+            setAuthVersion((version) => version + 1)
           })
         }}
         onNewBooking={() => {
@@ -257,6 +262,17 @@ export function App() {
         }}
       />
     </>
+  )
+}
+
+function AppBootstrap() {
+  return (
+    <main className="grid min-h-screen place-items-center bg-background text-foreground">
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
+        <div className="size-2.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+        <span className="text-muted-foreground text-sm">Opening workspace</span>
+      </div>
+    </main>
   )
 }
 

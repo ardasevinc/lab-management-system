@@ -2,21 +2,30 @@ import { labConfig } from "@lab/config"
 import {
   Activity,
   CalendarDays,
+  ChevronDown,
   Clock3,
   Cpu,
   LogOut,
   MailPlus,
   Plus,
   ShieldCheck,
-  UserRound,
   UsersRound,
   Wrench,
 } from "lucide-react"
 import type { Booking, Machine, User } from "@/lib/api"
 import type { CalendarRange } from "@/lib/calendar-geometry"
 import { formatDate, formatTime } from "@/lib/time"
+import { Avatar, AvatarFallback } from "./ui/avatar"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu"
 import { Field, FieldGroup, FieldLabel } from "./ui/field"
 import { Input } from "./ui/input"
 import {
@@ -100,26 +109,14 @@ export function DashboardShell({
               </div>
               <div className="min-w-0">
                 <div className="truncate font-semibold text-sm">{labConfig.shortName}</div>
-                <div className="truncate text-muted-foreground text-xs">{labConfig.appTitle}</div>
+                {labConfig.appTitle !== labConfig.shortName ? (
+                  <div className="truncate text-muted-foreground text-xs">{labConfig.appTitle}</div>
+                ) : null}
               </div>
             </div>
 
             <div className="flex min-w-0 items-center gap-2">
-              <Badge variant="secondary" className="hidden max-w-52 gap-1 sm:flex">
-                <UserRound className="size-3" aria-hidden="true" />
-                <span className="truncate">{user.name}</span>
-                <span className="text-muted-foreground">/ {user.role}</span>
-              </Badge>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                aria-label="Log out"
-                onClick={onLogout}
-              >
-                <LogOut className="size-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Log out</span>
-              </Button>
+              <UserMenu user={user} onLogout={onLogout} />
               <Button type="button" size="sm" onClick={onNewBooking}>
                 <Plus className="size-4" aria-hidden="true" />
                 New booking
@@ -163,7 +160,7 @@ export function DashboardShell({
             <section className="grid gap-2 px-1 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <ShieldCheck className="size-4" aria-hidden="true" />
-                Invite-only access
+                Invite-only
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Role</span>
@@ -189,7 +186,7 @@ export function DashboardShell({
                   </Badge>
                 </div>
                 <p className="mt-1 max-w-3xl text-muted-foreground text-sm">
-                  Drag to book. Move or resize reservations directly on the calendar.
+                  Drag to book, move, or resize reservations.
                 </p>
               </div>
 
@@ -206,9 +203,6 @@ export function DashboardShell({
                 <div className="flex min-w-0 items-center gap-2">
                   <Activity className="size-4 text-primary" aria-hidden="true" />
                   <span className="truncate font-medium text-sm">Week board</span>
-                  <span className="hidden text-muted-foreground text-xs sm:inline">
-                    server validates overlaps
-                  </span>
                 </div>
                 <Button type="button" variant="outline" size="sm">
                   This week
@@ -291,7 +285,7 @@ export function DashboardShell({
                   <div className="mb-3 flex items-center justify-between">
                     <div>
                       <h2 className="font-medium text-sm">Admin</h2>
-                      <p className="text-muted-foreground text-xs">Invite & member access</p>
+                      <p className="text-muted-foreground text-xs">Members</p>
                     </div>
                     <UsersRound className="size-4 text-muted-foreground" aria-hidden="true" />
                   </div>
@@ -386,6 +380,61 @@ export function DashboardShell({
       </div>
     </main>
   )
+}
+
+function UserMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const initials = getInitials(user.name || user.email)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="max-w-[13rem] justify-start gap-2 px-2"
+        >
+          <Avatar size="sm">
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <span className="hidden min-w-0 truncate sm:inline">{user.name}</span>
+          <ChevronDown data-icon="inline-end" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel className="p-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar>
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div className="grid min-w-0 gap-1">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="truncate font-medium text-foreground text-sm">{user.name}</span>
+                <Badge variant="outline" className="shrink-0 capitalize">
+                  {user.role}
+                </Badge>
+              </div>
+              <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+            </div>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onLogout}>
+          <LogOut data-icon="inline-start" aria-hidden="true" />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function getInitials(value: string) {
+  return value
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("")
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
