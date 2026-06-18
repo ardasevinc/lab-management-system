@@ -217,7 +217,22 @@ export function AdminUsersPage() {
         <div className="border-border border-b px-4 py-3">
           <h2 className="font-medium text-sm">Members</h2>
         </div>
-        <Table>
+        <div className="grid gap-2 p-3 md:hidden">
+          {workspace.users.map((user) => (
+            <div key={user.id} className="rounded-md border border-border bg-muted/20 px-3 py-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-sm">{user.name}</div>
+                  <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+                </div>
+                <Badge variant="outline" className="capitalize">
+                  {user.role}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Table className="hidden md:table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -308,28 +323,46 @@ export function AdminMaintenancePage() {
           <h2 className="font-medium text-sm">This week</h2>
         </div>
         {maintenanceBookings.length ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Starts</TableHead>
-                <TableHead>Ends</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            <div className="grid gap-2 p-3 md:hidden">
               {maintenanceBookings.map((booking) => (
-                <TableRow key={booking.id} onClick={() => workspace.editBooking(booking)}>
-                  <TableCell className="font-medium">{booking.title}</TableCell>
-                  <TableCell className="text-muted-foreground tabular-nums">
-                    {formatDate(booking.startsAt)} {formatTime(booking.startsAt)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground tabular-nums">
+                <button
+                  key={booking.id}
+                  type="button"
+                  className="rounded-md border border-border bg-muted/20 px-3 py-2 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => workspace.editBooking(booking)}
+                >
+                  <div className="truncate font-medium text-sm">{booking.title}</div>
+                  <div className="mt-1 text-muted-foreground text-xs tabular-nums">
+                    {formatDate(booking.startsAt)} {formatTime(booking.startsAt)} -{" "}
                     {formatDate(booking.endsAt)} {formatTime(booking.endsAt)}
-                  </TableCell>
-                </TableRow>
+                  </div>
+                </button>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+            <Table className="hidden md:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Starts</TableHead>
+                  <TableHead>Ends</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {maintenanceBookings.map((booking) => (
+                  <TableRow key={booking.id} onClick={() => workspace.editBooking(booking)}>
+                    <TableCell className="font-medium">{booking.title}</TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {formatDate(booking.startsAt)} {formatTime(booking.startsAt)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {formatDate(booking.endsAt)} {formatTime(booking.endsAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
         ) : (
           <Empty className="items-start p-4 text-left">
             <EmptyHeader>

@@ -140,13 +140,21 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
               </div>
             </div>
           </div>
-          <QuickBookingButton />
+          <HeaderAction pathname={pathname} />
         </header>
 
         <Outlet />
       </SidebarInset>
     </SidebarProvider>
   )
+}
+
+function HeaderAction({ pathname }: { pathname: string }) {
+  if (pathname !== "/schedule") {
+    return null
+  }
+
+  return <QuickBookingButton />
 }
 
 function QuickBookingButton() {
