@@ -251,7 +251,7 @@ function DayColumn({
           <button
             key={booking.id}
             type="button"
-            className="absolute overflow-hidden rounded-[6px] border px-2 py-1 text-left text-xs shadow-sm transition-[box-shadow,transform,opacity] duration-150 hover:shadow-md hover:ring-2 hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
+            className="group absolute overflow-hidden rounded-[6px] border px-2 py-1 text-left text-xs shadow-sm transition-[box-shadow,transform,opacity] duration-150 hover:shadow-md hover:ring-2 hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
             data-booking-id={booking.id}
             data-pending={pendingBookingId === booking.id || undefined}
             style={{
@@ -291,7 +291,7 @@ function DayColumn({
             }}
           >
             <span
-              className="absolute top-0 right-1 left-1 h-2 cursor-ns-resize rounded-t-md"
+              className="absolute top-0 right-1 left-1 flex h-3 cursor-ns-resize items-start justify-center pt-1"
               onPointerDown={(event) => {
                 if (event.button !== 0) {
                   return
@@ -305,13 +305,15 @@ function DayColumn({
                   currentY: event.clientY,
                 })
               }}
-            />
+            >
+              <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+            </span>
             <div className="truncate font-medium leading-tight">{booking.title}</div>
             <div className="truncate text-muted-foreground tabular-nums">
               {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
             </div>
             <span
-              className="absolute right-1 bottom-0 left-1 h-2 cursor-ns-resize rounded-b-md"
+              className="absolute right-1 bottom-0 left-1 flex h-3 cursor-ns-resize items-end justify-center pb-1"
               onPointerDown={(event) => {
                 if (event.button !== 0) {
                   return
@@ -325,7 +327,9 @@ function DayColumn({
                   currentY: event.clientY,
                 })
               }}
-            />
+            >
+              <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+            </span>
           </button>
         )
       })}

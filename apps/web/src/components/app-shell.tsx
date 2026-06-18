@@ -11,8 +11,10 @@ import {
   Settings,
   UsersRound,
   Wrench,
+  X,
 } from "lucide-react"
 import { useWorkspace } from "@/components/app-workspace"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -47,6 +49,7 @@ const calendarSkeletonCells = Array.from({ length: 72 }, (_, index) => `calendar
 
 export function AppShell({ user, onLogout }: { user: User; onLogout: () => void }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const { clearWorkspaceError, workspaceError } = useWorkspace()
   const isAdmin = user.role === "admin"
 
   return (
@@ -142,6 +145,27 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
           <HeaderAction pathname={pathname} />
         </header>
+
+        {workspaceError ? (
+          <div className="px-3 pt-3 sm:px-4">
+            <Alert variant="destructive">
+              <AlertTitle>Could not update booking</AlertTitle>
+              <AlertDescription>{workspaceError}</AlertDescription>
+              <AlertAction>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  aria-label="Dismiss"
+                  onClick={clearWorkspaceError}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </AlertAction>
+            </Alert>
+          </div>
+        ) : null}
 
         <Outlet />
       </SidebarInset>

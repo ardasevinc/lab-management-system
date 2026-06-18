@@ -41,7 +41,9 @@ type WorkspaceContextValue = {
   dashboardStats: DashboardStats
   pendingBookingId: string | null
   invitePending: boolean
+  workspaceError: string | null
   setSelectedMachineSlug: (slug: string) => void
+  clearWorkspaceError: () => void
   openNewBooking: () => void
   openMaintenanceBooking: () => void
   inviteUser: (form: FormData) => void
@@ -69,6 +71,7 @@ export function AppWorkspace() {
   const [selectedMachineSlug, setSelectedMachineSlug] = useState("tohum")
   const [dialogState, setDialogState] = useState<DialogState>(null)
   const [dialogError, setDialogError] = useState<string | null>(null)
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null)
   const hasStoredToken = Boolean(getStoredToken())
 
   const meQuery = useQuery({
@@ -119,6 +122,15 @@ export function AppWorkspace() {
     queryClient.invalidateQueries({ queryKey: ["bookings"] })
   }
 
+  const reportMutationError = (error: Error) => {
+    if (dialogState) {
+      setDialogError(error.message)
+      return
+    }
+
+    setWorkspaceError(error.message)
+  }
+
   const createBookingMutation = useMutation({
     mutationFn: (value: BookingDialogValue) =>
       apiFetch<{ booking: Booking }>("/bookings", {
@@ -136,9 +148,10 @@ export function AppWorkspace() {
     onSuccess: () => {
       setDialogState(null)
       setDialogError(null)
+      setWorkspaceError(null)
       invalidateBookings()
     },
-    onError: (error) => setDialogError(error.message),
+    onError: reportMutationError,
   })
 
   const updateBookingMutation = useMutation({
@@ -157,9 +170,10 @@ export function AppWorkspace() {
     onSuccess: () => {
       setDialogState(null)
       setDialogError(null)
+      setWorkspaceError(null)
       invalidateBookings()
     },
-    onError: (error) => setDialogError(error.message),
+    onError: reportMutationError,
   })
 
   const deleteBookingMutation = useMutation({
@@ -167,9 +181,10 @@ export function AppWorkspace() {
     onSuccess: () => {
       setDialogState(null)
       setDialogError(null)
+      setWorkspaceError(null)
       invalidateBookings()
     },
-    onError: (error) => setDialogError(error.message),
+    onError: reportMutationError,
   })
 
   const inviteMutation = useMutation({
@@ -229,13 +244,17 @@ export function AppWorkspace() {
     dashboardStats: getDashboardStats(bookings),
     pendingBookingId: updateBookingMutation.variables?.id ?? null,
     invitePending: inviteMutation.isPending,
+    workspaceError,
     setSelectedMachineSlug,
+    clearWorkspaceError: () => setWorkspaceError(null),
     openNewBooking: () => {
       setDialogError(null)
+      setWorkspaceError(null)
       setDialogState({ mode: "create", booking: null, range: null })
     },
     openMaintenanceBooking: () => {
       setDialogError(null)
+      setWorkspaceError(null)
       setDialogState({
         mode: "create",
         booking: null,
@@ -248,19 +267,23 @@ export function AppWorkspace() {
     inviteUser: (form) => inviteMutation.mutate(form),
     createRange: (range) => {
       setDialogError(null)
+      setWorkspaceError(null)
       setDialogState({ mode: "create", booking: null, range })
     },
     editBooking: (booking) => {
       setDialogError(null)
+      setWorkspaceError(null)
       setDialogState({ mode: "edit", booking, range: null })
     },
     moveBooking: (booking, range) => {
+      setWorkspaceError(null)
       updateBookingMutation.mutate({
         id: booking.id,
         value: bookingToDialogValue(booking, range),
       })
     },
     resizeBooking: (booking, range) => {
+      setWorkspaceError(null)
       updateBookingMutation.mutate({
         id: booking.id,
         value: bookingToDialogValue(booking, range),
