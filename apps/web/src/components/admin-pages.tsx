@@ -1,5 +1,5 @@
 import { Navigate } from "@tanstack/react-router"
-import { Clock3, MailPlus, MonitorCog, type ShieldCheck, UsersRound, Wrench } from "lucide-react"
+import { CalendarDays, Clock3, type LucideIcon, MailPlus, MonitorCog, Wrench } from "lucide-react"
 import { useWorkspace } from "@/components/app-workspace"
 import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
@@ -39,9 +39,9 @@ export function AdminOverviewPage() {
   return (
     <AdminPageFrame
       title="Admin overview"
-      description="Operational state for bookings, users, and machines."
+      description="Bookings and access for the selected machine."
     >
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <SummaryPanel
           icon={MonitorCog}
           label="Machines"
@@ -49,10 +49,16 @@ export function AdminOverviewPage() {
           detail="bookable"
         />
         <SummaryPanel
-          icon={UsersRound}
-          label="Users"
-          value={String(workspace.users.length)}
-          detail="invited accounts"
+          icon={CalendarDays}
+          label="Bookings"
+          value={String(workspace.dashboardStats.weekBookings)}
+          detail="this week"
+        />
+        <SummaryPanel
+          icon={Clock3}
+          label="Hours"
+          value={`${workspace.dashboardStats.weekHours}h`}
+          detail="reserved"
         />
         <SummaryPanel
           icon={Wrench}
@@ -63,37 +69,75 @@ export function AdminOverviewPage() {
       </div>
 
       <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="rounded-lg border border-border bg-card">
-          <div className="border-border border-b px-4 py-3">
-            <h2 className="font-medium text-sm">Machine status</h2>
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
+            <div>
+              <h2 className="font-medium text-sm">Operations</h2>
+              <p className="text-muted-foreground text-xs">Current machine and queue.</p>
+            </div>
+            <Badge variant="outline">{workspace.users.length} users</Badge>
           </div>
-          <div className="grid gap-3 p-4">
-            <div className="flex items-start justify-between gap-3">
+
+          <div className="divide-y divide-border">
+            <div className="grid gap-3 px-4 py-3 md:grid-cols-[120px_minmax(0,1fr)_auto]">
+              <div className="text-muted-foreground text-sm">Machine</div>
               <div className="min-w-0">
                 <div className="truncate font-medium">{selectedMachine?.name ?? "No machine"}</div>
                 <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
                   {selectedMachine?.description ?? "No selected machine."}
                 </p>
+                {selectedMachine?.specs.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {selectedMachine.specs.map((spec) => (
+                      <Badge key={spec} variant="outline">
+                        {spec}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <Badge variant={selectedMachine?.active ? "secondary" : "outline"}>
                 {selectedMachine?.active ? "bookable" : "inactive"}
               </Badge>
             </div>
-            {selectedMachine?.specs.length ? (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedMachine.specs.map((spec) => (
-                  <Badge key={spec} variant="outline">
-                    {spec}
+
+            <div className="grid gap-3 px-4 py-3 md:grid-cols-[120px_minmax(0,1fr)_auto]">
+              <div className="text-muted-foreground text-sm">Next</div>
+              {nextBooking ? (
+                <>
+                  <button
+                    type="button"
+                    className="min-w-0 text-left transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => workspace.editBooking(nextBooking)}
+                  >
+                    <div className="truncate font-medium">{nextBooking.title}</div>
+                    <div className="mt-1 text-muted-foreground text-sm tabular-nums">
+                      {formatDate(nextBooking.startsAt)} · {formatTime(nextBooking.startsAt)} -{" "}
+                      {formatTime(nextBooking.endsAt)}
+                    </div>
+                  </button>
+                  <Badge variant={nextBooking.type === "maintenance" ? "outline" : "secondary"}>
+                    {nextBooking.type}
                   </Badge>
-                ))}
-              </div>
-            ) : null}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <div className="font-medium">No upcoming bookings</div>
+                    <div className="mt-1 text-muted-foreground text-sm">
+                      The selected week is open.
+                    </div>
+                  </div>
+                  <Badge variant="outline">open</Badge>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="rounded-lg border border-border bg-card">
           <div className="border-border border-b px-4 py-3">
-            <h2 className="font-medium text-sm">Quick actions</h2>
+            <h2 className="font-medium text-sm">Actions</h2>
           </div>
           <div className="grid gap-2 p-4">
             <Button type="button" className="justify-start" onClick={workspace.openNewBooking}>
@@ -110,43 +154,6 @@ export function AdminOverviewPage() {
               Add maintenance
             </Button>
           </div>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
-          <div>
-            <h2 className="font-medium text-sm">Next booking</h2>
-            <p className="text-muted-foreground text-xs">Current schedule priority.</p>
-          </div>
-          <Clock3 className="text-muted-foreground" aria-hidden="true" />
-        </div>
-        <div className="p-4">
-          {nextBooking ? (
-            <button
-              type="button"
-              className="w-full rounded-md border border-border bg-muted/25 px-3 py-2 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => workspace.editBooking(nextBooking)}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-medium">{nextBooking.title}</span>
-                <Badge variant={nextBooking.type === "maintenance" ? "outline" : "secondary"}>
-                  {nextBooking.type}
-                </Badge>
-              </div>
-              <div className="mt-1 text-muted-foreground text-sm tabular-nums">
-                {formatDate(nextBooking.startsAt)} · {formatTime(nextBooking.startsAt)} -{" "}
-                {formatTime(nextBooking.endsAt)}
-              </div>
-            </button>
-          ) : (
-            <Empty className="items-start py-2 text-left">
-              <EmptyHeader>
-                <EmptyTitle>No upcoming bookings</EmptyTitle>
-                <EmptyDescription>The selected week is open.</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
         </div>
       </section>
     </AdminPageFrame>
@@ -385,20 +392,20 @@ function SummaryPanel({
   value,
   detail,
 }: {
-  icon: typeof ShieldCheck
+  icon: LucideIcon
   label: string
   value: string
   detail: string
 }) {
   return (
-    <section className="rounded-lg border border-border bg-card p-4">
+    <section className="rounded-lg border border-border bg-card px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-muted-foreground text-xs">{label}</div>
-          <div className="font-semibold text-2xl tabular-nums">{value}</div>
+          <div className="font-semibold text-xl tabular-nums">{value}</div>
           <div className="text-muted-foreground text-xs">{detail}</div>
         </div>
-        <div className="grid size-9 place-items-center rounded-md bg-muted text-muted-foreground">
+        <div className="grid size-8 place-items-center rounded-md bg-muted text-muted-foreground">
           <Icon aria-hidden="true" />
         </div>
       </div>
