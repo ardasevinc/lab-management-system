@@ -1,11 +1,22 @@
 import { addDays, format, isSameDay, startOfWeek } from "date-fns"
 import { CalendarDays, Clock3, MonitorCog } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useWorkspace } from "@/components/app-workspace"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { WeekCalendar } from "@/components/week-calendar"
+import type { Booking } from "@/lib/api"
+import {
+  bookingStyle,
+  bookingsForDay,
+  type CalendarRange,
+  dayEndHour,
+  dayStartHour,
+  hourHeightPx,
+  normalizeRange,
+  packOverlaps,
+  yToMinutes,
+} from "@/lib/calendar-geometry"
 import { formatDate, formatTime } from "@/lib/time"
 
 export function SchedulePage() {
@@ -14,7 +25,6 @@ export function SchedulePage() {
     dashboardStats,
     pendingBookingId,
     selectedMachine,
-    upcomingBookings,
     weekRange,
     createRange,
     editBooking,
@@ -27,8 +37,9 @@ export function SchedulePage() {
     const weekStart = startOfWeek(new Date(weekRange.start), { weekStartsOn: 1 })
     return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index))
   }, [weekRange.start])
-  const selectedDayBookings = upcomingBookings.filter((booking) =>
-    isSameDay(new Date(booking.startsAt), selectedDay),
+  const selectedDayBookings = useMemo(
+    () => bookingsForDay(bookings, selectedDay),
+    [bookings, selectedDay],
   )
   const weekDisplayEnd = mobileDays.at(-1) ?? new Date(weekRange.end)
 
@@ -90,7 +101,13 @@ export function SchedulePage() {
             </button>
           ))}
         </div>
-        <AgendaList bookings={selectedDayBookings} onEditBooking={editBooking} />
+        <MobileDayTimeline
+          day={selectedDay}
+          bookings={selectedDayBookings}
+          pendingBookingId={pendingBookingId}
+          onCreateRange={createRange}
+          onEditBooking={editBooking}
+        />
       </section>
 
       <section className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-sm md:block">
@@ -119,46 +136,188 @@ export function SchedulePage() {
   )
 }
 
-function AgendaList({
+function MobileDayTimeline({
+  day,
   bookings,
+  pendingBookingId,
+  onCreateRange,
   onEditBooking,
 }: {
-  bookings: ReturnType<typeof useWorkspace>["upcomingBookings"]
+  day: Date
+  bookings: Booking[]
+  pendingBookingId?: string | null
+  onCreateRange: (range: CalendarRange) => void
   onEditBooking: ReturnType<typeof useWorkspace>["editBooking"]
 }) {
-  if (!bookings.length) {
-    return (
-      <Empty className="items-start py-2 text-left">
-        <EmptyHeader>
-          <Clock3 className="text-muted-foreground" aria-hidden="true" />
-          <EmptyTitle>No upcoming bookings</EmptyTitle>
-          <EmptyDescription>The next available slot is open.</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    )
-  }
+  const laneRef = useRef<HTMLDivElement>(null)
+  const [draft, setDraft] = useState<{
+    startY: number
+    currentY: number
+    columnTop: number
+  } | null>(null)
+  const packedBookings = useMemo(() => packOverlaps(bookings), [bookings])
+  const hours = useMemo(
+    () => Array.from({ length: dayEndHour - dayStartHour + 1 }, (_, index) => dayStartHour + index),
+    [],
+  )
+
+  useEffect(() => {
+    if (!draft) {
+      return
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      setDraft((current) => (current ? { ...current, currentY: event.clientY } : current))
+    }
+
+    const onPointerUp = () => {
+      if (!draft) {
+        return
+      }
+
+      const moved = Math.abs(draft.currentY - draft.startY) > 4
+      const startMinutes = yToMinutes(draft.startY - draft.columnTop)
+      const endMinutes = moved ? yToMinutes(draft.currentY - draft.columnTop) : startMinutes + 60
+
+      onCreateRange(normalizeRange(day, startMinutes, endMinutes))
+      setDraft(null)
+    }
+
+    window.addEventListener("pointermove", onPointerMove)
+    window.addEventListener("pointerup", onPointerUp, { once: true })
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove)
+      window.removeEventListener("pointerup", onPointerUp)
+    }
+  }, [day, draft, onCreateRange])
+
+  const draftStyle = getMobileDraftStyle(draft, laneRef.current)
 
   return (
-    <div className="grid gap-2">
-      {bookings.slice(0, 3).map((booking) => (
-        <button
-          key={booking.id}
-          type="button"
-          className="rounded-md border border-border bg-muted/25 px-3 py-2 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={() => onEditBooking(booking)}
+    <div className="overflow-hidden rounded-md border border-border bg-background">
+      <div className="flex items-center justify-between border-border border-b bg-muted/30 px-3 py-2">
+        <div className="inline-flex items-center gap-2 text-muted-foreground text-xs">
+          <Clock3 aria-hidden="true" />
+          <span>{dayStartHour}:00</span>
+          <span>-</span>
+          <span>{dayEndHour}:00</span>
+        </div>
+        <span className="text-muted-foreground text-xs">
+          {bookings.length
+            ? `${bookings.length} booking${bookings.length === 1 ? "" : "s"}`
+            : "open"}
+        </span>
+      </div>
+
+      <div
+        className="grid grid-cols-[44px_minmax(0,1fr)] overflow-y-auto"
+        style={{ maxHeight: "min(58vh, 680px)" }}
+      >
+        <div
+          className="relative border-border border-r bg-muted/25"
+          style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
         >
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate font-medium text-sm">{booking.title}</span>
-            {booking.type === "maintenance" ? <Badge variant="outline">maintenance</Badge> : null}
-          </div>
-          <div className="mt-1 text-muted-foreground text-xs tabular-nums">
-            {formatDate(booking.startsAt)} · {formatTime(booking.startsAt)} -{" "}
-            {formatTime(booking.endsAt)}
-          </div>
-        </button>
-      ))}
+          {hours.slice(0, -1).map((hour) => (
+            <div
+              key={hour}
+              className="absolute right-2 -translate-y-2 text-muted-foreground text-[11px] tabular-nums"
+              style={{ top: (hour - dayStartHour) * hourHeightPx }}
+            >
+              {hour}:00
+            </div>
+          ))}
+        </div>
+
+        <div
+          ref={laneRef}
+          className="relative touch-none select-none bg-card"
+          style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
+          onPointerDown={(event) => {
+            if (event.button !== 0 || event.target !== event.currentTarget) {
+              return
+            }
+
+            const rect = event.currentTarget.getBoundingClientRect()
+            setDraft({
+              startY: event.clientY,
+              currentY: event.clientY,
+              columnTop: rect.top,
+            })
+            event.currentTarget.setPointerCapture(event.pointerId)
+          }}
+        >
+          {hours.slice(0, -1).map((hour) => (
+            <div
+              key={hour}
+              className="pointer-events-none absolute inset-x-0 border-border border-t"
+              style={{ top: (hour - dayStartHour) * hourHeightPx }}
+            />
+          ))}
+
+          {!packedBookings.length ? (
+            <div className="pointer-events-none absolute inset-x-3 top-4 rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-muted-foreground text-sm">
+              Tap a time to book it.
+            </div>
+          ) : null}
+
+          {packedBookings.map((booking) => {
+            const style = bookingStyle(booking)
+            return (
+              <button
+                key={booking.id}
+                type="button"
+                className="absolute overflow-hidden rounded-[7px] border px-2.5 py-1.5 text-left text-xs shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-booking-id={booking.id}
+                data-pending={pendingBookingId === booking.id || undefined}
+                style={{
+                  top: style.top,
+                  height: style.height,
+                  left: `calc(${style.left}% + 4px)`,
+                  width: `calc(${style.width}% - 8px)`,
+                  background:
+                    booking.type === "maintenance" ? "var(--color-muted)" : "var(--color-card)",
+                  borderColor:
+                    booking.type === "maintenance"
+                      ? "var(--color-border)"
+                      : "color-mix(in oklch, var(--color-primary) 34%, var(--color-border))",
+                  opacity: pendingBookingId === booking.id ? 0.55 : 1,
+                }}
+                onClick={() => onEditBooking(booking)}
+              >
+                <div className="truncate font-medium leading-tight">{booking.title}</div>
+                <div className="truncate text-muted-foreground tabular-nums">
+                  {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
+                </div>
+              </button>
+            )
+          })}
+
+          {draftStyle ? (
+            <div
+              className="pointer-events-none absolute right-2 left-2 rounded-md border border-primary bg-primary/12 shadow-sm"
+              style={draftStyle}
+            />
+          ) : null}
+        </div>
+      </div>
     </div>
   )
+}
+
+function getMobileDraftStyle(
+  draft: { startY: number; currentY: number } | null,
+  lane: HTMLDivElement | null,
+) {
+  if (!draft || !lane) {
+    return null
+  }
+
+  const rect = lane.getBoundingClientRect()
+  const top = Math.min(draft.startY, draft.currentY) - rect.top
+  const height = Math.max(28, Math.abs(draft.currentY - draft.startY))
+
+  return { top, height }
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
