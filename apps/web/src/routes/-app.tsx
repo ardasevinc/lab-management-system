@@ -1,12 +1,9 @@
-import { labConfig } from "@lab/config"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { addDays, isSameDay, startOfWeek } from "date-fns"
 import { useMemo, useState } from "react"
+import { AuthScreen } from "@/components/auth-screen"
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
 import { DashboardShell } from "@/components/dashboard-shell"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   type AuditEvent,
   apiFetch,
@@ -14,9 +11,7 @@ import {
   getStoredToken,
   logout,
   type Machine,
-  requestOtp,
   type User,
-  verifyOtp,
 } from "@/lib/api"
 
 export function App() {
@@ -154,7 +149,7 @@ export function App() {
 
   if (!meQuery.data) {
     return (
-      <LoginScreen
+      <AuthScreen
         onLoggedIn={() => {
           setAuthVersion((version) => version + 1)
           queryClient.invalidateQueries({ queryKey: ["me"] })
@@ -264,6 +259,7 @@ export function App() {
     </>
   )
 }
+
 function userCanViewAudit(user?: User) {
   return user?.role === "admin"
 }
@@ -280,96 +276,6 @@ function bookingToDialogValue(
     endsAt: range.endsAt,
     reason: "",
   }
-}
-
-function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
-  const [email, setEmail] = useState("admin@miralab.tr")
-  const [code, setCode] = useState("")
-  const [devCode, setDevCode] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const requestMutation = useMutation({
-    mutationFn: requestOtp,
-    onSuccess: (result) => {
-      setDevCode(result.devCode)
-      setCode(result.devCode)
-      setError(null)
-    },
-    onError: (mutationError) => setError(mutationError.message),
-  })
-
-  const verifyMutation = useMutation({
-    mutationFn: () => verifyOtp(email, code),
-    onSuccess: () => {
-      setError(null)
-      onLoggedIn()
-    },
-    onError: (mutationError) => setError(mutationError.message),
-  })
-
-  return (
-    <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
-      <section className="w-full max-w-sm rounded-lg border border-border bg-card p-5 shadow-sm">
-        <div className="mb-5">
-          <p className="text-muted-foreground text-sm">{labConfig.shortName}</p>
-          <h1 className="font-semibold text-2xl tracking-tight">{labConfig.appTitle}</h1>
-          <p className="mt-1 text-muted-foreground text-sm">GPU booking portal</p>
-        </div>
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault()
-            verifyMutation.mutate()
-          }}
-        >
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              name="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              spellCheck={false}
-              required
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <div className="grid flex-1 gap-2">
-              <Label htmlFor="code">Code</Label>
-              <Input
-                id="code"
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-                required
-              />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={requestMutation.isPending}
-              onClick={() => requestMutation.mutate(email)}
-            >
-              Send
-            </Button>
-          </div>
-          {devCode ? (
-            <p className="rounded-md bg-muted px-3 py-2 text-muted-foreground text-sm">
-              Dev code: <span className="font-mono text-foreground">{devCode}</span>
-            </p>
-          ) : null}
-          {error ? <p className="text-destructive text-sm">{error}</p> : null}
-          <Button type="submit" className="w-full" disabled={verifyMutation.isPending}>
-            Sign in
-          </Button>
-        </form>
-      </section>
-    </main>
-  )
 }
 
 function getWeekRange(date: Date) {

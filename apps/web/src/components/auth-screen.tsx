@@ -1,0 +1,174 @@
+import { labConfig } from "@lab/config"
+import { useMutation } from "@tanstack/react-query"
+import { Cpu, KeyRound, Mail, ShieldCheck } from "lucide-react"
+import { useState } from "react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { requestOtp, verifyOtp } from "@/lib/api"
+
+type AuthScreenProps = {
+  onLoggedIn: () => void
+}
+
+export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
+  const [email, setEmail] = useState("admin@miralab.tr")
+  const [code, setCode] = useState("")
+  const [devCode, setDevCode] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const requestMutation = useMutation({
+    mutationFn: requestOtp,
+    onSuccess: (result) => {
+      setDevCode(result.devCode)
+      setCode(result.devCode)
+      setError(null)
+    },
+    onError: (mutationError) => setError(mutationError.message),
+  })
+
+  const verifyMutation = useMutation({
+    mutationFn: () => verifyOtp(email, code),
+    onSuccess: () => {
+      setError(null)
+      onLoggedIn()
+    },
+    onError: (mutationError) => setError(mutationError.message),
+  })
+
+  const isBusy = requestMutation.isPending || verifyMutation.isPending
+
+  return (
+    <main className="relative min-h-[100dvh] overflow-hidden bg-[#07100f] text-white">
+      <div className="auth-background" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.88),rgba(3,7,9,0.56)_52%,rgba(3,7,9,0.24))]" />
+
+      <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
+        <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
+          <div className="flex items-center gap-3">
+            <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <Cpu className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="font-medium text-white/50 text-xs uppercase tracking-[0.18em]">
+                {labConfig.shortName}
+              </p>
+              <h1 className="font-semibold text-lg leading-none">{labConfig.appTitle}</h1>
+            </div>
+          </div>
+
+          <div className="max-w-xl">
+            <p className="font-medium text-white/52 text-sm uppercase tracking-[0.18em]">
+              booking system
+            </p>
+            <h2 className="mt-3 max-w-lg font-semibold text-4xl leading-tight tracking-tight">
+              Tohum access, without calendar drift.
+            </h2>
+          </div>
+
+          <div className="flex max-w-xl items-center gap-3 border-white/12 border-t pt-5 text-white/58 text-sm">
+            <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>Invite-only access for MIRALAB researchers and admins.</span>
+          </div>
+        </div>
+
+        <div className="grid min-h-[calc(100dvh-2rem)] place-items-center lg:min-h-full">
+          <div className="w-full max-w-[408px] rounded-xl border bg-card p-5 text-card-foreground shadow-2xl shadow-black/25 sm:p-6">
+            <div className="mb-7 flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-4 grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm lg:hidden">
+                  <Cpu className="size-5" aria-hidden="true" />
+                </div>
+                <p className="font-medium text-muted-foreground text-sm">{labConfig.shortName}</p>
+                <h2 className="font-semibold text-2xl tracking-tight">{labConfig.appTitle}</h2>
+              </div>
+              <div className="rounded-full border bg-muted px-2.5 py-1 text-muted-foreground text-xs">
+                OTP
+              </div>
+            </div>
+
+            <form
+              className="flex flex-col gap-5"
+              onSubmit={(event) => {
+                event.preventDefault()
+                verifyMutation.mutate()
+              }}
+            >
+              <FieldGroup>
+                <Field data-invalid={error ? true : undefined}>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <div className="relative">
+                    <Mail
+                      className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <Input
+                      id="email"
+                      className="pl-9"
+                      type="email"
+                      name="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      autoComplete="email"
+                      spellCheck={false}
+                      required
+                      aria-invalid={error ? true : undefined}
+                    />
+                  </div>
+                </Field>
+
+                <Field data-invalid={error ? true : undefined}>
+                  <div className="flex items-center justify-between gap-3">
+                    <FieldLabel htmlFor="code">Login code</FieldLabel>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={requestMutation.isPending || !email}
+                      onClick={() => requestMutation.mutate(email)}
+                    >
+                      Send code
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <KeyRound
+                      className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <Input
+                      id="code"
+                      className="pl-9 font-mono tracking-[0.18em]"
+                      name="code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={code}
+                      onChange={(event) => setCode(event.target.value)}
+                      required
+                      aria-invalid={error ? true : undefined}
+                    />
+                  </div>
+                  <FieldDescription>Use the code sent to your invited lab email.</FieldDescription>
+                  {error ? <FieldError>{error}</FieldError> : null}
+                </Field>
+              </FieldGroup>
+
+              {devCode ? (
+                <Alert>
+                  <AlertTitle>Local development code</AlertTitle>
+                  <AlertDescription>
+                    <span className="font-mono">{devCode}</span>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+
+              <Button type="submit" size="lg" className="w-full" disabled={isBusy}>
+                {verifyMutation.isPending ? "Signing in" : "Sign in"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}

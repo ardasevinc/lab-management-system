@@ -174,6 +174,68 @@ body {
     var(--card);
 }
 
+.auth-background {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(132deg, rgba(3, 10, 12, 0.98), rgba(7, 49, 51, 0.58), rgba(4, 10, 13, 0.92)),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size:
+    auto,
+    80px 80px,
+    80px 80px;
+}
+
+.auth-background::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background-image:
+    linear-gradient(
+      110deg,
+      transparent 0 19%,
+      rgba(71, 199, 180, 0.14) 19.15% 19.3%,
+      transparent 19.45% 100%
+    ),
+    linear-gradient(
+      132deg,
+      transparent 0 70%,
+      rgba(240, 183, 95, 0.1) 70.08% 70.2%,
+      transparent 70.34% 100%
+    ),
+    linear-gradient(16deg, rgba(70, 190, 171, 0.14), transparent 36%),
+    linear-gradient(205deg, rgba(30, 90, 104, 0.18), transparent 44%);
+  filter: saturate(0.8);
+}
+
+.auth-background::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  opacity: 0.42;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0 2px,
+      rgba(255, 255, 255, 0.04) 2px 3px,
+      transparent 3px 100%
+    ),
+    linear-gradient(
+      0deg,
+      transparent 0 2px,
+      rgba(255, 255, 255, 0.035) 2px 3px,
+      transparent 3px 100%
+    );
+  background-position:
+    8% 0,
+    0 18%;
+  background-size:
+    160px 160px,
+    160px 160px;
+  mask-image: linear-gradient(90deg, black, transparent 36%, transparent 64%, black);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
