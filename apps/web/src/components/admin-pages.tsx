@@ -1,6 +1,7 @@
 import { Navigate } from "@tanstack/react-router"
 import { Clock3, MailPlus, MonitorCog, type ShieldCheck, UsersRound, Wrench } from "lucide-react"
 import { useWorkspace } from "@/components/app-workspace"
+import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import {
   Table,
   TableBody,
@@ -268,34 +268,7 @@ export function AdminMachinesPage() {
 
   return (
     <AdminPageFrame title="Machines" description="Machine records and booking availability.">
-      <div className="grid gap-3 lg:grid-cols-2">
-        {workspace.machines.map((machine) => (
-          <section key={machine.id} className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="truncate font-semibold">{machine.name}</h2>
-                <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
-                  {machine.description}
-                </p>
-              </div>
-              <Badge variant={machine.active ? "secondary" : "outline"}>
-                {machine.active ? "bookable" : "inactive"}
-              </Badge>
-            </div>
-            <Separator className="my-3" />
-            <p className="text-muted-foreground text-sm">{machine.accessNotes}</p>
-            {machine.specs.length ? (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {machine.specs.map((spec) => (
-                  <Badge key={spec} variant="outline">
-                    {spec}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-          </section>
-        ))}
-      </div>
+      <MachineInventory machines={workspace.machines} />
     </AdminPageFrame>
   )
 }
