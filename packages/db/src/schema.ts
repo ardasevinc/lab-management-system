@@ -133,3 +133,34 @@ export const bookingAuditEvents = sqliteTable("booking_audit_events", {
   payloadJson: text("payload_json").notNull().default("{}"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 })
+
+export const notificationDeliveries = sqliteTable(
+  "notification_deliveries",
+  {
+    id: text("id").primaryKey(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    bookingId: text("booking_id").references(() => bookings.id, { onDelete: "cascade" }),
+    recipientEmail: text("recipient_email").notNull(),
+    kind: text("kind", {
+      enum: [
+        "booking_created",
+        "booking_updated",
+        "booking_deleted",
+        "booking_start_reminder",
+        "booking_ending_reminder",
+      ],
+    }).notNull(),
+    status: text("status", { enum: ["pending", "sent", "failed"] })
+      .notNull()
+      .default("pending"),
+    error: text("error"),
+    scheduledFor: integer("scheduled_for", { mode: "timestamp" }).notNull(),
+    sentAt: integer("sent_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    idempotencyIdx: uniqueIndex("notification_deliveries_idempotency_idx").on(table.idempotencyKey),
+    dueIdx: index("notification_deliveries_due_idx").on(table.status, table.scheduledFor),
+  }),
+)

@@ -28,6 +28,7 @@ import { cors } from "hono/cors"
 import { z } from "zod"
 import type { ApiRuntimeConfig } from "./env"
 import { createConsoleMailer, type Mailer } from "./mailer"
+import { sendBookingNotification } from "./notifications"
 
 const bookingBodySchema = z.object({
   machineId: z.string().min(1),
@@ -218,6 +219,7 @@ export function createApiApp({
         endsAt: new Date(body.data.endsAt),
         actorUserId: user.id,
       })
+      notifyBookingChange(db, emailSender, booking.id, "booking_created")
 
       return c.json({ booking }, 201)
     })
@@ -249,6 +251,7 @@ export function createApiApp({
         endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
         actorUserId: user.id,
       })
+      notifyBookingChange(db, emailSender, booking.id, "booking_updated")
 
       return c.json({ booking })
     })
@@ -265,6 +268,7 @@ export function createApiApp({
 
       assertCanWriteBooking(user, current)
       await deleteBooking(db, c.req.param("id"), user.id, c.req.query("reason"))
+      notifyBookingChange(db, emailSender, current.id, "booking_deleted")
       return c.json({ ok: true })
     }),
   )
@@ -366,6 +370,17 @@ async function handleApiResult(c: Context, fn: () => Promise<Response>) {
   } catch (error) {
     return apiErrorResponse(c, error)
   }
+}
+
+function notifyBookingChange(
+  db: Db,
+  mailer: Mailer,
+  bookingId: string,
+  kind: "booking_created" | "booking_updated" | "booking_deleted",
+) {
+  sendBookingNotification(db, mailer, { bookingId, kind }).catch((error) => {
+    console.error("[lab-api] booking notification failed", error)
+  })
 }
 
 function apiErrorResponse(c: Context, error: unknown) {

@@ -6,8 +6,17 @@ export type LoginOtpEmail = {
   expiresAt: string
 }
 
+export type BookingEmail = {
+  to: string
+  subject: string
+  headline: string
+  body: string
+  details: Array<{ label: string; value: string }>
+}
+
 export type Mailer = {
   sendLoginOtp(email: LoginOtpEmail): Promise<void>
+  sendBookingEmail(email: BookingEmail): Promise<void>
 }
 
 type SesMailerConfig = {
@@ -38,6 +47,9 @@ export function createConsoleMailer(): Mailer {
   return {
     async sendLoginOtp(email) {
       console.info(`[lab-api] login code for ${email.to}: ${email.code} expires ${email.expiresAt}`)
+    },
+    async sendBookingEmail(email) {
+      console.info(`[lab-api] booking email to ${email.to}: ${email.subject}`)
     },
   }
 }
@@ -84,6 +96,34 @@ export function createSesMailer(config: SesMailerConfig): Mailer {
         }),
       )
     },
+    async sendBookingEmail(email) {
+      await client.send(
+        new SendEmailCommand({
+          Source: formatAddress(config.fromName, config.fromEmail),
+          Destination: {
+            ToAddresses: [email.to],
+          },
+          ReplyToAddresses: config.replyTo ? [config.replyTo] : undefined,
+          ConfigurationSetName: config.configurationSet,
+          Message: {
+            Subject: {
+              Charset: "UTF-8",
+              Data: email.subject,
+            },
+            Body: {
+              Text: {
+                Charset: "UTF-8",
+                Data: renderBookingText(email),
+              },
+              Html: {
+                Charset: "UTF-8",
+                Data: renderBookingHtml(email),
+              },
+            },
+          },
+        }),
+      )
+    },
   }
 }
 
@@ -112,6 +152,41 @@ function renderLoginOtpHtml(code: string, expiresAt: Date) {
         <p style="margin:0 0 16px;color:#455157;font-size:15px;line-height:1.5;">Use this one-time code to sign in to the MIRALAB booking system.</p>
         <div style="margin:0 0 16px;padding:14px 16px;border-radius:10px;background:#e7f5f1;color:#007f67;font-size:28px;font-weight:700;letter-spacing:0.18em;text-align:center;">${escapeHtml(code)}</div>
         <p style="margin:0;color:#647176;font-size:13px;line-height:1.5;">Expires at ${escapeHtml(expiry)} Europe/Istanbul. Ignore this email if you did not request it.</p>
+      </section>
+    </main>
+  </body>
+</html>`
+}
+
+function renderBookingText(email: BookingEmail) {
+  return [
+    email.headline,
+    "",
+    email.body,
+    "",
+    ...email.details.map((detail) => `${detail.label}: ${detail.value}`),
+  ].join("\n")
+}
+
+function renderBookingHtml(email: BookingEmail) {
+  return `<!doctype html>
+<html>
+  <body style="margin:0;background:#f4f7f8;color:#172124;font-family:Arial,sans-serif;">
+    <main style="max-width:560px;margin:0 auto;padding:32px 20px;">
+      <section style="background:#ffffff;border:1px solid #d8e2e4;border-radius:12px;padding:24px;">
+        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">MIRALAB</p>
+        <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">${escapeHtml(email.headline)}</h1>
+        <p style="margin:0 0 18px;color:#455157;font-size:15px;line-height:1.5;">${escapeHtml(email.body)}</p>
+        <dl style="margin:0;display:grid;gap:10px;">
+          ${email.details
+            .map(
+              (detail) => `<div style="padding-top:10px;border-top:1px solid #e3ecee;">
+            <dt style="margin:0 0 3px;color:#647176;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;">${escapeHtml(detail.label)}</dt>
+            <dd style="margin:0;color:#172124;font-size:15px;">${escapeHtml(detail.value)}</dd>
+          </div>`,
+            )
+            .join("")}
+        </dl>
       </section>
     </main>
   </body>

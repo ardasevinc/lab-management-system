@@ -8,6 +8,13 @@
       "when": 1778407778497,
       "tag": "0000_loose_firebird",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781780543234,
+      "tag": "0001_dusty_human_robot",
+      "breakpoints": true
     }
   ]
 }

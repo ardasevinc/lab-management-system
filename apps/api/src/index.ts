@@ -4,6 +4,7 @@ import { serveStatic } from "hono/bun"
 import { createApiApp } from "./app"
 import { apiRuntimeConfigFromEnv } from "./env"
 import { createMailerFromEnv } from "./mailer"
+import { startNotificationWorker } from "./notifications"
 
 const defaultDatabaseUrl = `file:${fileURLToPath(new URL("../data/lab.sqlite", import.meta.url))}`
 const databaseUrl = Bun.env.DATABASE_URL ?? defaultDatabaseUrl
@@ -16,10 +17,11 @@ await seedInitialData(db)
 const port = Number(Bun.env.PORT ?? 3001)
 const serveWeb = Bun.env.SERVE_WEB === "1"
 const webDistDir = Bun.env.WEB_DIST_DIR ?? fileURLToPath(new URL("../../web/dist", import.meta.url))
+const mailer = createMailerFromEnv(Bun.env)
 const app = createApiApp({
   db,
   config: apiRuntimeConfigFromEnv(Bun.env),
-  mailer: createMailerFromEnv(Bun.env),
+  mailer,
   assetMiddleware: serveWeb
     ? serveStatic({
         root: webDistDir,
@@ -30,6 +32,14 @@ const app = createApiApp({
     : undefined,
   webMiddleware: serveWeb ? serveStatic({ root: webDistDir, path: "index.html" }) : undefined,
 })
+
+if (Bun.env.REMINDERS_ENABLED === "1") {
+  startNotificationWorker(db, mailer, {
+    intervalSeconds: Number(Bun.env.NOTIFICATION_WORKER_INTERVAL_SECONDS ?? 60),
+    startReminderMinutes: Number(Bun.env.BOOKING_START_REMINDER_MINUTES ?? 15),
+    endingReminderMinutes: Number(Bun.env.BOOKING_ENDING_REMINDER_MINUTES ?? 15),
+  })
+}
 
 export default {
   port,
