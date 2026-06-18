@@ -41,6 +41,7 @@ import {
   SidebarProvider,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User } from "@/lib/api"
@@ -203,10 +204,19 @@ function NavItem({
   icon: typeof CalendarDays
   active: boolean
 }) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={active} tooltip={label}>
-        <Link to={to}>
+        <Link
+          to={to}
+          onClick={() => {
+            if (isMobile) {
+              setOpenMobile(false)
+            }
+          }}
+        >
           <Icon aria-hidden="true" />
           <span>{label}</span>
         </Link>
@@ -217,6 +227,7 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
+  const { isMobile } = useSidebar()
 
   return (
     <DropdownMenu>
@@ -231,7 +242,11 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="right" className="w-64">
+      <DropdownMenuContent
+        align={isMobile ? "start" : "end"}
+        side={isMobile ? "top" : "right"}
+        className="w-64"
+      >
         <DropdownMenuLabel className="p-2">
           <div className="grid gap-1">
             <div className="flex min-w-0 items-center justify-between gap-2">
