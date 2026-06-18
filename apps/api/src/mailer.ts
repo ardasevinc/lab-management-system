@@ -1,0 +1,139 @@
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses"
+
+export type LoginOtpEmail = {
+  to: string
+  code: string
+  expiresAt: string
+}
+
+export type Mailer = {
+  sendLoginOtp(email: LoginOtpEmail): Promise<void>
+}
+
+type SesMailerConfig = {
+  region: string
+  fromName: string
+  fromEmail: string
+  replyTo?: string
+  configurationSet?: string
+}
+
+export function createMailerFromEnv(env: Record<string, string | undefined>): Mailer {
+  const provider = env.EMAIL_PROVIDER ?? "console"
+
+  if (provider === "ses") {
+    return createSesMailer({
+      region: requiredEnv(env.AWS_REGION, "AWS_REGION"),
+      fromName: env.SES_FROM_NAME ?? "MIRALAB",
+      fromEmail: requiredEnv(env.SES_FROM_EMAIL, "SES_FROM_EMAIL"),
+      replyTo: emptyToUndefined(env.SES_REPLY_TO),
+      configurationSet: emptyToUndefined(env.SES_CONFIGURATION_SET),
+    })
+  }
+
+  return createConsoleMailer()
+}
+
+export function createConsoleMailer(): Mailer {
+  return {
+    async sendLoginOtp(email) {
+      console.info(`[lab-api] login code for ${email.to}: ${email.code} expires ${email.expiresAt}`)
+    },
+  }
+}
+
+export function createSesMailer(config: SesMailerConfig): Mailer {
+  const client = new SESClient({ region: config.region })
+
+  return {
+    async sendLoginOtp(email) {
+      const expiresAt = new Date(email.expiresAt)
+      await client.send(
+        new SendEmailCommand({
+          Source: formatAddress(config.fromName, config.fromEmail),
+          Destination: {
+            ToAddresses: [email.to],
+          },
+          ReplyToAddresses: config.replyTo ? [config.replyTo] : undefined,
+          ConfigurationSetName: config.configurationSet,
+          Message: {
+            Subject: {
+              Charset: "UTF-8",
+              Data: "Your MIRALAB login code",
+            },
+            Body: {
+              Text: {
+                Charset: "UTF-8",
+                Data: [
+                  `Your MIRALAB login code is ${email.code}.`,
+                  `It expires at ${expiresAt.toLocaleString("en-US", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                    timeZone: "Europe/Istanbul",
+                  })} Europe/Istanbul.`,
+                  "",
+                  "If you did not request this code, you can ignore this email.",
+                ].join("\n"),
+              },
+              Html: {
+                Charset: "UTF-8",
+                Data: renderLoginOtpHtml(email.code, expiresAt),
+              },
+            },
+          },
+        }),
+      )
+    },
+  }
+}
+
+function formatAddress(name: string, email: string) {
+  return `${quoteDisplayName(name)} <${email}>`
+}
+
+function quoteDisplayName(name: string) {
+  return `"${name.replaceAll('"', '\\"')}"`
+}
+
+function renderLoginOtpHtml(code: string, expiresAt: Date) {
+  const expiry = expiresAt.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Istanbul",
+  })
+
+  return `<!doctype html>
+<html>
+  <body style="margin:0;background:#f4f7f8;color:#172124;font-family:Arial,sans-serif;">
+    <main style="max-width:520px;margin:0 auto;padding:32px 20px;">
+      <section style="background:#ffffff;border:1px solid #d8e2e4;border-radius:12px;padding:24px;">
+        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">MIRALAB</p>
+        <h1 style="margin:0 0 18px;font-size:22px;line-height:1.25;">Your login code</h1>
+        <p style="margin:0 0 16px;color:#455157;font-size:15px;line-height:1.5;">Use this one-time code to sign in to the MIRALAB booking system.</p>
+        <div style="margin:0 0 16px;padding:14px 16px;border-radius:10px;background:#e7f5f1;color:#007f67;font-size:28px;font-weight:700;letter-spacing:0.18em;text-align:center;">${escapeHtml(code)}</div>
+        <p style="margin:0;color:#647176;font-size:13px;line-height:1.5;">Expires at ${escapeHtml(expiry)} Europe/Istanbul. Ignore this email if you did not request it.</p>
+      </section>
+    </main>
+  </body>
+</html>`
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+}
+
+function requiredEnv(value: string | undefined, name: string) {
+  if (!value) {
+    throw new Error(`${name} is required`)
+  }
+
+  return value
+}
+
+function emptyToUndefined(value: string | undefined) {
+  return value?.trim() || undefined
+}

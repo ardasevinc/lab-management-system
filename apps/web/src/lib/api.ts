@@ -83,7 +83,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 }
 
 export async function requestOtp(email: string) {
-  return apiFetch<{ ok: true; email: string; devCode: string; expiresAt: string }>(
+  return apiFetch<{ ok: true; email: string; devCode?: string; expiresAt: string }>(
     "/auth/request-otp",
     {
       method: "POST",

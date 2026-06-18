@@ -22,8 +22,8 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
   const requestMutation = useMutation({
     mutationFn: requestOtp,
     onSuccess: (result) => {
-      setDevCode(result.devCode)
-      setCode(result.devCode)
+      setDevCode(result.devCode ?? null)
+      setCode(result.devCode ?? "")
       setError(null)
       setStep("code")
     },

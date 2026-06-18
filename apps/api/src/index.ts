@@ -2,6 +2,8 @@ import { fileURLToPath } from "node:url"
 import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "@lab/db"
 import { serveStatic } from "hono/bun"
 import { createApiApp } from "./app"
+import { apiRuntimeConfigFromEnv } from "./env"
+import { createMailerFromEnv } from "./mailer"
 
 const defaultDatabaseUrl = `file:${fileURLToPath(new URL("../data/lab.sqlite", import.meta.url))}`
 const databaseUrl = Bun.env.DATABASE_URL ?? defaultDatabaseUrl
@@ -16,6 +18,8 @@ const serveWeb = Bun.env.SERVE_WEB === "1"
 const webDistDir = Bun.env.WEB_DIST_DIR ?? fileURLToPath(new URL("../../web/dist", import.meta.url))
 const app = createApiApp({
   db,
+  config: apiRuntimeConfigFromEnv(Bun.env),
+  mailer: createMailerFromEnv(Bun.env),
   assetMiddleware: serveWeb
     ? serveStatic({
         root: webDistDir,

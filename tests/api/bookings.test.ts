@@ -17,6 +17,40 @@ afterEach(() => {
 })
 
 describe("booking API", () => {
+  it("sends OTP email and can hide dev codes", async () => {
+    const sentEmails: Array<{ to: string; code: string; expiresAt: string }> = []
+    app = createApiApp({
+      db: testDb.db,
+      config: { devShowOtp: false },
+      mailer: {
+        async sendLoginOtp(email) {
+          sentEmails.push(email)
+        },
+      },
+    })
+
+    const response = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "admin@miralab.tr" }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toEqual({
+      ok: true,
+      email: "admin@miralab.tr",
+      expiresAt: expect.any(String),
+    })
+    expect(sentEmails).toEqual([
+      {
+        to: "admin@miralab.tr",
+        code: expect.stringMatching(/^\d{6}$/),
+        expiresAt: expect.any(String),
+      },
+    ])
+  })
+
   it("lists seeded machines", async () => {
     const response = await app.request("/machines", { headers: authHeaders })
     const body = await response.json()

@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.1071.0",
     "@lab/config": "workspace:*",
     "@lab/db": "workspace:*",
     "@lab/domain": "workspace:*",

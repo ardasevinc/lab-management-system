@@ -26,6 +26,8 @@ import { Hono } from "hono"
 import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { cors } from "hono/cors"
 import { z } from "zod"
+import type { ApiRuntimeConfig } from "./env"
+import { createConsoleMailer, type Mailer } from "./mailer"
 
 const bookingBodySchema = z.object({
   machineId: z.string().min(1),
@@ -66,19 +68,35 @@ type CurrentUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>
 
 export type ApiAppOptions = {
   db: Db
+  config?: Partial<ApiRuntimeConfig>
+  mailer?: Mailer
   assetMiddleware?: MiddlewareHandler
   webMiddleware?: MiddlewareHandler
 }
 
-export function createApiApp({ db, assetMiddleware, webMiddleware }: ApiAppOptions) {
+const defaultRuntimeConfig: ApiRuntimeConfig = {
+  corsOrigins: ["http://localhost:5173"],
+  sessionCookieSecure: false,
+  devShowOtp: true,
+}
+
+export function createApiApp({
+  db,
+  config,
+  mailer,
+  assetMiddleware,
+  webMiddleware,
+}: ApiAppOptions) {
   const app = new Hono<{ Variables: { user: CurrentUser } }>()
+  const runtimeConfig = { ...defaultRuntimeConfig, ...config }
+  const emailSender = mailer ?? createConsoleMailer()
 
   app.onError((error, c) => apiErrorResponse(c, error))
 
   app.use(
     "*",
     cors({
-      origin: ["http://localhost:5173"],
+      origin: runtimeConfig.corsOrigins,
       credentials: true,
     }),
   )
@@ -102,7 +120,18 @@ export function createApiApp({ db, assetMiddleware, webMiddleware }: ApiAppOptio
 
     return handleApiResult(c, async () => {
       const otp = await requestLoginOtp(db, body.data.email)
-      return c.json({ ok: true, email: otp.email, devCode: otp.code, expiresAt: otp.expiresAt })
+      await emailSender.sendLoginOtp({
+        to: otp.email,
+        code: otp.code,
+        expiresAt: otp.expiresAt,
+      })
+
+      return c.json({
+        ok: true,
+        email: otp.email,
+        devCode: runtimeConfig.devShowOtp ? otp.code : undefined,
+        expiresAt: otp.expiresAt,
+      })
     })
   })
 
@@ -115,7 +144,7 @@ export function createApiApp({ db, assetMiddleware, webMiddleware }: ApiAppOptio
 
     return handleApiResult(c, async () => {
       const session = await verifyLoginOtp(db, body.data.email, body.data.code)
-      setSessionCookie(c, session.token, session.expiresAt)
+      setSessionCookie(c, session.token, session.expiresAt, runtimeConfig)
       return c.json({ user: session.user, token: session.token, expiresAt: session.expiresAt })
     })
   })
@@ -301,11 +330,13 @@ function sessionToken(c: Context) {
   return getCookie(c, "lab_session")
 }
 
-function setSessionCookie(c: Context, token: string, expiresAt: string) {
+function setSessionCookie(c: Context, token: string, expiresAt: string, config: ApiRuntimeConfig) {
   setCookie(c, "lab_session", token, {
     path: "/",
     httpOnly: true,
     sameSite: "Lax",
+    secure: config.sessionCookieSecure,
+    domain: config.sessionCookieDomain,
     expires: new Date(expiresAt),
   })
 }
