@@ -300,12 +300,12 @@ export function AdminMaintenancePage() {
         </div>
         {maintenanceBookings.length ? (
           <>
-            <div className="grid gap-2 p-3 md:hidden">
+            <div className="divide-y divide-border md:hidden">
               {maintenanceBookings.map((booking) => (
                 <button
                   key={booking.id}
                   type="button"
-                  className="rounded-md border border-border bg-muted/20 px-3 py-2 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="w-full px-4 py-3 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => workspace.editBooking(booking)}
                 >
                   <div className="truncate font-medium text-sm">{booking.title}</div>
