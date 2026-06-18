@@ -3,14 +3,6 @@ import { CalendarDays } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -22,6 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import type { AuditEvent, Booking, Machine } from "@/lib/api"
 import { fromLocalDateTimeParts, toLocalDateValue, toLocalTimeValue } from "@/lib/time"
@@ -82,10 +82,10 @@ export function BookingDialog({
   }, [open, defaults.startsDate, defaults.startsTime, defaults.endsDate, defaults.endsTime])
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-lg sm:p-5">
         <form
-          className="flex flex-col gap-5"
+          className="flex min-h-full flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -99,12 +99,12 @@ export function BookingDialog({
             })
           }}
         >
-          <DialogHeader>
-            <DialogTitle>{mode === "create" ? "New booking" : "Edit booking"}</DialogTitle>
-            <DialogDescription>
+          <SheetHeader className="px-0 pt-0">
+            <SheetTitle>{mode === "create" ? "New booking" : "Edit booking"}</SheetTitle>
+            <SheetDescription>
               {machine ? `${machine.name} booking details` : "Booking details"}
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
 
           <FieldGroup>
             <Field>
@@ -112,7 +112,7 @@ export function BookingDialog({
               <Input id="title" name="title" defaultValue={defaults.title} required />
             </Field>
 
-            <FieldGroup className="grid gap-4 sm:grid-cols-2">
+            <FieldGroup className="grid gap-4">
               <DateTimeField
                 label="Starts"
                 dateId="startsDate"
@@ -178,7 +178,7 @@ export function BookingDialog({
             </div>
           ) : null}
 
-          <DialogFooter className="gap-2 sm:justify-between">
+          <SheetFooter className="px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
             {mode === "edit" ? (
               <Button type="button" variant="destructive" disabled={pending} onClick={onDelete}>
                 Delete
@@ -194,10 +194,10 @@ export function BookingDialog({
                 {mode === "create" ? "Create" : "Save"}
               </Button>
             </div>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -236,7 +236,7 @@ function DateTimeField({
               aria-label={`${label} date ${formattedDate}`}
             >
               <CalendarDays data-icon="inline-start" aria-hidden="true" />
-              {formattedDate}
+              <span className="truncate">{formattedDate}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
