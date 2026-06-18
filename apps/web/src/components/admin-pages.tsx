@@ -283,14 +283,16 @@ export function AdminMaintenancePage() {
   const maintenanceBookings = workspace.bookings.filter((booking) => booking.type === "maintenance")
 
   return (
-    <AdminPageFrame title="Maintenance" description="Blocking reservations for machine work.">
-      <div className="flex justify-end">
+    <AdminPageFrame
+      title="Maintenance"
+      description="Blocking reservations for machine work."
+      action={
         <Button type="button" onClick={workspace.openMaintenanceBooking}>
           <Wrench data-icon="inline-start" aria-hidden="true" />
           Add maintenance
         </Button>
-      </div>
-
+      }
+    >
       <section className="rounded-lg border border-border bg-card">
         <div className="border-border border-b px-4 py-3">
           <h2 className="font-medium text-sm">This week</h2>
@@ -337,8 +339,8 @@ export function AdminMaintenancePage() {
             </Table>
           </>
         ) : (
-          <Empty className="items-start p-4 text-left">
-            <EmptyHeader>
+          <Empty className="items-start justify-start p-4 text-left">
+            <EmptyHeader className="items-start text-left">
               <EmptyTitle>No maintenance blocks</EmptyTitle>
               <EmptyDescription>
                 Use maintenance blocks when admins need to reserve the machine.
@@ -354,17 +356,22 @@ export function AdminMaintenancePage() {
 function AdminPageFrame({
   title,
   description,
+  action,
   children,
 }: {
   title: string
   description: string
+  action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <main className="min-w-0 p-3 sm:p-4">
-      <div className="mb-4">
-        <h1 className="font-semibold text-2xl tracking-tight">{title}</h1>
-        <p className="mt-1 text-muted-foreground text-sm">{description}</p>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-semibold text-2xl tracking-tight">{title}</h1>
+          <p className="mt-1 text-muted-foreground text-sm">{description}</p>
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       <div className="grid gap-3">{children}</div>
     </main>
