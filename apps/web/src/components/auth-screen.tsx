@@ -6,10 +6,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { requestOtp, verifyOtp } from "@/lib/api"
+import { requestOtp, type User, verifyOtp } from "@/lib/api"
 
 type AuthScreenProps = {
-  onLoggedIn: () => void
+  onLoggedIn: (user: User) => void
 }
 
 export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
@@ -32,9 +32,9 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
 
   const verifyMutation = useMutation({
     mutationFn: () => verifyOtp(email, code),
-    onSuccess: () => {
+    onSuccess: (session) => {
       setError(null)
-      onLoggedIn()
+      onLoggedIn(session.user)
     },
     onError: (mutationError) => setError(mutationError.message),
   })
