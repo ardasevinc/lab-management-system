@@ -17,6 +17,14 @@ import { useWorkspace } from "@/components/app-workspace"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -26,6 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
 import {
   Sidebar,
   SidebarContent,
@@ -50,8 +59,9 @@ const calendarSkeletonCells = Array.from({ length: 72 }, (_, index) => `calendar
 
 export function AppShell({ user, onLogout }: { user: User; onLogout: () => void }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const { clearWorkspaceError, workspaceError } = useWorkspace()
+  const { clearWorkspaceError, selectedMachine, workspaceError } = useWorkspace()
   const isAdmin = user.role === "admin"
+  const routeInfo = getRouteInfo(pathname)
 
   return (
     <SidebarProvider>
@@ -136,15 +146,20 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-border border-b bg-background/94 px-3 backdrop-blur sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger />
-            <div className="h-5 w-px bg-border" />
-            <div className="min-w-0">
-              <div className="truncate font-medium text-sm">{getRouteLabel(pathname)}</div>
-              <div className="truncate text-muted-foreground text-xs">
-                {labConfig.defaultTimezone}
-              </div>
-            </div>
+            <Separator orientation="vertical" className="h-5" />
+            <RouteBreadcrumb routeInfo={routeInfo} />
           </div>
-          <HeaderAction pathname={pathname} />
+          <div className="flex shrink-0 items-center gap-2">
+            {selectedMachine ? (
+              <Badge variant="outline" className="hidden max-w-40 truncate sm:inline-flex">
+                {selectedMachine.name}
+              </Badge>
+            ) : null}
+            <Badge variant="secondary" className="hidden md:inline-flex">
+              {labConfig.defaultTimezone}
+            </Badge>
+            <HeaderAction pathname={pathname} />
+          </div>
         </header>
 
         {workspaceError ? (
@@ -174,6 +189,24 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
   )
 }
 
+function RouteBreadcrumb({ routeInfo }: { routeInfo: RouteInfo }) {
+  return (
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList className="flex-nowrap gap-1.5 overflow-hidden">
+        <BreadcrumbItem className="hidden shrink-0 sm:inline-flex">
+          <BreadcrumbLink asChild>
+            <Link to={routeInfo.sectionTo}>{routeInfo.section}</Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator className="hidden shrink-0 sm:inline-flex" />
+        <BreadcrumbItem className="min-w-0">
+          <BreadcrumbPage className="block truncate font-medium">{routeInfo.page}</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+}
+
 function HeaderAction({ pathname }: { pathname: string }) {
   if (pathname !== "/schedule") {
     return null
@@ -191,6 +224,12 @@ function QuickBookingButton() {
       <span className="hidden sm:inline">New booking</span>
     </Button>
   )
+}
+
+type RouteInfo = {
+  section: string
+  sectionTo: string
+  page: string
 }
 
 function NavItem({
@@ -316,23 +355,23 @@ export function WorkspaceBootstrap() {
   )
 }
 
-function getRouteLabel(pathname: string) {
+function getRouteInfo(pathname: string): RouteInfo {
   if (pathname.startsWith("/admin/users")) {
-    return "Users"
+    return { section: "Admin", sectionTo: "/admin", page: "Users" }
   }
   if (pathname.startsWith("/admin/machines")) {
-    return "Admin machines"
+    return { section: "Admin", sectionTo: "/admin", page: "Machines" }
   }
   if (pathname.startsWith("/admin/maintenance")) {
-    return "Maintenance"
+    return { section: "Admin", sectionTo: "/admin", page: "Maintenance" }
   }
   if (pathname === "/admin") {
-    return "Admin overview"
+    return { section: "Admin", sectionTo: "/admin", page: "Overview" }
   }
   if (pathname.startsWith("/machines")) {
-    return "Machines"
+    return { section: "Workspace", sectionTo: "/schedule", page: "Machines" }
   }
-  return "Schedule"
+  return { section: "Workspace", sectionTo: "/schedule", page: "Schedule" }
 }
 
 function getInitials(value: string) {
