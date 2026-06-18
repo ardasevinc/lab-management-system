@@ -1,6 +1,6 @@
 import { labConfig } from "@lab/config"
 import { useMutation } from "@tanstack/react-query"
-import { Cpu, KeyRound, Mail, ShieldCheck } from "lucide-react"
+import { ArrowLeft, Cpu, KeyRound, Mail, ShieldCheck } from "lucide-react"
 import { useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
   const [code, setCode] = useState("")
   const [devCode, setDevCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [step, setStep] = useState<"email" | "code">("email")
 
   const requestMutation = useMutation({
     mutationFn: requestOtp,
@@ -24,6 +25,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
       setDevCode(result.devCode)
       setCode(result.devCode)
       setError(null)
+      setStep("code")
     },
     onError: (mutationError) => setError(mutationError.message),
   })
@@ -92,68 +94,98 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
               className="flex flex-col gap-5"
               onSubmit={(event) => {
                 event.preventDefault()
+                if (step === "email") {
+                  requestMutation.mutate(email)
+                  return
+                }
+
                 verifyMutation.mutate()
               }}
             >
-              <FieldGroup>
-                <Field data-invalid={error ? true : undefined}>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
-                  <div className="relative">
-                    <Mail
-                      className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <Input
-                      id="email"
-                      className="pl-9"
-                      type="email"
-                      name="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      autoComplete="email"
-                      spellCheck={false}
-                      required
-                      aria-invalid={error ? true : undefined}
-                    />
-                  </div>
-                </Field>
+              {step === "email" ? (
+                <FieldGroup>
+                  <Field data-invalid={error ? true : undefined}>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <div className="relative">
+                      <Mail
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Input
+                        id="email"
+                        className="pl-9"
+                        type="email"
+                        name="email"
+                        value={email}
+                        onChange={(event) => {
+                          setEmail(event.target.value)
+                          setError(null)
+                        }}
+                        autoComplete="email"
+                        spellCheck={false}
+                        required
+                        aria-invalid={error ? true : undefined}
+                      />
+                    </div>
+                    <FieldDescription>Use your invited lab email.</FieldDescription>
+                    {error ? <FieldError>{error}</FieldError> : null}
+                  </Field>
+                </FieldGroup>
+              ) : (
+                <FieldGroup>
+                  <Field>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <FieldLabel htmlFor="code">Login code</FieldLabel>
+                        <FieldDescription className="truncate">{email}</FieldDescription>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="shrink-0"
+                        onClick={() => {
+                          setStep("email")
+                          setCode("")
+                          setDevCode(null)
+                          setError(null)
+                        }}
+                      >
+                        <ArrowLeft className="size-4" aria-hidden="true" />
+                        Change
+                      </Button>
+                    </div>
+                  </Field>
 
-                <Field data-invalid={error ? true : undefined}>
-                  <div className="flex items-center justify-between gap-3">
-                    <FieldLabel htmlFor="code">Login code</FieldLabel>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={requestMutation.isPending || !email}
-                      onClick={() => requestMutation.mutate(email)}
-                    >
-                      Send code
-                    </Button>
-                  </div>
-                  <div className="relative">
-                    <KeyRound
-                      className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <Input
-                      id="code"
-                      className="pl-9 font-mono tracking-[0.18em]"
-                      name="code"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      value={code}
-                      onChange={(event) => setCode(event.target.value)}
-                      required
-                      aria-invalid={error ? true : undefined}
-                    />
-                  </div>
-                  <FieldDescription>Use the code sent to your invited lab email.</FieldDescription>
-                  {error ? <FieldError>{error}</FieldError> : null}
-                </Field>
-              </FieldGroup>
+                  <Field data-invalid={error ? true : undefined}>
+                    <div className="relative">
+                      <KeyRound
+                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Input
+                        id="code"
+                        className="pl-9 font-mono tracking-[0.18em]"
+                        name="code"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={code}
+                        onChange={(event) => {
+                          setCode(event.target.value)
+                          setError(null)
+                        }}
+                        autoFocus
+                        required
+                        aria-invalid={error ? true : undefined}
+                      />
+                    </div>
+                    <FieldDescription>Enter the one-time code sent to your email.</FieldDescription>
+                    {error ? <FieldError>{error}</FieldError> : null}
+                  </Field>
+                </FieldGroup>
+              )}
 
-              {devCode ? (
+              {step === "code" && devCode ? (
                 <Alert>
                   <AlertTitle>Local development code</AlertTitle>
                   <AlertDescription>
@@ -163,7 +195,13 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
               ) : null}
 
               <Button type="submit" size="lg" className="w-full" disabled={isBusy}>
-                {verifyMutation.isPending ? "Signing in" : "Sign in"}
+                {step === "email"
+                  ? requestMutation.isPending
+                    ? "Sending code"
+                    : "Continue"
+                  : verifyMutation.isPending
+                    ? "Signing in"
+                    : "Sign in"}
               </Button>
             </form>
           </div>

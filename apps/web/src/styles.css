@@ -178,10 +178,22 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(132deg, rgba(3, 10, 12, 0.98), rgba(7, 49, 51, 0.58), rgba(4, 10, 13, 0.92)),
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    linear-gradient(
+      118deg,
+      rgba(2, 7, 10, 0.99) 0 38%,
+      rgba(2, 28, 32, 0.88) 58%,
+      rgba(2, 74, 70, 0.78)
+    ),
+    linear-gradient(
+      145deg,
+      transparent 0 52%,
+      rgba(24, 204, 175, 0.24) 52.1% 52.45%,
+      transparent 52.6%
+    ),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size:
+    auto,
     auto,
     80px 80px,
     80px 80px;
@@ -194,46 +206,64 @@ body {
   background-image:
     linear-gradient(
       110deg,
-      transparent 0 19%,
-      rgba(71, 199, 180, 0.14) 19.15% 19.3%,
-      transparent 19.45% 100%
+      transparent 0 14%,
+      rgba(105, 255, 223, 0.22) 14.08% 14.24%,
+      transparent 14.4% 100%
     ),
     linear-gradient(
       132deg,
-      transparent 0 70%,
-      rgba(240, 183, 95, 0.1) 70.08% 70.2%,
-      transparent 70.34% 100%
+      transparent 0 62%,
+      rgba(245, 190, 96, 0.2) 62.08% 62.22%,
+      transparent 62.38% 100%
     ),
-    linear-gradient(16deg, rgba(70, 190, 171, 0.14), transparent 36%),
-    linear-gradient(205deg, rgba(30, 90, 104, 0.18), transparent 44%);
-  filter: saturate(0.8);
+    linear-gradient(24deg, rgba(29, 224, 188, 0.36), transparent 42%),
+    linear-gradient(215deg, rgba(41, 124, 145, 0.38), transparent 48%);
+  filter: saturate(1.05);
 }
 
 .auth-background::after {
   position: absolute;
   inset: 0;
   content: "";
-  opacity: 0.42;
+  opacity: 0.76;
   background-image:
+    linear-gradient(
+      42deg,
+      transparent 0 24%,
+      rgba(114, 255, 226, 0.16) 24.1% 24.28%,
+      transparent 24.42% 52%,
+      rgba(114, 255, 226, 0.1) 52.08% 52.2%,
+      transparent 52.34%
+    ),
+    linear-gradient(
+      144deg,
+      transparent 0 46%,
+      rgba(245, 190, 96, 0.14) 46.08% 46.22%,
+      transparent 46.38%
+    ),
     linear-gradient(
       90deg,
       transparent 0 2px,
-      rgba(255, 255, 255, 0.04) 2px 3px,
+      rgba(255, 255, 255, 0.07) 2px 3px,
       transparent 3px 100%
     ),
     linear-gradient(
       0deg,
       transparent 0 2px,
-      rgba(255, 255, 255, 0.035) 2px 3px,
+      rgba(255, 255, 255, 0.055) 2px 3px,
       transparent 3px 100%
     );
   background-position:
+    0 0,
+    0 0,
     8% 0,
     0 18%;
   background-size:
+    auto,
+    auto,
     160px 160px,
     160px 160px;
-  mask-image: linear-gradient(90deg, black, transparent 36%, transparent 64%, black);
+  mask-image: linear-gradient(90deg, black, rgba(0, 0, 0, 0.68) 36%, black 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
