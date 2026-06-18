@@ -34,6 +34,7 @@ export function AdminOverviewPage() {
 
   const nextBooking = workspace.upcomingBookings[0]
   const activeMachines = workspace.machines.filter((machine) => machine.active).length
+  const selectedMachine = workspace.selectedMachine
 
   return (
     <AdminPageFrame
@@ -60,6 +61,57 @@ export function AdminOverviewPage() {
           detail="blocks this week"
         />
       </div>
+
+      <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="rounded-lg border border-border bg-card">
+          <div className="border-border border-b px-4 py-3">
+            <h2 className="font-medium text-sm">Machine status</h2>
+          </div>
+          <div className="grid gap-3 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate font-medium">{selectedMachine?.name ?? "No machine"}</div>
+                <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
+                  {selectedMachine?.description ?? "No selected machine."}
+                </p>
+              </div>
+              <Badge variant={selectedMachine?.active ? "secondary" : "outline"}>
+                {selectedMachine?.active ? "bookable" : "inactive"}
+              </Badge>
+            </div>
+            {selectedMachine?.specs.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedMachine.specs.map((spec) => (
+                  <Badge key={spec} variant="outline">
+                    {spec}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card">
+          <div className="border-border border-b px-4 py-3">
+            <h2 className="font-medium text-sm">Quick actions</h2>
+          </div>
+          <div className="grid gap-2 p-4">
+            <Button type="button" className="justify-start" onClick={workspace.openNewBooking}>
+              <Clock3 data-icon="inline-start" aria-hidden="true" />
+              New booking
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start"
+              onClick={workspace.openMaintenanceBooking}
+            >
+              <Wrench data-icon="inline-start" aria-hidden="true" />
+              Add maintenance
+            </Button>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">

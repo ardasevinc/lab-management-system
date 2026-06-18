@@ -153,9 +153,9 @@ function QuickBookingButton() {
   const { openNewBooking } = useWorkspace()
 
   return (
-    <Button type="button" size="sm" onClick={openNewBooking}>
+    <Button type="button" size="sm" onClick={openNewBooking} aria-label="New booking">
       <Plus data-icon="inline-start" aria-hidden="true" />
-      New booking
+      <span className="hidden sm:inline">New booking</span>
     </Button>
   )
 }
