@@ -1,4 +1,8 @@
+import { format } from "date-fns"
+import { CalendarDays } from "lucide-react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Dialog,
   DialogContent,
@@ -10,9 +14,10 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import type { AuditEvent, Booking, Machine } from "@/lib/api"
-import { fromLocalInputValue, toLocalInputValue } from "@/lib/time"
+import { fromLocalDateTimeParts, toLocalDateValue, toLocalTimeValue } from "@/lib/time"
 
 export type BookingDialogValue = {
   title: string
@@ -53,6 +58,21 @@ export function BookingDialog({
   onDelete,
 }: BookingDialogProps) {
   const defaults = dialogDefaults(booking, initialRange)
+  const [startsDate, setStartsDate] = useState(defaults.startsDate)
+  const [startsTime, setStartsTime] = useState(defaults.startsTime)
+  const [endsDate, setEndsDate] = useState(defaults.endsDate)
+  const [endsTime, setEndsTime] = useState(defaults.endsTime)
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    setStartsDate(defaults.startsDate)
+    setStartsTime(defaults.startsTime)
+    setEndsDate(defaults.endsDate)
+    setEndsTime(defaults.endsTime)
+  }, [open, defaults.startsDate, defaults.startsTime, defaults.endsDate, defaults.endsTime])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,8 +86,8 @@ export function BookingDialog({
               title: String(form.get("title") ?? ""),
               notes: String(form.get("notes") ?? ""),
               type: String(form.get("type") ?? "normal") as "normal" | "maintenance",
-              startsAt: fromLocalInputValue(String(form.get("startsAt") ?? "")),
-              endsAt: fromLocalInputValue(String(form.get("endsAt") ?? "")),
+              startsAt: fromLocalDateTimeParts(startsDate, startsTime),
+              endsAt: fromLocalDateTimeParts(endsDate, endsTime),
               reason: String(form.get("reason") ?? ""),
             })
           }}
@@ -85,28 +105,26 @@ export function BookingDialog({
               <Input id="title" name="title" defaultValue={defaults.title} required />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="startsAt">Starts</FieldLabel>
-                <Input
-                  id="startsAt"
-                  name="startsAt"
-                  type="datetime-local"
-                  defaultValue={defaults.startsAt}
-                  required
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="endsAt">Ends</FieldLabel>
-                <Input
-                  id="endsAt"
-                  name="endsAt"
-                  type="datetime-local"
-                  defaultValue={defaults.endsAt}
-                  required
-                />
-              </Field>
-            </div>
+            <FieldGroup className="grid gap-4 sm:grid-cols-2">
+              <DateTimeField
+                label="Starts"
+                dateId="startsDate"
+                timeId="startsTime"
+                dateValue={startsDate}
+                timeValue={startsTime}
+                onDateChange={setStartsDate}
+                onTimeChange={setStartsTime}
+              />
+              <DateTimeField
+                label="Ends"
+                dateId="endsDate"
+                timeId="endsTime"
+                dateValue={endsDate}
+                timeValue={endsTime}
+                onDateChange={setEndsDate}
+                onTimeChange={setEndsTime}
+              />
+            </FieldGroup>
 
             <Field>
               <FieldLabel htmlFor="type">Type</FieldLabel>
@@ -175,6 +193,73 @@ export function BookingDialog({
   )
 }
 
+function DateTimeField({
+  label,
+  dateId,
+  timeId,
+  dateValue,
+  timeValue,
+  onDateChange,
+  onTimeChange,
+}: {
+  label: string
+  dateId: string
+  timeId: string
+  dateValue: string
+  timeValue: string
+  onDateChange: (date: string) => void
+  onTimeChange: (time: string) => void
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const selectedDate = new Date(`${dateValue}T12:00:00`)
+  const formattedDate = format(selectedDate, "MMM d, yyyy")
+
+  return (
+    <Field>
+      <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
+      <FieldGroup className="grid grid-cols-[minmax(0,1fr)_5.75rem] gap-2">
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              id={dateId}
+              type="button"
+              variant="outline"
+              className="justify-start font-normal"
+              aria-label={`${label} date ${formattedDate}`}
+            >
+              <CalendarDays data-icon="inline-start" aria-hidden="true" />
+              {formattedDate}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                if (date) {
+                  onDateChange(toLocalDateValue(date))
+                  setPickerOpen(false)
+                }
+              }}
+              autoFocus
+            />
+          </PopoverContent>
+        </Popover>
+        <Input
+          id={timeId}
+          inputMode="numeric"
+          autoComplete="off"
+          value={timeValue}
+          onChange={(event) => onTimeChange(event.target.value)}
+          pattern="\d{2}:\d{2}"
+          aria-label={`${label} time`}
+          required
+        />
+      </FieldGroup>
+    </Field>
+  )
+}
+
 function dialogDefaults(
   booking: Booking | null,
   range?: { startsAt: string; endsAt: string } | null,
@@ -187,7 +272,9 @@ function dialogDefaults(
     title: booking?.title ?? "",
     notes: booking?.notes ?? "",
     type: booking?.type ?? "normal",
-    startsAt: toLocalInputValue(booking?.startsAt ?? range?.startsAt ?? now),
-    endsAt: toLocalInputValue(booking?.endsAt ?? range?.endsAt ?? later),
+    startsDate: toLocalDateValue(booking?.startsAt ?? range?.startsAt ?? now),
+    startsTime: toLocalTimeValue(booking?.startsAt ?? range?.startsAt ?? now),
+    endsDate: toLocalDateValue(booking?.endsAt ?? range?.endsAt ?? later),
+    endsTime: toLocalTimeValue(booking?.endsAt ?? range?.endsAt ?? later),
   }
 }
