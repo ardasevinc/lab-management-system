@@ -178,21 +178,36 @@ body {
   position: absolute;
   inset: 0;
   background:
+    radial-gradient(circle at 28% 48%, rgba(54, 255, 216, 0.32), transparent 16rem),
+    radial-gradient(circle at 16% 38%, rgba(255, 211, 122, 0.16), transparent 8rem),
+    radial-gradient(circle at 82% 62%, rgba(18, 128, 118, 0.34), transparent 18rem),
     linear-gradient(
       118deg,
-      rgba(2, 7, 10, 0.99) 0 38%,
-      rgba(2, 28, 32, 0.88) 58%,
-      rgba(2, 74, 70, 0.78)
+      rgba(1, 6, 8, 0.99) 0 32%,
+      rgba(2, 24, 28, 0.9) 56%,
+      rgba(2, 68, 64, 0.8)
     ),
     linear-gradient(
       145deg,
       transparent 0 52%,
-      rgba(24, 204, 175, 0.24) 52.1% 52.45%,
+      rgba(24, 204, 175, 0.3) 52.1% 52.45%,
       transparent 52.6%
+    ),
+    linear-gradient(
+      34deg,
+      transparent 0 34%,
+      rgba(196, 255, 240, 0.12) 34.05% 34.22%,
+      transparent 34.36% 72%,
+      rgba(245, 190, 96, 0.14) 72.06% 72.2%,
+      transparent 72.34%
     ),
     linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
   background-size:
+    auto,
+    auto,
+    auto,
+    auto,
     auto,
     auto,
     80px 80px,
@@ -204,20 +219,30 @@ body {
   inset: 0;
   content: "";
   background-image:
+    radial-gradient(circle at 19% 41%, rgba(214, 255, 246, 0.9) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 28% 48%, rgba(214, 255, 246, 0.7) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 38% 38%, rgba(214, 255, 246, 0.5) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 31% 58%, rgba(245, 190, 96, 0.68) 0 1.5px, transparent 2px),
     linear-gradient(
       110deg,
       transparent 0 14%,
-      rgba(105, 255, 223, 0.22) 14.08% 14.24%,
+      rgba(105, 255, 223, 0.28) 14.08% 14.24%,
       transparent 14.4% 100%
     ),
     linear-gradient(
       132deg,
       transparent 0 62%,
-      rgba(245, 190, 96, 0.2) 62.08% 62.22%,
+      rgba(245, 190, 96, 0.22) 62.08% 62.22%,
       transparent 62.38% 100%
     ),
-    linear-gradient(24deg, rgba(29, 224, 188, 0.36), transparent 42%),
-    linear-gradient(215deg, rgba(41, 124, 145, 0.38), transparent 48%);
+    linear-gradient(
+      62deg,
+      transparent 0 28%,
+      rgba(105, 255, 223, 0.18) 28.06% 28.2%,
+      transparent 28.34% 100%
+    ),
+    linear-gradient(24deg, rgba(29, 224, 188, 0.4), transparent 42%),
+    linear-gradient(215deg, rgba(41, 124, 145, 0.4), transparent 48%);
   filter: saturate(1.05);
 }
 
@@ -227,6 +252,7 @@ body {
   content: "";
   opacity: 0.76;
   background-image:
+    radial-gradient(rgba(196, 255, 240, 0.22) 0.8px, transparent 1px),
     linear-gradient(
       42deg,
       transparent 0 24%,
@@ -256,14 +282,25 @@ body {
   background-position:
     0 0,
     0 0,
+    0 0,
     8% 0,
     0 18%;
   background-size:
+    26px 26px,
     auto,
     auto,
     160px 160px,
     160px 160px;
   mask-image: linear-gradient(90deg, black, rgba(0, 0, 0, 0.68) 36%, black 100%);
+}
+
+.auth-panel {
+  border-color: rgba(255, 255, 255, 0.58);
+  background: color-mix(in oklch, var(--card) 96%, transparent);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(18px) saturate(1.08);
 }
 
 @media (prefers-reduced-motion: reduce) {

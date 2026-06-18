@@ -44,7 +44,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
   return (
     <main className="relative min-h-[100dvh] overflow-hidden bg-[#07100f] text-white">
       <div className="auth-background" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.88),rgba(3,7,9,0.56)_52%,rgba(3,7,9,0.24))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.92),rgba(3,7,9,0.62)_52%,rgba(3,7,9,0.2))]" />
 
       <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
         <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
@@ -74,7 +74,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
         </div>
 
         <div className="grid min-h-[calc(100dvh-2rem)] place-items-center lg:min-h-full">
-          <div className="w-full max-w-[408px] rounded-xl border bg-card p-5 text-card-foreground shadow-2xl shadow-black/25 sm:p-6">
+          <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
                 <div className="mb-4 grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm lg:hidden">
