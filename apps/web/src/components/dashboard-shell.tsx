@@ -2,7 +2,6 @@ import { labConfig } from "@lab/config"
 import {
   Activity,
   CalendarDays,
-  ChevronDown,
   Clock3,
   Cpu,
   LogOut,
@@ -392,30 +391,24 @@ function UserMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           type="button"
           variant="outline"
           size="sm"
-          className="max-w-[13rem] justify-start gap-2 px-2"
+          className="size-8 rounded-full px-0"
+          aria-label={`Account menu for ${user.name}`}
         >
           <Avatar size="sm">
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
-          <span className="hidden min-w-0 truncate sm:inline">{user.name}</span>
-          <ChevronDown data-icon="inline-end" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="p-2">
-          <div className="flex min-w-0 items-center gap-3">
-            <Avatar>
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div className="grid min-w-0 gap-1">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate font-medium text-foreground text-sm">{user.name}</span>
-                <Badge variant="outline" className="shrink-0 capitalize">
-                  {user.role}
-                </Badge>
-              </div>
-              <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+          <div className="grid min-w-0 gap-1">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <span className="truncate font-medium text-foreground text-sm">{user.name}</span>
+              <Badge variant="outline" className="shrink-0 capitalize">
+                {user.role}
+              </Badge>
             </div>
+            <div className="truncate text-muted-foreground text-xs">{user.email}</div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
