@@ -119,7 +119,11 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
     }
 
     assertValidBookingRange(next.startsAt, next.endsAt)
-    await assertMachineExists(tx, next.machineId)
+    if (changesBookingPlacement(input)) {
+      await assertMachineBookable(tx, next.machineId)
+    } else {
+      await assertMachineExists(tx, next.machineId)
+    }
     if (input.userId !== undefined) {
       await assertActiveUserExists(tx, next.userId)
     }
@@ -185,4 +189,8 @@ export async function getBooking(db: Db, id: string) {
     where: and(eq(bookings.id, id), isNull(bookings.deletedAt)),
   })
   return row ? mapBooking(row) : null
+}
+
+function changesBookingPlacement(input: UpdateBookingInput) {
+  return input.machineId !== undefined || input.startsAt !== undefined || input.endsAt !== undefined
 }

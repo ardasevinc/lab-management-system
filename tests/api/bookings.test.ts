@@ -396,6 +396,41 @@ describe("booking API", () => {
     expect(deleteResponse.status).toBe(200)
   })
 
+  it("blocks rescheduling bookings while their machine is inactive", async () => {
+    const createResponse = await createBookingRequest({
+      title: "Inactive machine existing run",
+      startsAt: "2026-05-10T10:00:00.000Z",
+      endsAt: "2026-05-10T11:00:00.000Z",
+    })
+    const { booking } = await createResponse.json()
+
+    const deactivateResponse = await app.request("/admin/machines/tohum", {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    })
+    const titleOnlyResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ title: "Inactive machine title edit" }),
+    })
+    const rescheduleResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        startsAt: "2026-05-10T11:00:00.000Z",
+        endsAt: "2026-05-10T12:00:00.000Z",
+      }),
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(deactivateResponse.status).toBe(200)
+    expect(titleOnlyResponse.status).toBe(200)
+    expect((await titleOnlyResponse.json()).booking.title).toBe("Inactive machine title edit")
+    expect(rescheduleResponse.status).toBe(400)
+    expect(await rescheduleResponse.json()).toEqual({ error: "Machine is not bookable" })
+  })
+
   it("does not delete machines with booking history", async () => {
     const createResponse = await createBookingRequest({
       title: "Machine history",
