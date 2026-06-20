@@ -2,7 +2,9 @@ import { expect, type Page, test } from "@playwright/test"
 
 const adminEmail = "admin@miralab.tr"
 
-test("admin can sign in and manage a tohum booking", async ({ page }) => {
+test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop week-board flow")
+
   const bookingTitle = `E2E booking ${Date.now()}`
 
   const consoleProblems = collectConsoleProblems(page)
@@ -43,7 +45,9 @@ test("admin can sign in and manage a tohum booking", async ({ page }) => {
   expect(consoleProblems).toEqual([])
 })
 
-test("moving a booking into an occupied slot surfaces a conflict", async ({ page }) => {
+test("moving a booking into an occupied slot surfaces a conflict", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop drag flow")
+
   const consoleProblems = collectConsoleProblems(page)
   await loginAsAdmin(page)
 
@@ -87,7 +91,9 @@ test("moving a booking into an occupied slot surfaces a conflict", async ({ page
   expect(unexpectedConsoleProblems(consoleProblems)).toEqual([])
 })
 
-test("resizing a booking into an occupied slot surfaces a conflict", async ({ page }) => {
+test("resizing a booking into an occupied slot surfaces a conflict", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop resize flow")
+
   const consoleProblems = collectConsoleProblems(page)
   await loginAsAdmin(page)
 
@@ -132,6 +138,40 @@ test("resizing a booking into an occupied slot surfaces a conflict", async ({ pa
   )
   expect(unexpectedConsoleProblems(consoleProblems)).toEqual([])
 })
+
+test("researchers can create and delete a booking from the responsive day agenda", async ({
+  page,
+}, testInfo) => {
+  test.skip(isDesktopProject(testInfo.project.name), "responsive day-agenda flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E responsive ${testInfo.project.name} ${Date.now()}`
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByText("Day agenda")).toBeVisible()
+  await expect(page.getByText("Week board")).toBeHidden()
+
+  await page.getByRole("button", { name: "Book" }).click()
+  await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
+  await page.getByLabel("Title").fill(bookingTitle)
+  await page.getByRole("button", { name: "Create" }).click()
+
+  const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+  await expect(booking).toBeVisible()
+
+  await booking.click()
+  await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+  await page.getByRole("button", { name: "Delete" }).click()
+  await expect(booking).toBeHidden()
+  await expect(page.getByText("Day agenda")).toBeVisible()
+  expect(consoleProblems).toEqual([])
+})
+
+function isDesktopProject(projectName: string) {
+  return projectName === "chromium"
+}
 
 function collectConsoleProblems(page: Page) {
   const consoleProblems: string[] = []
