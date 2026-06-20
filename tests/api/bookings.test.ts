@@ -66,6 +66,49 @@ describe("booking API", () => {
     ])
   })
 
+  it("lets admins edit machine records and blocks new bookings when inactive", async () => {
+    const updateResponse = await app.request("/admin/machines/tohum", {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "tohum gpu",
+        description: "Primary MIRALAB training workstation.",
+        specs: ["NVIDIA RTX", "128 GB RAM", ""],
+        accessNotes: "Ask an admin for ZeroTier and SSH details.",
+        active: false,
+      }),
+    })
+    const updateBody = await updateResponse.json()
+    const machinesResponse = await app.request("/machines", { headers: authHeaders })
+    const machinesBody = await machinesResponse.json()
+    const bookingResponse = await createBookingRequest({
+      title: "Blocked inactive run",
+      startsAt: "2026-05-10T10:00:00.000Z",
+      endsAt: "2026-05-10T11:00:00.000Z",
+    })
+
+    expect(updateResponse.status).toBe(200)
+    expect(updateBody.machine).toEqual(
+      expect.objectContaining({
+        id: "tohum",
+        name: "tohum gpu",
+        description: "Primary MIRALAB training workstation.",
+        specs: ["NVIDIA RTX", "128 GB RAM"],
+        accessNotes: "Ask an admin for ZeroTier and SSH details.",
+        active: false,
+      }),
+    )
+    expect(machinesBody.machines).toContainEqual(
+      expect.objectContaining({
+        id: "tohum",
+        name: "tohum gpu",
+        active: false,
+      }),
+    )
+    expect(bookingResponse.status).toBe(400)
+    expect(await bookingResponse.json()).toEqual({ error: "Machine is not bookable" })
+  })
+
   it("creates and lists a booking", async () => {
     const createResponse = await app.request("/bookings", {
       method: "POST",
@@ -467,9 +510,15 @@ describe("booking API", () => {
       }),
     })
     const adminResponse = await app.request("/admin/users", { headers: memberHeaders })
+    const machineResponse = await app.request("/admin/machines/tohum", {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    })
 
     expect(maintenanceResponse.status).toBe(403)
     expect(adminResponse.status).toBe(403)
+    expect(machineResponse.status).toBe(403)
   })
 
   it("lets members manage their own normal bookings", async () => {

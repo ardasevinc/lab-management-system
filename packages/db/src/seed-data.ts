@@ -63,16 +63,5 @@ export async function seedInitialData(db: Db, now = new Date()) {
       createdAt: now,
       updatedAt: now,
     })
-    .onConflictDoUpdate({
-      target: machines.id,
-      set: {
-        slug: "tohum",
-        name: "tohum",
-        description: "MIRALAB GPU workstation for remote AI training and research sessions.",
-        specsJson: JSON.stringify(["NVIDIA GPU workstation"]),
-        accessNotes: "Remote access details are shared by lab admins.",
-        active: true,
-        updatedAt: now,
-      },
-    })
+    .onConflictDoNothing()
 }

@@ -23,6 +23,7 @@
     "test:api:health": "vitest run tests/api/health.test.ts",
     "test:api:mailer": "vitest run tests/api/mailer.test.ts",
     "test:api:notifications": "vitest run tests/api/notifications.test.ts",
+    "test:db:machines": "vitest run tests/db/machines.test.ts",
     "test:web:calendar": "vitest run tests/web/calendar-geometry.test.ts",
     "test:watch": "vitest",
     "typecheck": "bun run --filter '*' typecheck"

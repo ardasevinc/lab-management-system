@@ -7,9 +7,11 @@ import {
   MonitorCog,
   Power,
   RotateCcw,
+  Save,
   Wrench,
 } from "lucide-react"
-import { useWorkspace } from "@/components/app-workspace"
+import { useState } from "react"
+import { type MachineUpdateValue, useWorkspace } from "@/components/app-workspace"
 import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -25,6 +27,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import {
   Table,
   TableBody,
   TableCell,
@@ -32,7 +42,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { User } from "@/lib/api"
+import { Textarea } from "@/components/ui/textarea"
+import type { Machine, User } from "@/lib/api"
 import { formatDate, formatTime } from "@/lib/time"
 
 export function AdminOverviewPage() {
@@ -341,6 +352,7 @@ function UserAccessButton({
 
 export function AdminMachinesPage() {
   const workspace = useWorkspace()
+  const [editingMachine, setEditingMachine] = useState<Machine | null>(null)
 
   if (workspace.user.role !== "admin") {
     return <Navigate to="/schedule" replace />
@@ -348,9 +360,136 @@ export function AdminMachinesPage() {
 
   return (
     <AdminPageFrame title="Machines" description="Machine records and booking availability.">
-      <MachineInventory machines={workspace.machines} />
+      <MachineInventory machines={workspace.machines} onEditMachine={setEditingMachine} />
+      <MachineEditorSheet
+        machine={editingMachine}
+        open={Boolean(editingMachine)}
+        pending={workspace.machineUpdatePendingId === editingMachine?.id}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingMachine(null)
+          }
+        }}
+        onSubmit={(value) => {
+          if (!editingMachine) {
+            return
+          }
+
+          workspace.updateMachine(editingMachine, value, {
+            onSuccess: () => setEditingMachine(null),
+          })
+        }}
+      />
     </AdminPageFrame>
   )
+}
+
+function MachineEditorSheet({
+  machine,
+  open,
+  pending,
+  onOpenChange,
+  onSubmit,
+}: {
+  machine: Machine | null
+  open: boolean
+  pending: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (value: MachineUpdateValue) => void
+}) {
+  if (!machine) {
+    return null
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-lg sm:p-5">
+        <form
+          key={machine.id}
+          className="grid gap-5"
+          onSubmit={(event) => {
+            event.preventDefault()
+            const form = new FormData(event.currentTarget)
+
+            onSubmit({
+              name: String(form.get("name") ?? "").trim(),
+              description: String(form.get("description") ?? "").trim(),
+              specs: parseMachineSpecs(String(form.get("specs") ?? "")),
+              accessNotes: String(form.get("accessNotes") ?? "").trim(),
+              active: form.get("active") === "true",
+            })
+          }}
+        >
+          <SheetHeader className="px-0 pt-0">
+            <SheetTitle>Edit machine</SheetTitle>
+            <SheetDescription>{machine.slug}</SheetDescription>
+          </SheetHeader>
+
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="machine-name">Name</FieldLabel>
+              <Input id="machine-name" name="name" defaultValue={machine.name} required />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="machine-state">Booking state</FieldLabel>
+              <Select name="active" defaultValue={String(machine.active)}>
+                <SelectTrigger id="machine-state" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="true">Bookable</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="machine-description">Description</FieldLabel>
+              <Textarea
+                id="machine-description"
+                name="description"
+                defaultValue={machine.description}
+                rows={4}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="machine-specs">Specs</FieldLabel>
+              <Textarea
+                id="machine-specs"
+                name="specs"
+                defaultValue={machine.specs.join("\n")}
+                rows={5}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="machine-access-notes">Access notes</FieldLabel>
+              <Textarea
+                id="machine-access-notes"
+                name="accessNotes"
+                defaultValue={machine.accessNotes}
+                rows={4}
+              />
+            </Field>
+          </FieldGroup>
+
+          <SheetFooter className="px-0 pb-0">
+            <Button type="submit" disabled={pending}>
+              <Save data-icon="inline-start" aria-hidden="true" />
+              {pending ? "Saving" : "Save machine"}
+            </Button>
+          </SheetFooter>
+        </form>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function parseMachineSpecs(value: string) {
+  return value
+    .split(/\n|,/)
+    .map((spec) => spec.trim())
+    .filter(Boolean)
 }
 
 export function AdminMaintenancePage() {

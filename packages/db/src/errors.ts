@@ -13,8 +13,8 @@ export class NotFoundError extends Error {
 }
 
 export class InvalidBookingRangeError extends Error {
-  constructor() {
-    super("Booking end time must be after start time")
+  constructor(message = "Booking end time must be after start time") {
+    super(message)
     this.name = "InvalidBookingRangeError"
   }
 }

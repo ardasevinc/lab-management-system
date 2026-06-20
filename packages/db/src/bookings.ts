@@ -50,7 +50,7 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
   assertValidRange(input.startsAt, input.endsAt)
 
   return db.transaction(async (tx) => {
-    await assertMachineExists(tx, input.machineId)
+    await assertMachineBookable(tx, input.machineId)
     await assertUserExists(tx, input.userId)
     await assertUserExists(tx, input.actorUserId)
     await assertNoOverlap(tx, {
@@ -218,6 +218,16 @@ async function assertMachineExists(db: DbLike, id: string) {
   const machine = await db.query.machines.findFirst({ where: eq(machines.id, id) })
   if (!machine) {
     throw new NotFoundError("Machine not found")
+  }
+
+  return machine
+}
+
+async function assertMachineBookable(db: DbLike, id: string) {
+  const machine = await assertMachineExists(db, id)
+
+  if (!machine.active) {
+    throw new InvalidBookingRangeError("Machine is not bookable")
   }
 }
 

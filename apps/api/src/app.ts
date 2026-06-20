@@ -19,6 +19,7 @@ import {
   NotFoundError,
   requestLoginOtp,
   updateBooking,
+  updateMachine,
   updateUserAccess,
   verifyLoginOtp,
 } from "@lab/db"
@@ -69,6 +70,16 @@ const inviteSchema = z.object({
 const userAccessPatchSchema = z
   .object({
     role: z.enum(["admin", "member"]).optional(),
+    active: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required")
+
+const machinePatchSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    specs: z.array(z.string()).optional(),
+    accessNotes: z.string().optional(),
     active: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field is required")
@@ -298,6 +309,24 @@ export function createApiApp({
   })
 
   app.get("/admin/users", async (c) => c.json({ users: await listUsers(db) }))
+
+  app.patch("/admin/machines/:id", async (c) => {
+    const body = machinePatchSchema.safeParse(await c.req.json())
+
+    if (!body.success) {
+      return c.json({ error: "Invalid machine update", issues: body.error.issues }, 400)
+    }
+
+    const update = {
+      ...body.data,
+      specs: body.data.specs?.map((spec) => spec.trim()).filter(Boolean),
+    }
+
+    return handleApiResult(c, async () => {
+      const machine = await updateMachine(db, c.req.param("id"), update)
+      return c.json({ machine })
+    })
+  })
 
   app.patch("/admin/users/:id", async (c) => {
     const body = userAccessPatchSchema.safeParse(await c.req.json())

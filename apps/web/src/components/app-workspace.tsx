@@ -24,6 +24,11 @@ export type DashboardStats = {
   weekHours: number
 }
 
+export type MachineUpdateValue = Pick<
+  Machine,
+  "accessNotes" | "active" | "description" | "name" | "specs"
+>
+
 type DialogState = {
   mode: "create" | "edit"
   booking: Booking | null
@@ -43,6 +48,7 @@ type WorkspaceContextValue = {
   pendingBookingId: string | null
   invitePending: boolean
   userAccessPendingId: string | null
+  machineUpdatePendingId: string | null
   workspaceError: string | null
   setSelectedMachineSlug: (slug: string) => void
   goToPreviousWeek: () => void
@@ -54,6 +60,11 @@ type WorkspaceContextValue = {
   openMaintenanceBooking: () => void
   inviteUser: (form: FormData) => void
   updateUserAccess: (user: User, value: { active?: boolean; role?: User["role"] }) => void
+  updateMachine: (
+    machine: Machine,
+    value: MachineUpdateValue,
+    options?: { onSuccess?: () => void },
+  ) => void
   createRange: (range: CalendarRange) => void
   editBooking: (booking: Booking) => void
   moveBooking: (booking: Booking, range: CalendarRange) => void
@@ -225,6 +236,30 @@ export function AppWorkspace() {
     },
   })
 
+  const machineUpdateMutation = useMutation({
+    mutationFn: ({
+      id,
+      value,
+      onSuccess,
+    }: {
+      id: string
+      value: MachineUpdateValue
+      onSuccess?: () => void
+    }) =>
+      apiFetch<{ machine: Machine }>(`/admin/machines/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(value),
+      }).then(() => ({ onSuccess })),
+    onSuccess: ({ onSuccess }) => {
+      setWorkspaceError(null)
+      queryClient.invalidateQueries({ queryKey: ["machines"] })
+      onSuccess?.()
+    },
+    onError: (error: Error) => {
+      setWorkspaceError(error.message)
+    },
+  })
+
   if (!hasStoredToken) {
     return <Navigate to="/login" replace />
   }
@@ -268,6 +303,9 @@ export function AppWorkspace() {
     pendingBookingId: updateBookingMutation.variables?.id ?? null,
     invitePending: inviteMutation.isPending,
     userAccessPendingId: userAccessMutation.isPending ? userAccessMutation.variables.id : null,
+    machineUpdatePendingId: machineUpdateMutation.isPending
+      ? machineUpdateMutation.variables.id
+      : null,
     workspaceError,
     setSelectedMachineSlug,
     goToPreviousWeek: () => setVisibleWeekDate((date) => addWeeks(date, -1)),
@@ -295,6 +333,12 @@ export function AppWorkspace() {
     inviteUser: (form) => inviteMutation.mutate(form),
     updateUserAccess: (targetUser, access) =>
       userAccessMutation.mutate({ id: targetUser.id, value: access }),
+    updateMachine: (machine, machineUpdate, options) =>
+      machineUpdateMutation.mutate({
+        id: machine.id,
+        value: machineUpdate,
+        onSuccess: options?.onSuccess,
+      }),
     createRange: (range) => {
       setDialogError(null)
       setWorkspaceError(null)

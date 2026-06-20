@@ -1,4 +1,4 @@
-import { Check, MonitorCog } from "lucide-react"
+import { Check, MonitorCog, Pencil } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,6 +16,7 @@ type MachineInventoryProps = {
   machines: Machine[]
   selectedMachineSlug?: string
   onSelectMachine?: (slug: string) => void
+  onEditMachine?: (machine: Machine) => void
   selectionLabel?: string
 }
 
@@ -23,6 +24,7 @@ export function MachineInventory({
   machines,
   selectedMachineSlug,
   onSelectMachine,
+  onEditMachine,
   selectionLabel = "Use",
 }: MachineInventoryProps) {
   return (
@@ -43,7 +45,9 @@ export function MachineInventory({
               <TableHead className="w-28">State</TableHead>
               <TableHead>Specs</TableHead>
               <TableHead>Access</TableHead>
-              {onSelectMachine ? <TableHead className="w-28 text-right">Default</TableHead> : null}
+              {onSelectMachine || onEditMachine ? (
+                <TableHead className="w-28 text-right">Actions</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -67,17 +71,32 @@ export function MachineInventory({
                   <TableCell className="max-w-md whitespace-normal text-muted-foreground">
                     {machine.accessNotes}
                   </TableCell>
-                  {onSelectMachine ? (
+                  {onSelectMachine || onEditMachine ? (
                     <TableCell className="text-right">
-                      <Button
-                        type="button"
-                        variant={isSelected ? "secondary" : "outline"}
-                        size="sm"
-                        onClick={() => onSelectMachine(machine.slug)}
-                      >
-                        {isSelected ? <Check data-icon="inline-start" aria-hidden="true" /> : null}
-                        {isSelected ? "Selected" : selectionLabel}
-                      </Button>
+                      {onSelectMachine ? (
+                        <Button
+                          type="button"
+                          variant={isSelected ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => onSelectMachine(machine.slug)}
+                        >
+                          {isSelected ? (
+                            <Check data-icon="inline-start" aria-hidden="true" />
+                          ) : null}
+                          {isSelected ? "Selected" : selectionLabel}
+                        </Button>
+                      ) : null}
+                      {onEditMachine ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onEditMachine(machine)}
+                        >
+                          <Pencil data-icon="inline-start" aria-hidden="true" />
+                          Edit
+                        </Button>
+                      ) : null}
                     </TableCell>
                   ) : null}
                 </TableRow>
@@ -125,6 +144,17 @@ export function MachineInventory({
                 >
                   {isSelected ? <Check data-icon="inline-start" aria-hidden="true" /> : null}
                   {isSelected ? "Selected machine" : selectionLabel}
+                </Button>
+              ) : null}
+              {onEditMachine ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3 w-full"
+                  onClick={() => onEditMachine(machine)}
+                >
+                  <Pencil data-icon="inline-start" aria-hidden="true" />
+                  Edit machine
                 </Button>
               ) : null}
             </article>
