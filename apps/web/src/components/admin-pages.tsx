@@ -5,13 +5,19 @@ import {
   type LucideIcon,
   MailPlus,
   MonitorCog,
+  Plus,
   Power,
   RotateCcw,
   Save,
+  Trash2,
   Wrench,
 } from "lucide-react"
 import { useState } from "react"
-import { type MachineUpdateValue, useWorkspace } from "@/components/app-workspace"
+import {
+  type MachineCreateValue,
+  type MachineUpdateValue,
+  useWorkspace,
+} from "@/components/app-workspace"
 import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -391,18 +397,32 @@ function UserAccessButton({
 export function AdminMachinesPage() {
   const workspace = useWorkspace()
   const [editingMachine, setEditingMachine] = useState<Machine | null>(null)
+  const [creatingMachine, setCreatingMachine] = useState(false)
 
   if (workspace.user.role !== "admin") {
     return <Navigate to="/schedule" replace />
   }
 
   return (
-    <AdminPageFrame title="Machines" description="Machine records and booking availability.">
+    <AdminPageFrame
+      title="Machines"
+      description="Machine records and booking availability."
+      action={
+        <Button type="button" onClick={() => setCreatingMachine(true)}>
+          <Plus data-icon="inline-start" aria-hidden="true" />
+          New machine
+        </Button>
+      }
+    >
       <MachineInventory machines={workspace.machines} onEditMachine={setEditingMachine} />
       <MachineEditorSheet
+        mode="edit"
         machine={editingMachine}
         open={Boolean(editingMachine)}
-        pending={workspace.machineUpdatePendingId === editingMachine?.id}
+        pending={
+          workspace.machineUpdatePendingId === editingMachine?.id ||
+          workspace.machineDeletePendingId === editingMachine?.id
+        }
         onOpenChange={(open) => {
           if (!open) {
             setEditingMachine(null)
@@ -417,60 +437,122 @@ export function AdminMachinesPage() {
             onSuccess: () => setEditingMachine(null),
           })
         }}
+        onDelete={() => {
+          if (!editingMachine) {
+            return
+          }
+
+          workspace.deleteMachine(editingMachine, {
+            onSuccess: () => setEditingMachine(null),
+          })
+        }}
+      />
+      <MachineEditorSheet
+        mode="create"
+        machine={null}
+        open={creatingMachine}
+        pending={workspace.machineCreatePending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreatingMachine(false)
+          }
+        }}
+        onSubmit={(value) => {
+          workspace.createMachine(value, {
+            onSuccess: () => setCreatingMachine(false),
+          })
+        }}
       />
     </AdminPageFrame>
   )
 }
 
 function MachineEditorSheet({
+  mode,
   machine,
   open,
   pending,
   onOpenChange,
   onSubmit,
+  onDelete,
 }: {
+  mode: "create" | "edit"
   machine: Machine | null
   open: boolean
   pending: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (value: MachineUpdateValue) => void
+  onSubmit: (value: MachineCreateValue | MachineUpdateValue) => void
+  onDelete?: () => void
 }) {
-  if (!machine) {
+  if (mode === "edit" && !machine) {
     return null
+  }
+
+  const defaults = machine ?? {
+    id: "new",
+    slug: "",
+    name: "",
+    description: "",
+    specs: [],
+    accessNotes: "",
+    active: true,
   }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-lg sm:p-5">
         <form
-          key={machine.id}
+          key={`${mode}-${defaults.id}`}
           className="grid gap-5"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
-
-            onSubmit({
+            const value = {
               name: String(form.get("name") ?? "").trim(),
+              slug:
+                mode === "create" ? String(form.get("slug") ?? "").trim() || undefined : undefined,
               description: String(form.get("description") ?? "").trim(),
               specs: parseMachineSpecs(String(form.get("specs") ?? "")),
               accessNotes: String(form.get("accessNotes") ?? "").trim(),
               active: form.get("active") === "true",
-            })
+            }
+
+            if (mode === "edit") {
+              const { slug: _slug, ...updateValue } = value
+              onSubmit(updateValue)
+              return
+            }
+
+            onSubmit(value)
           }}
         >
           <SheetHeader className="px-0 pt-0">
-            <SheetTitle>Edit machine</SheetTitle>
-            <SheetDescription>{machine.slug}</SheetDescription>
+            <SheetTitle>{mode === "create" ? "New machine" : "Edit machine"}</SheetTitle>
+            <SheetDescription>
+              {mode === "create" ? "Add a bookable lab resource." : defaults.slug}
+            </SheetDescription>
           </SheetHeader>
 
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="machine-name">Name</FieldLabel>
-              <Input id="machine-name" name="name" defaultValue={machine.name} required />
+              <Input id="machine-name" name="name" defaultValue={defaults.name} required />
             </Field>
+            {mode === "create" ? (
+              <Field>
+                <FieldLabel htmlFor="machine-slug">Slug</FieldLabel>
+                <Input
+                  id="machine-slug"
+                  name="slug"
+                  defaultValue={defaults.slug}
+                  placeholder="gpu-2"
+                  spellCheck={false}
+                />
+              </Field>
+            ) : null}
             <Field>
               <FieldLabel htmlFor="machine-state">Booking state</FieldLabel>
-              <Select name="active" defaultValue={String(machine.active)}>
+              <Select name="active" defaultValue={String(defaults.active)}>
                 <SelectTrigger id="machine-state" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -487,7 +569,7 @@ function MachineEditorSheet({
               <Textarea
                 id="machine-description"
                 name="description"
-                defaultValue={machine.description}
+                defaultValue={defaults.description}
                 rows={4}
               />
             </Field>
@@ -496,7 +578,7 @@ function MachineEditorSheet({
               <Textarea
                 id="machine-specs"
                 name="specs"
-                defaultValue={machine.specs.join("\n")}
+                defaultValue={defaults.specs.join("\n")}
                 rows={5}
               />
             </Field>
@@ -505,16 +587,24 @@ function MachineEditorSheet({
               <Textarea
                 id="machine-access-notes"
                 name="accessNotes"
-                defaultValue={machine.accessNotes}
+                defaultValue={defaults.accessNotes}
                 rows={4}
               />
             </Field>
           </FieldGroup>
 
-          <SheetFooter className="px-0 pb-0">
+          <SheetFooter className="gap-2 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
+            {mode === "edit" && onDelete ? (
+              <Button type="button" variant="outline" disabled={pending} onClick={onDelete}>
+                <Trash2 data-icon="inline-start" aria-hidden="true" />
+                Delete
+              </Button>
+            ) : (
+              <span />
+            )}
             <Button type="submit" disabled={pending}>
               <Save data-icon="inline-start" aria-hidden="true" />
-              {pending ? "Saving" : "Save machine"}
+              {pending ? "Saving" : mode === "create" ? "Create machine" : "Save machine"}
             </Button>
           </SheetFooter>
         </form>

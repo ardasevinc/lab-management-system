@@ -2,10 +2,13 @@ import { labConfig } from "@lab/config"
 import {
   AuthError,
   BookingConflictError,
+  ConflictError,
   createBooking,
   createInvite,
+  createMachine,
   type Db,
   deleteBooking,
+  deleteMachine,
   deleteSession,
   ForbiddenError,
   getBooking,
@@ -83,6 +86,15 @@ const machinePatchSchema = z
     active: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field is required")
+
+const machineCreateSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().optional(),
+  description: z.string().optional(),
+  specs: z.array(z.string()).optional(),
+  accessNotes: z.string().optional(),
+  active: z.boolean().optional(),
+})
 
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>
 
@@ -310,6 +322,19 @@ export function createApiApp({
 
   app.get("/admin/users", async (c) => c.json({ users: await listUsers(db) }))
 
+  app.post("/admin/machines", async (c) => {
+    const body = machineCreateSchema.safeParse(await c.req.json())
+
+    if (!body.success) {
+      return c.json({ error: "Invalid machine", issues: body.error.issues }, 400)
+    }
+
+    return handleApiResult(c, async () => {
+      const machine = await createMachine(db, sanitizeMachineInput(body.data))
+      return c.json({ machine }, 201)
+    })
+  })
+
   app.patch("/admin/machines/:id", async (c) => {
     const body = machinePatchSchema.safeParse(await c.req.json())
 
@@ -317,16 +342,18 @@ export function createApiApp({
       return c.json({ error: "Invalid machine update", issues: body.error.issues }, 400)
     }
 
-    const update = {
-      ...body.data,
-      specs: body.data.specs?.map((spec) => spec.trim()).filter(Boolean),
-    }
-
     return handleApiResult(c, async () => {
-      const machine = await updateMachine(db, c.req.param("id"), update)
+      const machine = await updateMachine(db, c.req.param("id"), sanitizeMachineInput(body.data))
       return c.json({ machine })
     })
   })
+
+  app.delete("/admin/machines/:id", async (c) =>
+    handleApiResult(c, async () => {
+      const machine = await deleteMachine(db, c.req.param("id"))
+      return c.json({ machine })
+    }),
+  )
 
   app.patch("/admin/users/:id", async (c) => {
     const body = userAccessPatchSchema.safeParse(await c.req.json())
@@ -495,6 +522,10 @@ function apiErrorResponse(c: Context, error: unknown) {
     return c.json({ error: error.message }, 409)
   }
 
+  if (error instanceof ConflictError) {
+    return c.json({ error: error.message }, 409)
+  }
+
   if (error instanceof InvalidBookingRangeError) {
     return c.json({ error: error.message }, 400)
   }
@@ -512,4 +543,15 @@ function apiErrorResponse(c: Context, error: unknown) {
   }
 
   throw error
+}
+
+function sanitizeMachineInput<T extends { specs?: string[]; name?: string; slug?: string }>(
+  input: T,
+) {
+  return {
+    ...input,
+    name: input.name?.trim(),
+    slug: input.slug?.trim(),
+    specs: input.specs?.map((spec) => spec.trim()).filter(Boolean),
+  }
 }

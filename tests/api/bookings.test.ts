@@ -109,6 +109,45 @@ describe("booking API", () => {
     expect(await bookingResponse.json()).toEqual({ error: "Machine is not bookable" })
   })
 
+  it("lets admins create and delete unused machines", async () => {
+    const createResponse = await app.request("/admin/machines", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "GPU 2",
+        slug: "GPU 2",
+        description: "Secondary GPU workstation.",
+        specs: ["NVIDIA RTX"],
+        accessNotes: "Ask admins.",
+      }),
+    })
+    const { machine } = await createResponse.json()
+    const duplicateResponse = await app.request("/admin/machines", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ name: "Duplicate GPU", slug: "gpu-2" }),
+    })
+    const deleteResponse = await app.request(`/admin/machines/${machine.id}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    })
+    const machinesResponse = await app.request("/machines", { headers: authHeaders })
+    const machinesBody = await machinesResponse.json()
+
+    expect(createResponse.status).toBe(201)
+    expect(machine).toEqual(
+      expect.objectContaining({
+        slug: "gpu-2",
+        name: "GPU 2",
+        active: true,
+      }),
+    )
+    expect(duplicateResponse.status).toBe(409)
+    expect(await duplicateResponse.json()).toEqual({ error: "Machine slug is already in use" })
+    expect(deleteResponse.status).toBe(200)
+    expect(machinesBody.machines).not.toContainEqual(expect.objectContaining({ id: machine.id }))
+  })
+
   it("creates and lists a booking", async () => {
     const createResponse = await app.request("/bookings", {
       method: "POST",
@@ -357,6 +396,24 @@ describe("booking API", () => {
     expect(deleteResponse.status).toBe(200)
   })
 
+  it("does not delete machines with booking history", async () => {
+    const createResponse = await createBookingRequest({
+      title: "Machine history",
+      startsAt: "2026-05-10T10:00:00.000Z",
+      endsAt: "2026-05-10T11:00:00.000Z",
+    })
+    const deleteResponse = await app.request("/admin/machines/tohum", {
+      method: "DELETE",
+      headers: authHeaders,
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(deleteResponse.status).toBe(409)
+    expect(await deleteResponse.json()).toEqual({
+      error: "Machine has bookings; deactivate it instead",
+    })
+  })
+
   it("records admin-readable audit events for booking changes", async () => {
     const createResponse = await app.request("/bookings", {
       method: "POST",
@@ -515,10 +572,21 @@ describe("booking API", () => {
       headers: { ...memberHeaders, "content-type": "application/json" },
       body: JSON.stringify({ active: false }),
     })
+    const machineCreateResponse = await app.request("/admin/machines", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ name: "GPU 2" }),
+    })
+    const machineDeleteResponse = await app.request("/admin/machines/tohum", {
+      method: "DELETE",
+      headers: memberHeaders,
+    })
 
     expect(maintenanceResponse.status).toBe(403)
     expect(adminResponse.status).toBe(403)
     expect(machineResponse.status).toBe(403)
+    expect(machineCreateResponse.status).toBe(403)
+    expect(machineDeleteResponse.status).toBe(403)
   })
 
   it("lets members manage their own normal bookings", async () => {

@@ -5,6 +5,13 @@ export class BookingConflictError extends Error {
   }
 }
 
+export class ConflictError extends Error {
+  constructor(message = "Resource conflict") {
+    super(message)
+    this.name = "ConflictError"
+  }
+}
+
 export class NotFoundError extends Error {
   constructor(message = "Resource not found") {
     super(message)

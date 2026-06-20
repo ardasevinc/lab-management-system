@@ -165,7 +165,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
         {workspaceError ? (
           <div className="px-3 pt-3 sm:px-4">
             <Alert variant="destructive">
-              <AlertTitle>Could not update booking</AlertTitle>
+              <AlertTitle>Could not save changes</AlertTitle>
               <AlertDescription>{workspaceError}</AlertDescription>
               <AlertAction>
                 <Button

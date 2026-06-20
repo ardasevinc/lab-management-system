@@ -29,6 +29,10 @@ export type MachineUpdateValue = Pick<
   "accessNotes" | "active" | "description" | "name" | "specs"
 >
 
+export type MachineCreateValue = MachineUpdateValue & {
+  slug?: string
+}
+
 type DialogState = {
   mode: "create" | "edit"
   booking: Booking | null
@@ -48,7 +52,9 @@ type WorkspaceContextValue = {
   pendingBookingId: string | null
   invitePending: boolean
   userAccessPendingId: string | null
+  machineCreatePending: boolean
   machineUpdatePendingId: string | null
+  machineDeletePendingId: string | null
   workspaceError: string | null
   setSelectedMachineSlug: (slug: string) => void
   goToPreviousWeek: () => void
@@ -65,6 +71,8 @@ type WorkspaceContextValue = {
     value: MachineUpdateValue,
     options?: { onSuccess?: () => void },
   ) => void
+  createMachine: (value: MachineCreateValue, options?: { onSuccess?: () => void }) => void
+  deleteMachine: (machine: Machine, options?: { onSuccess?: () => void }) => void
   createRange: (range: CalendarRange) => void
   editBooking: (booking: Booking) => void
   moveBooking: (booking: Booking, range: CalendarRange) => void
@@ -260,6 +268,44 @@ export function AppWorkspace() {
     },
   })
 
+  const machineCreateMutation = useMutation({
+    mutationFn: ({ value, onSuccess }: { value: MachineCreateValue; onSuccess?: () => void }) =>
+      apiFetch<{ machine: Machine }>("/admin/machines", {
+        method: "POST",
+        body: JSON.stringify(value),
+      }).then(() => ({ onSuccess })),
+    onSuccess: ({ onSuccess }) => {
+      setWorkspaceError(null)
+      queryClient.invalidateQueries({ queryKey: ["machines"] })
+      onSuccess?.()
+    },
+    onError: (error: Error) => {
+      setWorkspaceError(error.message)
+    },
+  })
+
+  const machineDeleteMutation = useMutation({
+    mutationFn: ({ machine, onSuccess }: { machine: Machine; onSuccess?: () => void }) =>
+      apiFetch<{ machine: Machine }>(`/admin/machines/${machine.id}`, {
+        method: "DELETE",
+      }).then(() => ({ machine, onSuccess })),
+    onSuccess: ({ machine, onSuccess }) => {
+      const remainingMachines =
+        machinesQuery.data?.machines.filter((candidate) => candidate.id !== machine.id) ?? []
+
+      if (selectedMachineSlug === machine.slug && remainingMachines[0]) {
+        setSelectedMachineSlug(remainingMachines[0].slug)
+      }
+
+      setWorkspaceError(null)
+      queryClient.invalidateQueries({ queryKey: ["machines"] })
+      onSuccess?.()
+    },
+    onError: (error: Error) => {
+      setWorkspaceError(error.message)
+    },
+  })
+
   if (!hasStoredToken) {
     return <Navigate to="/login" replace />
   }
@@ -303,8 +349,12 @@ export function AppWorkspace() {
     pendingBookingId: updateBookingMutation.variables?.id ?? null,
     invitePending: inviteMutation.isPending,
     userAccessPendingId: userAccessMutation.isPending ? userAccessMutation.variables.id : null,
+    machineCreatePending: machineCreateMutation.isPending,
     machineUpdatePendingId: machineUpdateMutation.isPending
       ? machineUpdateMutation.variables.id
+      : null,
+    machineDeletePendingId: machineDeleteMutation.isPending
+      ? machineDeleteMutation.variables.machine.id
       : null,
     workspaceError,
     setSelectedMachineSlug,
@@ -337,6 +387,16 @@ export function AppWorkspace() {
       machineUpdateMutation.mutate({
         id: machine.id,
         value: machineUpdate,
+        onSuccess: options?.onSuccess,
+      }),
+    createMachine: (machineCreate, options) =>
+      machineCreateMutation.mutate({
+        value: machineCreate,
+        onSuccess: options?.onSuccess,
+      }),
+    deleteMachine: (machine, options) =>
+      machineDeleteMutation.mutate({
+        machine,
         onSuccess: options?.onSuccess,
       }),
     createRange: (range) => {
