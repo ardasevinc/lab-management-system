@@ -19,6 +19,7 @@ import {
   NotFoundError,
   requestLoginOtp,
   updateBooking,
+  updateUserAccess,
   verifyLoginOtp,
 } from "@lab/db"
 import type { Context, MiddlewareHandler } from "hono"
@@ -64,6 +65,13 @@ const inviteSchema = z.object({
   name: z.string().min(1),
   role: z.enum(["admin", "member"]).default("member"),
 })
+
+const userAccessPatchSchema = z
+  .object({
+    role: z.enum(["admin", "member"]).optional(),
+    active: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required")
 
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>
 
@@ -290,6 +298,25 @@ export function createApiApp({
   })
 
   app.get("/admin/users", async (c) => c.json({ users: await listUsers(db) }))
+
+  app.patch("/admin/users/:id", async (c) => {
+    const body = userAccessPatchSchema.safeParse(await c.req.json())
+
+    if (!body.success) {
+      return c.json({ error: "Invalid user update", issues: body.error.issues }, 400)
+    }
+
+    const currentUser = c.get("user")
+
+    if (c.req.param("id") === currentUser.id) {
+      throw new ForbiddenError("Admins cannot change their own access")
+    }
+
+    return handleApiResult(c, async () => {
+      const user = await updateUserAccess(db, c.req.param("id"), body.data)
+      return c.json({ user })
+    })
+  })
 
   app.post("/admin/invites", async (c) => {
     const body = inviteSchema.safeParse(await c.req.json())

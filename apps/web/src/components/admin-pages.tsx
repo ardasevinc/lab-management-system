@@ -1,5 +1,14 @@
 import { Navigate } from "@tanstack/react-router"
-import { CalendarDays, Clock3, type LucideIcon, MailPlus, MonitorCog, Wrench } from "lucide-react"
+import {
+  CalendarDays,
+  Clock3,
+  type LucideIcon,
+  MailPlus,
+  MonitorCog,
+  Power,
+  RotateCcw,
+  Wrench,
+} from "lucide-react"
 import { useWorkspace } from "@/components/app-workspace"
 import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import type { User } from "@/lib/api"
 import { formatDate, formatTime } from "@/lib/time"
 
 export function AdminOverviewPage() {
@@ -167,6 +177,8 @@ export function AdminUsersPage() {
     return <Navigate to="/schedule" replace />
   }
 
+  const activeUsers = workspace.users.filter((user) => user.active).length
+
   return (
     <AdminPageFrame title="Users" description="Invite researchers and review access.">
       <section className="rounded-lg border border-border bg-card">
@@ -223,7 +235,9 @@ export function AdminUsersPage() {
       <section className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
           <h2 className="font-medium text-sm">Members</h2>
-          <Badge variant="outline">{workspace.users.length}</Badge>
+          <Badge variant="outline">
+            {activeUsers}/{workspace.users.length} active
+          </Badge>
         </div>
         <div className="divide-y divide-border md:hidden">
           {workspace.users.map((user) => (
@@ -233,10 +247,20 @@ export function AdminUsersPage() {
                   <div className="truncate font-medium text-sm">{user.name}</div>
                   <div className="truncate text-muted-foreground text-xs">{user.email}</div>
                 </div>
-                <Badge variant="outline" className="capitalize">
-                  {user.role}
-                </Badge>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <Badge variant="outline" className="capitalize">
+                    {user.role}
+                  </Badge>
+                  <UserStatusBadge active={user.active} />
+                </div>
               </div>
+              <UserAccessButton
+                className="mt-3 w-full"
+                user={user}
+                currentUserId={workspace.user.id}
+                pending={workspace.userAccessPendingId === user.id}
+                onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
+              />
             </div>
           ))}
         </div>
@@ -246,6 +270,8 @@ export function AdminUsersPage() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead className="w-28">Role</TableHead>
+              <TableHead className="w-28">Status</TableHead>
+              <TableHead className="w-36 text-right">Access</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -258,12 +284,58 @@ export function AdminUsersPage() {
                     {user.role}
                   </Badge>
                 </TableCell>
+                <TableCell>
+                  <UserStatusBadge active={user.active} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <UserAccessButton
+                    user={user}
+                    currentUserId={workspace.user.id}
+                    pending={workspace.userAccessPendingId === user.id}
+                    onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </section>
     </AdminPageFrame>
+  )
+}
+
+function UserStatusBadge({ active }: { active: boolean }) {
+  return <Badge variant={active ? "secondary" : "outline"}>{active ? "active" : "disabled"}</Badge>
+}
+
+function UserAccessButton({
+  user,
+  currentUserId,
+  pending,
+  className,
+  onToggle,
+}: {
+  user: User
+  currentUserId: string
+  pending: boolean
+  className?: string
+  onToggle: () => void
+}) {
+  const isSelf = user.id === currentUserId
+  const Icon = user.active ? Power : RotateCcw
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className={className}
+      disabled={isSelf || pending}
+      onClick={onToggle}
+    >
+      <Icon data-icon="inline-start" aria-hidden="true" />
+      {pending ? "Saving" : user.active ? "Disable" : "Reactivate"}
+    </Button>
   )
 }
 

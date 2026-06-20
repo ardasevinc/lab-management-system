@@ -62,6 +62,7 @@ export async function verifyLoginOtp(db: Db, emailInput: string, code: string, n
       email,
       name: existingUser?.name ?? principal.name,
       role: existingUser?.role ?? principal.role,
+      active: existingUser?.active ?? true,
       createdAt: existingUser?.createdAt ?? now,
       updatedAt: now,
     }
@@ -117,7 +118,9 @@ export async function getSessionUser(db: Db, token: string | undefined, now = ne
     return null
   }
 
-  const user = await db.query.users.findFirst({ where: eq(users.id, session.userId) })
+  const user = await db.query.users.findFirst({
+    where: and(eq(users.id, session.userId), eq(users.active, true)),
+  })
   return user ? mapUser(user) : null
 }
 
@@ -132,6 +135,43 @@ export async function deleteSession(db: Db, token: string | undefined) {
 export async function listUsers(db: Db) {
   const rows = await db.select().from(users).orderBy(asc(users.name))
   return rows.map(mapUser)
+}
+
+export async function updateUserAccess(
+  db: Db,
+  id: string,
+  input: { role?: UserRole; active?: boolean },
+  now = new Date(),
+) {
+  const existingUser = await db.query.users.findFirst({ where: eq(users.id, id) })
+
+  if (!existingUser) {
+    throw new NotFoundError("User not found")
+  }
+
+  const active = input.active ?? existingUser.active
+  const role = input.role ?? existingUser.role
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({
+        active,
+        role,
+        updatedAt: now,
+      })
+      .where(eq(users.id, id))
+
+    if (!active) {
+      await tx.delete(sessions).where(eq(sessions.userId, id))
+    }
+  })
+
+  return {
+    ...mapUser(existingUser),
+    active,
+    role,
+  }
 }
 
 export async function createInvite(
@@ -164,7 +204,7 @@ export async function createInvite(
       },
     })
 
-  return { id: values.id, email, name: values.name, role: values.role }
+  return { id: values.id, email, name: values.name, role: values.role, active: true }
 }
 
 export function normalizeEmail(email: string) {
@@ -182,6 +222,10 @@ function hashSessionToken(token: string) {
 async function findInvitedPrincipal(db: PrincipalDb, email: string) {
   const user = await db.query.users.findFirst({ where: eq(users.email, email) })
   if (user) {
+    if (!user.active) {
+      return null
+    }
+
     return { name: user.name, role: user.role, inviteId: null }
   }
 

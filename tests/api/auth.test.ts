@@ -62,8 +62,74 @@ describe("auth and invites", () => {
       email: "new.member@miralab.tr",
       name: "New Member",
       role: "member",
+      active: true,
     })
     expect(await meResponse.json()).toEqual({ user })
+  })
+
+  it("lets admins deactivate and reactivate users", async () => {
+    const adminHeaders = await login("admin@miralab.tr")
+    const memberHeaders = await login("member@miralab.tr")
+
+    const deactivateResponse = await app.request("/admin/users/member-local", {
+      method: "PATCH",
+      headers: { ...adminHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    })
+    const deactivated = await deactivateResponse.json()
+    const meAfterDeactivate = await app.request("/auth/me", {
+      headers: memberHeaders,
+    })
+    const otpAfterDeactivate = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr" }),
+    })
+
+    const reactivateResponse = await app.request("/admin/users/member-local", {
+      method: "PATCH",
+      headers: { ...adminHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ active: true }),
+    })
+    const reactivated = await reactivateResponse.json()
+    const otpAfterReactivate = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr" }),
+    })
+
+    expect(deactivateResponse.status).toBe(200)
+    expect(deactivated.user).toEqual(
+      expect.objectContaining({
+        id: "member-local",
+        email: "member@miralab.tr",
+        active: false,
+      }),
+    )
+    expect(meAfterDeactivate.status).toBe(401)
+    expect(await meAfterDeactivate.json()).toEqual({ error: "Authentication required" })
+    expect(otpAfterDeactivate.status).toBe(404)
+    expect(await otpAfterDeactivate.json()).toEqual({ error: "Email is not invited" })
+    expect(reactivateResponse.status).toBe(200)
+    expect(reactivated.user).toEqual(
+      expect.objectContaining({
+        id: "member-local",
+        active: true,
+      }),
+    )
+    expect(otpAfterReactivate.status).toBe(200)
+  })
+
+  it("prevents admins from changing their own access", async () => {
+    const adminHeaders = await login("admin@miralab.tr")
+    const response = await app.request("/admin/users/admin-local", {
+      method: "PATCH",
+      headers: { ...adminHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: "Admins cannot change their own access" })
   })
 
   it("sets a secure domain session cookie in production", async () => {

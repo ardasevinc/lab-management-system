@@ -6,6 +6,7 @@ export function mapUser(row: typeof users.$inferSelect) {
     email: row.email,
     name: row.name,
     role: row.role,
+    active: row.active,
   }
 }
 

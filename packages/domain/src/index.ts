@@ -12,6 +12,16 @@ export const machineSchema = z.object({
 
 export type Machine = z.infer<typeof machineSchema>
 
+export const userSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  role: z.enum(["admin", "member"]),
+  active: z.boolean(),
+})
+
+export type User = z.infer<typeof userSchema>
+
 export const bookingSchema = z.object({
   id: z.string(),
   machineId: z.string(),

@@ -42,6 +42,7 @@ type WorkspaceContextValue = {
   dashboardStats: DashboardStats
   pendingBookingId: string | null
   invitePending: boolean
+  userAccessPendingId: string | null
   workspaceError: string | null
   setSelectedMachineSlug: (slug: string) => void
   goToPreviousWeek: () => void
@@ -52,6 +53,7 @@ type WorkspaceContextValue = {
   openNewBooking: () => void
   openMaintenanceBooking: () => void
   inviteUser: (form: FormData) => void
+  updateUserAccess: (user: User, value: { active?: boolean; role?: User["role"] }) => void
   createRange: (range: CalendarRange) => void
   editBooking: (booking: Booking) => void
   moveBooking: (booking: Booking, range: CalendarRange) => void
@@ -208,6 +210,21 @@ export function AppWorkspace() {
     },
   })
 
+  const userAccessMutation = useMutation({
+    mutationFn: ({ id, value }: { id: string; value: { active?: boolean; role?: User["role"] } }) =>
+      apiFetch<{ user: User }>(`/admin/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(value),
+      }),
+    onSuccess: () => {
+      setWorkspaceError(null)
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+    },
+    onError: (error: Error) => {
+      setWorkspaceError(error.message)
+    },
+  })
+
   if (!hasStoredToken) {
     return <Navigate to="/login" replace />
   }
@@ -250,6 +267,7 @@ export function AppWorkspace() {
     dashboardStats: getDashboardStats(bookings),
     pendingBookingId: updateBookingMutation.variables?.id ?? null,
     invitePending: inviteMutation.isPending,
+    userAccessPendingId: userAccessMutation.isPending ? userAccessMutation.variables.id : null,
     workspaceError,
     setSelectedMachineSlug,
     goToPreviousWeek: () => setVisibleWeekDate((date) => addWeeks(date, -1)),
@@ -275,6 +293,8 @@ export function AppWorkspace() {
       })
     },
     inviteUser: (form) => inviteMutation.mutate(form),
+    updateUserAccess: (targetUser, access) =>
+      userAccessMutation.mutate({ id: targetUser.id, value: access }),
     createRange: (range) => {
       setDialogError(null)
       setWorkspaceError(null)
