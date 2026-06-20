@@ -3,7 +3,15 @@ set -eu
 
 database_path="${BACKUP_DATABASE_PATH:-}"
 if [ -z "$database_path" ] && [ "${DATABASE_URL:-}" != "" ]; then
-  database_path="${DATABASE_URL#file:}"
+  case "$DATABASE_URL" in
+    file:*)
+      database_path="${DATABASE_URL#file:}"
+      ;;
+    *)
+      echo "DATABASE_URL must use file: for SQLite backups" >&2
+      exit 1
+      ;;
+  esac
 fi
 database_path="${database_path:-/app/data/lab.sqlite}"
 

@@ -30,6 +30,7 @@
     "test:db:machines": "vitest run tests/db/machines.test.ts",
     "test:e2e": "bun run build && playwright test",
     "test:scripts:backup-cron": "vitest run tests/scripts/backup-cron-entry.test.ts",
+    "test:scripts:sqlite-backup": "vitest run tests/scripts/sqlite-backup.test.ts",
     "test:web:booking-dialog": "vitest run tests/web/booking-dialog-defaults.test.ts",
     "test:web:calendar": "vitest run tests/web/calendar-geometry.test.ts",
     "test:web:schedule-defaults": "vitest run tests/web/schedule-defaults.test.ts",
