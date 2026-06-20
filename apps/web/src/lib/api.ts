@@ -106,8 +106,13 @@ export async function verifyOtp(email: string, code: string) {
 }
 
 export async function logout() {
-  await apiFetch<{ ok: true }>("/auth/logout", { method: "POST" })
-  setStoredToken(null)
+  try {
+    await apiFetch<{ ok: true }>("/auth/logout", { method: "POST" })
+  } catch {
+    // Local logout must not depend on the server being reachable.
+  } finally {
+    setStoredToken(null)
+  }
 }
 
 async function readErrorBody(response: Response): Promise<ApiErrorBody> {
