@@ -314,7 +314,7 @@ function MobileDayTimeline({
       </div>
 
       <div
-        className="grid grid-cols-[44px_minmax(0,1fr)] overflow-y-auto"
+        className="grid grid-cols-[44px_minmax(0,1fr)] overflow-y-auto pt-2 pb-1"
         style={{ maxHeight: "min(58vh, 680px)" }}
       >
         <div
