@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Navigate } from "@tanstack/react-router"
 import { addWeeks, isSameDay } from "date-fns"
-import { createContext, useContext, useMemo, useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { AppShell, WorkspaceBootstrap } from "@/components/app-shell"
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
 import {
@@ -15,6 +15,7 @@ import {
   type User,
 } from "@/lib/api"
 import type { CalendarRange } from "@/lib/calendar-geometry"
+import { resolveSelectedMachine, resolveSelectedMachineSlug } from "@/lib/machine-selection"
 import { getWeekRange } from "@/lib/week-range"
 
 export type DashboardStats = {
@@ -115,10 +116,14 @@ export function AppWorkspace() {
     enabled: Boolean(meQuery.data),
   })
 
+  const machines = machinesQuery.data?.machines ?? []
   const selectedMachine = useMemo(
-    () =>
-      machinesQuery.data?.machines.find((machine) => machine.slug === selectedMachineSlug) ?? null,
-    [machinesQuery.data?.machines, selectedMachineSlug],
+    () => resolveSelectedMachine(machines, selectedMachineSlug),
+    [machines, selectedMachineSlug],
+  )
+  const resolvedSelectedMachineSlug = useMemo(
+    () => resolveSelectedMachineSlug(machines, selectedMachineSlug),
+    [machines, selectedMachineSlug],
   )
 
   const weekRange = useMemo(() => getWeekRange(visibleWeekDate), [visibleWeekDate])
@@ -145,6 +150,12 @@ export function AppWorkspace() {
       apiFetch<{ events: AuditEvent[] }>(`/bookings/${dialogState?.booking?.id}/audit`),
     enabled: meQuery.data?.user.role === "admin" && Boolean(dialogState?.booking),
   })
+
+  useEffect(() => {
+    if (resolvedSelectedMachineSlug !== selectedMachineSlug) {
+      setSelectedMachineSlug(resolvedSelectedMachineSlug)
+    }
+  }, [resolvedSelectedMachineSlug, selectedMachineSlug])
 
   const invalidateBookings = () => {
     queryClient.invalidateQueries({ queryKey: ["bookings"] })
@@ -341,9 +352,9 @@ export function AppWorkspace() {
 
   const value: WorkspaceContextValue = {
     user,
-    machines: machinesQuery.data?.machines ?? [],
+    machines,
     selectedMachine,
-    selectedMachineSlug,
+    selectedMachineSlug: resolvedSelectedMachineSlug,
     weekRange,
     bookings,
     upcomingBookings: getUpcomingBookings(bookings),
