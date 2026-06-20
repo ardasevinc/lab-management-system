@@ -66,6 +66,11 @@ export function AdminOverviewPage() {
   const weekBookings = [...workspace.bookings].sort((left, right) =>
     left.startsAt.localeCompare(right.startsAt),
   )
+  const secondarySpecs = selectedMachine?.specs.slice(1).join(", ")
+  const machineAvailability = selectedMachine?.active ? "Active for reservations" : "Inactive"
+  const accessDetail = selectedMachine?.accessNotes
+    ? "Visible to admins only"
+    : "No private access notes saved"
 
   return (
     <AdminPageFrame
@@ -165,9 +170,7 @@ export function AdminOverviewPage() {
             <Empty className="items-start justify-start p-4 text-left">
               <EmptyHeader className="items-start text-left">
                 <EmptyTitle>No reservations this week</EmptyTitle>
-                <EmptyDescription>
-                  No booking or maintenance block exists for this machine in the selected week.
-                </EmptyDescription>
+                <EmptyDescription>This machine is free for the selected week.</EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
@@ -184,7 +187,7 @@ export function AdminOverviewPage() {
               detail={
                 nextBooking
                   ? `${formatDate(nextBooking.startsAt)} · ${formatTime(nextBooking.startsAt)} - ${formatTime(nextBooking.endsAt)}`
-                  : "No booking or maintenance block is scheduled."
+                  : "The upcoming slot is open."
               }
               badge={nextBooking?.type ?? "open"}
               onClick={nextBooking ? () => workspace.editBooking(nextBooking) : undefined}
@@ -192,15 +195,12 @@ export function AdminOverviewPage() {
             <OverviewDetailRow
               label="Specs"
               value={selectedMachine?.specs[0] ?? "No primary spec"}
-              detail={
-                selectedMachine?.specs.slice(1).join(", ") ||
-                "Machine metadata can be edited from Admin > Machines."
-              }
+              detail={secondarySpecs || machineAvailability}
             />
             <OverviewDetailRow
               label="Access"
-              value={selectedMachine?.accessNotes || "Shared by admins"}
-              detail="Keep access notes off public booking details."
+              value={selectedMachine?.accessNotes || "Not configured"}
+              detail={accessDetail}
             />
           </div>
         </div>
