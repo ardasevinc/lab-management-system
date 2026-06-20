@@ -104,7 +104,7 @@ export function SchedulePage() {
           <Metric label="Week" value={String(dashboardStats.weekBookings)} />
           <Metric label="Today" value={String(dashboardStats.todayBookings)} />
           <Metric label="Booked" value={`${dashboardStats.weekHours}h`} />
-          <Metric label="Maint." value={String(dashboardStats.maintenanceCount)} />
+          <Metric label="Service" value={String(dashboardStats.maintenanceCount)} />
         </div>
       </div>
 
@@ -356,13 +356,6 @@ function MobileDayTimeline({
               style={{ top: (hour - dayStartHour) * hourHeightPx }}
             />
           ))}
-
-          {!packedBookings.length ? (
-            <div className="pointer-events-none absolute inset-x-3 top-4 rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-muted-foreground text-sm">
-              Tap a time to book it.
-            </div>
-          ) : null}
-
           {packedBookings.map((booking) => {
             const style = bookingStyle(booking)
             return (

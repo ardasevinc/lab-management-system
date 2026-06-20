@@ -762,9 +762,6 @@ export function AdminMaintenancePage() {
           <Empty className="items-start justify-start p-4 text-left">
             <EmptyHeader className="items-start text-left">
               <EmptyTitle>No maintenance blocks</EmptyTitle>
-              <EmptyDescription>
-                Use maintenance blocks when admins need to reserve the machine.
-              </EmptyDescription>
             </EmptyHeader>
           </Empty>
         )}
