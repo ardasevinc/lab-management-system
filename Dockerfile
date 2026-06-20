@@ -16,12 +16,16 @@ RUN apk add --no-cache sqlite
 COPY . .
 
 RUN bun run build
+RUN mkdir -p /app/data/backups
 
 ENV NODE_ENV=production
 ENV PORT=3001
 ENV SERVE_WEB=1
 ENV WEB_DIST_DIR=/app/apps/web/dist
 ENV DATABASE_URL=file:/app/data/lab.sqlite
+ENV BACKUP_DATABASE_PATH=/app/data/lab.sqlite
+ENV BACKUP_DIR=/app/data/backups
+ENV BACKUP_RETENTION_DAYS=30
 
 EXPOSE 3001
 
