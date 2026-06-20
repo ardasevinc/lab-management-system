@@ -1,0 +1,88 @@
+import { isAbsolute } from "node:path"
+import {
+  apiRuntimeConfigFromEnv,
+  databaseUrlFromEnv,
+  notificationWorkerConfigFromEnv,
+} from "../apps/api/src/env"
+import { createMailerFromEnv } from "../apps/api/src/mailer"
+
+const envPath = Bun.argv[2] ?? "deploy/caprover.env.example"
+const env = parseEnvFile(await Bun.file(envPath).text())
+
+apiRuntimeConfigFromEnv(env)
+databaseUrlFromEnv(env, "")
+notificationWorkerConfigFromEnv(env)
+createMailerFromEnv(env)
+
+assertEnv("APP_ENV", "production")
+assertEnv("NODE_ENV", "production")
+assertEnv("SERVE_WEB", "1")
+assertEnv("DEV_SHOW_OTP", "0")
+assertEnv("EMAIL_PROVIDER", "ses")
+assertEnv("REMINDERS_ENABLED", "1")
+
+assertAbsolutePathEnv("WEB_DIST_DIR")
+assertAbsolutePathEnv("BACKUP_DATABASE_PATH")
+assertAbsolutePathEnv("BACKUP_DIR")
+assertSameSqlitePath()
+assertPlaceholderSecret("AWS_ACCESS_KEY_ID")
+assertPlaceholderSecret("AWS_SECRET_ACCESS_KEY")
+
+console.log(`verified CapRover env template: ${envPath}`)
+
+function parseEnvFile(contents: string) {
+  const parsed: Record<string, string> = {}
+
+  for (const [index, rawLine] of contents.split(/\r?\n/).entries()) {
+    const line = rawLine.trim()
+    if (!line || line.startsWith("#")) {
+      continue
+    }
+
+    const equalsIndex = line.indexOf("=")
+    if (equalsIndex <= 0) {
+      throw new Error(`Invalid env line ${index + 1}: ${rawLine}`)
+    }
+
+    const key = line.slice(0, equalsIndex).trim()
+    const value = line.slice(equalsIndex + 1).trim()
+    if (!/^[A-Z0-9_]+$/.test(key)) {
+      throw new Error(`Invalid env key on line ${index + 1}: ${key}`)
+    }
+
+    parsed[key] = value
+  }
+
+  return parsed
+}
+
+function assertEnv(key: string, expected: string) {
+  if (env[key] !== expected) {
+    throw new Error(`${key} must be ${expected}`)
+  }
+}
+
+function assertAbsolutePathEnv(key: string) {
+  const value = env[key]
+  if (!value || !isAbsolute(value)) {
+    throw new Error(`${key} must be an absolute path`)
+  }
+}
+
+function assertSameSqlitePath() {
+  const databaseUrl = env.DATABASE_URL
+  const backupDatabasePath = env.BACKUP_DATABASE_PATH
+  if (!databaseUrl?.startsWith("file:")) {
+    throw new Error("DATABASE_URL must use file: SQLite storage")
+  }
+
+  if (databaseUrl.slice("file:".length) !== backupDatabasePath) {
+    throw new Error("BACKUP_DATABASE_PATH must match DATABASE_URL")
+  }
+}
+
+function assertPlaceholderSecret(key: string) {
+  if (env[key] !== "<set-in-caprover>") {
+    throw new Error(`${key} must stay as <set-in-caprover> in deploy/caprover.env.example`)
+  }
+}
