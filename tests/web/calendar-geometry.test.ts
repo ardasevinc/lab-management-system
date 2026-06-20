@@ -150,6 +150,62 @@ describe("calendar geometry", () => {
     ])
   })
 
+  it("keeps adjacent bookings full width", () => {
+    const packed = packOverlaps([
+      booking("a", iso(9 * 60), iso(10 * 60)),
+      booking("b", iso(10 * 60), iso(11 * 60)),
+      booking("c", iso(11 * 60), iso(12 * 60)),
+    ])
+
+    expect(
+      packed.map((item) => ({ id: item.id, column: item.column, columnCount: item.columnCount })),
+    ).toEqual([
+      { id: "a", column: 0, columnCount: 1 },
+      { id: "b", column: 0, columnCount: 1 },
+      { id: "c", column: 0, columnCount: 1 },
+    ])
+  })
+
+  it("does not leak packed widths across disjoint overlap clusters", () => {
+    const packed = packOverlaps([
+      booking("morning-a", iso(9 * 60), iso(10 * 60)),
+      booking("morning-b", iso(9 * 60 + 30), iso(10 * 60 + 30)),
+      booking("midday", iso(10 * 60 + 30), iso(11 * 60 + 30)),
+      booking("afternoon-a", iso(12 * 60), iso(13 * 60)),
+      booking("afternoon-b", iso(12 * 60 + 30), iso(13 * 60 + 30)),
+      booking("afternoon-c", iso(12 * 60 + 45), iso(13 * 60 + 15)),
+    ])
+
+    expect(
+      packed.map((item) => ({ id: item.id, column: item.column, columnCount: item.columnCount })),
+    ).toEqual([
+      { id: "morning-a", column: 0, columnCount: 2 },
+      { id: "morning-b", column: 1, columnCount: 2 },
+      { id: "midday", column: 0, columnCount: 1 },
+      { id: "afternoon-a", column: 0, columnCount: 3 },
+      { id: "afternoon-b", column: 1, columnCount: 3 },
+      { id: "afternoon-c", column: 2, columnCount: 3 },
+    ])
+  })
+
+  it("keeps long bridge bookings as wide as the densest active cluster they overlap", () => {
+    const packed = packOverlaps([
+      booking("bridge", iso(9 * 60), iso(13 * 60)),
+      booking("short-a", iso(10 * 60), iso(11 * 60)),
+      booking("short-b", iso(10 * 60 + 30), iso(11 * 60 + 30)),
+      booking("tail", iso(12 * 60), iso(13 * 60)),
+    ])
+
+    expect(
+      packed.map((item) => ({ id: item.id, column: item.column, columnCount: item.columnCount })),
+    ).toEqual([
+      { id: "bridge", column: 0, columnCount: 3 },
+      { id: "short-a", column: 1, columnCount: 3 },
+      { id: "short-b", column: 2, columnCount: 3 },
+      { id: "tail", column: 1, columnCount: 2 },
+    ])
+  })
+
   it("creates slot dates in the lab timezone", () => {
     expect(dateAtMinutes(day, 10 * 60).toISOString()).toBe("2026-05-11T07:00:00.000Z")
   })
