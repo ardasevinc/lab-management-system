@@ -18,6 +18,7 @@
     "full-gate": "bun run check && bun run build",
     "lint": "biome check .",
     "format": "biome check --write .",
+    "playwright": "playwright",
     "test": "vitest run",
     "test:api:auth": "vitest run tests/api/auth.test.ts",
     "test:api:bookings": "vitest run tests/api/bookings.test.ts",
