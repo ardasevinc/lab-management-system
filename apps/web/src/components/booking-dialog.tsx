@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import type { AuditEvent, Booking, Machine } from "@/lib/api"
-import { fromLocalDateTimeParts, toLocalDateValue, toLocalTimeValue } from "@/lib/time"
+import { formatDateTime, fromLabDateTimeParts, toLabDateValue, toLabTimeValue } from "@/lib/time"
 
 export type BookingDialogValue = {
   title: string
@@ -93,8 +93,8 @@ export function BookingDialog({
               title: String(form.get("title") ?? ""),
               notes: String(form.get("notes") ?? ""),
               type: String(form.get("type") ?? "normal") as "normal" | "maintenance",
-              startsAt: fromLocalDateTimeParts(startsDate, startsTime),
-              endsAt: fromLocalDateTimeParts(endsDate, endsTime),
+              startsAt: fromLabDateTimeParts(startsDate, startsTime),
+              endsAt: fromLabDateTimeParts(endsDate, endsTime),
               reason: String(form.get("reason") ?? ""),
             })
           }}
@@ -170,7 +170,7 @@ export function BookingDialog({
                 {auditEvents.map((event) => (
                   <div key={event.id} className="text-muted-foreground text-xs">
                     <span className="font-medium text-foreground">{event.eventType}</span> by{" "}
-                    {event.actorUserId} at {new Date(event.createdAt).toLocaleString()}
+                    {event.actorUserId} at {formatDateTime(event.createdAt)}
                     {event.reason ? <span> ({event.reason})</span> : null}
                   </div>
                 ))}
@@ -245,7 +245,7 @@ function DateTimeField({
               selected={selectedDate}
               onSelect={(date) => {
                 if (date) {
-                  onDateChange(toLocalDateValue(date))
+                  onDateChange(toLabDateValue(date))
                   setPickerOpen(false)
                 }
               }}
@@ -280,9 +280,9 @@ function dialogDefaults(
     title: booking?.title ?? "",
     notes: booking?.notes ?? "",
     type: booking?.type ?? "normal",
-    startsDate: toLocalDateValue(booking?.startsAt ?? range?.startsAt ?? now),
-    startsTime: toLocalTimeValue(booking?.startsAt ?? range?.startsAt ?? now),
-    endsDate: toLocalDateValue(booking?.endsAt ?? range?.endsAt ?? later),
-    endsTime: toLocalTimeValue(booking?.endsAt ?? range?.endsAt ?? later),
+    startsDate: toLabDateValue(booking?.startsAt ?? range?.startsAt ?? now),
+    startsTime: toLabTimeValue(booking?.startsAt ?? range?.startsAt ?? now),
+    endsDate: toLabDateValue(booking?.endsAt ?? range?.endsAt ?? later),
+    endsTime: toLabTimeValue(booking?.endsAt ?? range?.endsAt ?? later),
   }
 }
