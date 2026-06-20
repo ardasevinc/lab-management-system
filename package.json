@@ -29,6 +29,7 @@
     "test:api:health": "vitest run tests/api/health.test.ts",
     "test:api:mailer": "vitest run tests/api/mailer.test.ts",
     "test:api:notifications": "vitest run tests/api/notifications.test.ts",
+    "test:api:web-fallback": "vitest run tests/api/web-fallback.test.ts",
     "test:db:bookings": "vitest run tests/db/bookings.test.ts",
     "test:db:machines": "vitest run tests/db/machines.test.ts",
     "test:e2e": "bun run build && playwright test",

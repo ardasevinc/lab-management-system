@@ -115,6 +115,15 @@ export function createApiApp({
 
   app.get("/config/public", (c) => c.json(labConfig))
 
+  if (webMiddleware) {
+    app.get("/", webMiddleware)
+    app.get("/login", webMiddleware)
+    app.get("/schedule", webMiddleware)
+    app.get("/machines", htmlNavigationOnly(webMiddleware))
+    app.get("/admin", webMiddleware)
+    app.get("/admin/*", htmlNavigationOnly(webMiddleware))
+  }
+
   app.post("/auth/request-otp", async (c) => {
     const body = loginRequestSchema.safeParse(await c.req.json())
 
@@ -289,13 +298,37 @@ export function createApiApp({
     return c.json({ invite }, 201)
   })
 
-  if (assetMiddleware && webMiddleware) {
+  if (assetMiddleware) {
     app.get("/assets/*", assetMiddleware)
-    app.get("/", webMiddleware)
-    app.get("*", webMiddleware)
+    for (const path of publicAssetPaths(labConfig.logoPath, labConfig.faviconPath)) {
+      app.get(path, assetMiddleware)
+    }
+  }
+
+  if (webMiddleware) {
+    app.get("*", htmlNavigationOnly(webMiddleware))
   }
 
   return app
+}
+
+function htmlNavigationOnly(webMiddleware: MiddlewareHandler): MiddlewareHandler {
+  return async (c, next) => {
+    if (!acceptsHtml(c)) {
+      await next()
+      return
+    }
+
+    return webMiddleware(c, next)
+  }
+}
+
+function acceptsHtml(c: Context) {
+  return c.req.header("accept")?.includes("text/html") ?? false
+}
+
+function publicAssetPaths(...paths: string[]) {
+  return paths.filter((path) => path.startsWith("/") && !path.startsWith("/assets/"))
 }
 
 function requireAuth(db: Db): MiddlewareHandler<{ Variables: { user: CurrentUser } }> {

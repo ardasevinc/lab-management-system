@@ -1,3 +1,4 @@
+import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "@lab/db"
 import { serveStatic } from "hono/bun"
@@ -32,7 +33,19 @@ const app = createApiApp({
         },
       })
     : undefined,
-  webMiddleware: serveWeb ? serveStatic({ root: webDistDir, path: "index.html" }) : undefined,
+  webMiddleware: serveWeb
+    ? async (c) => {
+        const indexFile = Bun.file(join(webDistDir, "index.html"))
+
+        if (!(await indexFile.exists())) {
+          return c.text("Web app is not built", 500)
+        }
+
+        c.header("Cache-Control", "no-store")
+        c.header("Content-Type", "text/html; charset=utf-8")
+        return c.body(await indexFile.text())
+      }
+    : undefined,
 })
 
 if (notificationWorkerConfig.enabled) {
