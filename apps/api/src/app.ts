@@ -105,13 +105,7 @@ export function createApiApp({
     }),
   )
 
-  app.get("/health", (c) =>
-    c.json({
-      ok: true,
-      service: "lab-api",
-      lab: labConfig.shortName,
-    }),
-  )
+  app.get("/health", (c) => healthResponse(c, db))
 
   app.get("/config/public", (c) => c.json(labConfig))
 
@@ -331,6 +325,33 @@ function requireAuth(db: Db): MiddlewareHandler<{ Variables: { user: CurrentUser
 
     c.set("user", user)
     await next()
+  }
+}
+
+async function healthResponse(c: Context, db: Db) {
+  try {
+    const machines = await listMachines(db)
+    return c.json({
+      ok: true,
+      service: "lab-api",
+      lab: labConfig.shortName,
+      checks: {
+        database: "ok",
+        machines: machines.length,
+      },
+    })
+  } catch {
+    return c.json(
+      {
+        ok: false,
+        service: "lab-api",
+        lab: labConfig.shortName,
+        checks: {
+          database: "unhealthy",
+        },
+      },
+      503,
+    )
   }
 }
 
