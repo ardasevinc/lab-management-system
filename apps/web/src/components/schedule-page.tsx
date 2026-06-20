@@ -1,5 +1,5 @@
-import { addDays, format, isSameDay, startOfWeek } from "date-fns"
-import { CalendarDays, Clock3, MonitorCog } from "lucide-react"
+import { addDays, format, isSameDay, isSameWeek, startOfWeek } from "date-fns"
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MonitorCog } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useWorkspace } from "@/components/app-workspace"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,9 @@ export function SchedulePage() {
     weekRange,
     createRange,
     editBooking,
+    goToCurrentWeek,
+    goToNextWeek,
+    goToPreviousWeek,
     moveBooking,
     openNewBooking,
     resizeBooking,
@@ -42,6 +45,21 @@ export function SchedulePage() {
     [bookings, selectedDay],
   )
   const weekDisplayEnd = mobileDays.at(-1) ?? new Date(weekRange.end)
+
+  useEffect(() => {
+    const firstVisibleDay = mobileDays[0]
+    if (!firstVisibleDay) {
+      return
+    }
+
+    const selectedDayIsVisible = mobileDays.some((day) => isSameDay(day, selectedDay))
+
+    if (!selectedDayIsVisible) {
+      setSelectedDay(
+        isSameWeek(new Date(), firstVisibleDay, { weekStartsOn: 1 }) ? new Date() : firstVisibleDay,
+      )
+    }
+  }, [mobileDays, selectedDay])
 
   return (
     <main className="min-w-0 p-3 sm:p-4">
@@ -67,6 +85,12 @@ export function SchedulePage() {
               </span>
             ) : null}
           </div>
+          <WeekNavigation
+            className="mt-3 lg:hidden"
+            onPrevious={goToPreviousWeek}
+            onToday={goToCurrentWeek}
+            onNext={goToNextWeek}
+          />
         </div>
 
         <div className="grid grid-cols-4 gap-1.5 sm:gap-2 xl:w-[520px]">
@@ -116,9 +140,11 @@ export function SchedulePage() {
             <CalendarDays className="text-primary" aria-hidden="true" />
             <span className="truncate font-medium text-sm">Week board</span>
           </div>
-          <Button type="button" variant="outline" size="sm">
-            This week
-          </Button>
+          <WeekNavigation
+            onPrevious={goToPreviousWeek}
+            onToday={goToCurrentWeek}
+            onNext={goToNextWeek}
+          />
         </div>
         <div className="calendar-frame">
           <WeekCalendar
@@ -133,6 +159,38 @@ export function SchedulePage() {
         </div>
       </section>
     </main>
+  )
+}
+
+function WeekNavigation({
+  className,
+  onPrevious,
+  onToday,
+  onNext,
+}: {
+  className?: string
+  onPrevious: () => void
+  onToday: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className={["flex items-center gap-1.5", className].filter(Boolean).join(" ")}>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Previous week"
+        onClick={onPrevious}
+      >
+        <ChevronLeft aria-hidden="true" />
+      </Button>
+      <Button type="button" variant="outline" size="sm" onClick={onToday}>
+        Today
+      </Button>
+      <Button type="button" variant="outline" size="icon" aria-label="Next week" onClick={onNext}>
+        <ChevronRight aria-hidden="true" />
+      </Button>
+    </div>
   )
 }
 

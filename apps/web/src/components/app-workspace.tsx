@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Navigate } from "@tanstack/react-router"
-import { addDays, isSameDay, startOfWeek } from "date-fns"
+import { addWeeks, isSameDay } from "date-fns"
 import { createContext, useContext, useMemo, useState } from "react"
 import { AppShell, WorkspaceBootstrap } from "@/components/app-shell"
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
@@ -15,6 +15,7 @@ import {
   type User,
 } from "@/lib/api"
 import type { CalendarRange } from "@/lib/calendar-geometry"
+import { getWeekRange } from "@/lib/week-range"
 
 export type DashboardStats = {
   maintenanceCount: number
@@ -43,6 +44,9 @@ type WorkspaceContextValue = {
   invitePending: boolean
   workspaceError: string | null
   setSelectedMachineSlug: (slug: string) => void
+  goToPreviousWeek: () => void
+  goToNextWeek: () => void
+  goToCurrentWeek: () => void
   clearWorkspaceError: () => void
   openNewBooking: () => void
   openMaintenanceBooking: () => void
@@ -69,6 +73,7 @@ export function AppWorkspace() {
   const queryClient = useQueryClient()
   const [authVersion, setAuthVersion] = useState(0)
   const [selectedMachineSlug, setSelectedMachineSlug] = useState("tohum")
+  const [visibleWeekDate, setVisibleWeekDate] = useState(() => new Date())
   const [dialogState, setDialogState] = useState<DialogState>(null)
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [workspaceError, setWorkspaceError] = useState<string | null>(null)
@@ -93,7 +98,7 @@ export function AppWorkspace() {
     [machinesQuery.data?.machines, selectedMachineSlug],
   )
 
-  const [weekRange] = useState(() => getWeekRange(new Date()))
+  const weekRange = useMemo(() => getWeekRange(visibleWeekDate), [visibleWeekDate])
   const bookingsQuery = useQuery({
     queryKey: ["bookings", selectedMachine?.slug, weekRange.start, weekRange.end],
     queryFn: () =>
@@ -246,6 +251,9 @@ export function AppWorkspace() {
     invitePending: inviteMutation.isPending,
     workspaceError,
     setSelectedMachineSlug,
+    goToPreviousWeek: () => setVisibleWeekDate((date) => addWeeks(date, -1)),
+    goToNextWeek: () => setVisibleWeekDate((date) => addWeeks(date, 1)),
+    goToCurrentWeek: () => setVisibleWeekDate(new Date()),
     clearWorkspaceError: () => setWorkspaceError(null),
     openNewBooking: () => {
       setDialogError(null)
@@ -353,14 +361,6 @@ function bookingToDialogValue(
     endsAt: range.endsAt,
     reason: "",
   }
-}
-
-function getWeekRange(date: Date) {
-  const start = startOfWeek(date, { weekStartsOn: 1 })
-  start.setHours(0, 0, 0, 0)
-  const end = addDays(start, 7)
-
-  return { start: start.toISOString(), end: end.toISOString() }
 }
 
 function getDashboardStats(bookings: Booking[]) {
