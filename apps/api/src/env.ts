@@ -1,3 +1,5 @@
+import { isAbsolute } from "node:path"
+
 export type ApiRuntimeConfig = {
   appEnv: "development" | "production" | "test"
   publicAppUrl: string
@@ -12,6 +14,21 @@ export type NotificationWorkerConfig = {
   intervalSeconds: number
   startReminderMinutes: number
   endingReminderMinutes: number
+}
+
+export function databaseUrlFromEnv(
+  env: Record<string, string | undefined>,
+  defaultDatabaseUrl: string,
+) {
+  const appEnvironment = appEnv(env.APP_ENV ?? env.NODE_ENV)
+  const databaseUrl = env.DATABASE_URL ?? defaultDatabaseUrl
+
+  assertValidDatabaseUrl(databaseUrl, {
+    appEnv: appEnvironment,
+    explicitDatabaseUrl: Boolean(env.DATABASE_URL),
+  })
+
+  return databaseUrl
 }
 
 export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig {
@@ -81,6 +98,32 @@ function assertValidRuntimeConfig(config: ApiRuntimeConfig) {
     if (!origin.startsWith("https://")) {
       throw new Error("CORS_ORIGINS must be HTTPS in production")
     }
+  }
+}
+
+function assertValidDatabaseUrl(
+  databaseUrl: string,
+  input: { appEnv: ApiRuntimeConfig["appEnv"]; explicitDatabaseUrl: boolean },
+) {
+  if (input.appEnv !== "production") {
+    return
+  }
+
+  if (!input.explicitDatabaseUrl) {
+    throw new Error("DATABASE_URL is required in production")
+  }
+
+  if (!databaseUrl.startsWith("file:")) {
+    throw new Error("DATABASE_URL must use file: SQLite storage in production")
+  }
+
+  if (databaseUrl.startsWith("file::memory:")) {
+    throw new Error("DATABASE_URL must not use in-memory SQLite in production")
+  }
+
+  const databasePath = databaseUrl.replace(/^file:/, "")
+  if (!isAbsolute(databasePath)) {
+    throw new Error("DATABASE_URL must use an absolute SQLite path in production")
   }
 }
 

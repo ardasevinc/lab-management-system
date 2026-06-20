@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { apiRuntimeConfigFromEnv, notificationWorkerConfigFromEnv } from "../../apps/api/src/env"
+import {
+  apiRuntimeConfigFromEnv,
+  databaseUrlFromEnv,
+  notificationWorkerConfigFromEnv,
+} from "../../apps/api/src/env"
 
 describe("api runtime env", () => {
   it("accepts local development defaults", () => {
@@ -44,6 +48,32 @@ describe("api runtime env", () => {
         SESSION_COOKIE_SECURE: "0",
       }),
     ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
+  })
+
+  it("requires an explicit absolute SQLite database path in production", () => {
+    const productionEnv = {
+      APP_ENV: "production",
+    }
+
+    expect(() => databaseUrlFromEnv(productionEnv, "file:/app/default/lab.sqlite")).toThrow(
+      "DATABASE_URL is required in production",
+    )
+
+    expect(() =>
+      databaseUrlFromEnv({ ...productionEnv, DATABASE_URL: "file:./data/lab.sqlite" }, ""),
+    ).toThrow("DATABASE_URL must use an absolute SQLite path in production")
+
+    expect(() =>
+      databaseUrlFromEnv({ ...productionEnv, DATABASE_URL: "file::memory:" }, ""),
+    ).toThrow("DATABASE_URL must not use in-memory SQLite in production")
+
+    expect(() =>
+      databaseUrlFromEnv({ ...productionEnv, DATABASE_URL: "libsql://example.turso.io" }, ""),
+    ).toThrow("DATABASE_URL must use file: SQLite storage in production")
+
+    expect(
+      databaseUrlFromEnv({ ...productionEnv, DATABASE_URL: "file:/app/data/lab.sqlite" }, ""),
+    ).toBe("file:/app/data/lab.sqlite")
   })
 
   it("parses disabled notification worker defaults", () => {

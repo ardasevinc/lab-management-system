@@ -2,12 +2,13 @@ import { fileURLToPath } from "node:url"
 import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "@lab/db"
 import { serveStatic } from "hono/bun"
 import { createApiApp } from "./app"
-import { apiRuntimeConfigFromEnv, notificationWorkerConfigFromEnv } from "./env"
+import { apiRuntimeConfigFromEnv, databaseUrlFromEnv, notificationWorkerConfigFromEnv } from "./env"
 import { createMailerFromEnv } from "./mailer"
 import { startNotificationWorker } from "./notifications"
 
 const defaultDatabaseUrl = `file:${fileURLToPath(new URL("../data/lab.sqlite", import.meta.url))}`
-const databaseUrl = Bun.env.DATABASE_URL ?? defaultDatabaseUrl
+const runtimeConfig = apiRuntimeConfigFromEnv(Bun.env)
+const databaseUrl = databaseUrlFromEnv(Bun.env, defaultDatabaseUrl)
 const client = createDatabaseClient(databaseUrl)
 const db = createDbFromClient(client)
 
@@ -21,7 +22,7 @@ const mailer = createMailerFromEnv(Bun.env)
 const notificationWorkerConfig = notificationWorkerConfigFromEnv(Bun.env)
 const app = createApiApp({
   db,
-  config: apiRuntimeConfigFromEnv(Bun.env),
+  config: runtimeConfig,
   mailer,
   assetMiddleware: serveWeb
     ? serveStatic({
