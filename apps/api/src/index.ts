@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url"
 import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "@lab/db"
 import { serveStatic } from "hono/bun"
 import { createApiApp } from "./app"
-import { apiRuntimeConfigFromEnv } from "./env"
+import { apiRuntimeConfigFromEnv, notificationWorkerConfigFromEnv } from "./env"
 import { createMailerFromEnv } from "./mailer"
 import { startNotificationWorker } from "./notifications"
 
@@ -18,6 +18,7 @@ const port = Number(Bun.env.PORT ?? 3001)
 const serveWeb = Bun.env.SERVE_WEB === "1"
 const webDistDir = Bun.env.WEB_DIST_DIR ?? fileURLToPath(new URL("../../web/dist", import.meta.url))
 const mailer = createMailerFromEnv(Bun.env)
+const notificationWorkerConfig = notificationWorkerConfigFromEnv(Bun.env)
 const app = createApiApp({
   db,
   config: apiRuntimeConfigFromEnv(Bun.env),
@@ -33,11 +34,11 @@ const app = createApiApp({
   webMiddleware: serveWeb ? serveStatic({ root: webDistDir, path: "index.html" }) : undefined,
 })
 
-if (Bun.env.REMINDERS_ENABLED === "1") {
+if (notificationWorkerConfig.enabled) {
   startNotificationWorker(db, mailer, {
-    intervalSeconds: Number(Bun.env.NOTIFICATION_WORKER_INTERVAL_SECONDS ?? 60),
-    startReminderMinutes: Number(Bun.env.BOOKING_START_REMINDER_MINUTES ?? 15),
-    endingReminderMinutes: Number(Bun.env.BOOKING_ENDING_REMINDER_MINUTES ?? 15),
+    intervalSeconds: notificationWorkerConfig.intervalSeconds,
+    startReminderMinutes: notificationWorkerConfig.startReminderMinutes,
+    endingReminderMinutes: notificationWorkerConfig.endingReminderMinutes,
   })
 }
 

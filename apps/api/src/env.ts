@@ -7,6 +7,13 @@ export type ApiRuntimeConfig = {
   devShowOtp: boolean
 }
 
+export type NotificationWorkerConfig = {
+  enabled: boolean
+  intervalSeconds: number
+  startReminderMinutes: number
+  endingReminderMinutes: number
+}
+
 export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig {
   const config = {
     appEnv: appEnv(env.APP_ENV),
@@ -19,6 +26,34 @@ export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>)
 
   assertValidRuntimeConfig(config)
   return config
+}
+
+export function notificationWorkerConfigFromEnv(
+  env: Record<string, string | undefined>,
+): NotificationWorkerConfig {
+  const enabled = env.REMINDERS_ENABLED === "1"
+
+  return {
+    enabled,
+    intervalSeconds: positiveIntegerFromEnv(
+      env.NOTIFICATION_WORKER_INTERVAL_SECONDS,
+      "NOTIFICATION_WORKER_INTERVAL_SECONDS",
+      60,
+      enabled,
+    ),
+    startReminderMinutes: positiveIntegerFromEnv(
+      env.BOOKING_START_REMINDER_MINUTES,
+      "BOOKING_START_REMINDER_MINUTES",
+      15,
+      enabled,
+    ),
+    endingReminderMinutes: positiveIntegerFromEnv(
+      env.BOOKING_ENDING_REMINDER_MINUTES,
+      "BOOKING_ENDING_REMINDER_MINUTES",
+      15,
+      enabled,
+    ),
+  }
 }
 
 function assertValidRuntimeConfig(config: ApiRuntimeConfig) {
@@ -66,4 +101,26 @@ function splitCsv(value: string) {
 
 function emptyToUndefined(value: string | undefined) {
   return value?.trim() || undefined
+}
+
+function positiveIntegerFromEnv(
+  value: string | undefined,
+  name: string,
+  fallback: number,
+  required: boolean,
+) {
+  if (!value) {
+    if (required) {
+      return fallback
+    }
+
+    return fallback
+  }
+
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer`)
+  }
+
+  return parsed
 }
