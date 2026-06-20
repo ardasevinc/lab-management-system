@@ -4,12 +4,15 @@ import {
   CalendarDays,
   ChevronsUpDown,
   Cpu,
+  Globe2,
   Home,
   LogOut,
+  Mail,
   MonitorCog,
   PanelLeft,
   Plus,
   Settings,
+  ShieldCheck,
   UsersRound,
   Wrench,
   X,
@@ -276,6 +279,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const { isMobile } = useSidebar()
   const menuSide = isMobile ? "top" : "right"
   const displayName = user.name || user.email
+  const roleLabel = user.role === "admin" ? "Admin" : "Member"
 
   return (
     <DropdownMenu>
@@ -284,14 +288,14 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-9 rounded-md px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
+              className="h-9 rounded-md px-2 text-sidebar-foreground/88 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
             >
               <Avatar size="sm" className="rounded-md">
                 <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-medium text-sm">{displayName}</span>
-                <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+                <span className="truncate text-muted-foreground text-xs">{roleLabel}</span>
               </div>
               <ChevronsUpDown
                 className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -305,23 +309,18 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={6}
-        className="w-72 max-w-[calc(100vw-2rem)] rounded-lg p-1"
+        className="w-70 max-w-[calc(100vw-2rem)] rounded-lg p-1"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex min-w-0 items-start gap-2.5 rounded-md px-2.5 py-2.5">
-              <Avatar size="default" className="mt-0.5 rounded-md">
+            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
+              <Avatar size="default" className="rounded-md">
                 <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 gap-1 text-left leading-tight">
-                <div className="flex min-w-0 items-center justify-between gap-2">
-                  <span className="truncate font-medium text-sm text-popover-foreground">
-                    {displayName}
-                  </span>
-                  <Badge variant="outline" className="h-5 px-1.5 text-[0.68rem] capitalize">
-                    {user.role}
-                  </Badge>
-                </div>
+              <div className="grid min-w-0 flex-1 text-left leading-tight">
+                <span className="truncate font-medium text-sm text-popover-foreground">
+                  {displayName}
+                </span>
                 <span className="truncate text-muted-foreground text-xs">{user.email}</span>
               </div>
             </div>
@@ -329,13 +328,39 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={onLogout} className="h-8 rounded-md">
+          <div className="grid gap-0.5 px-1 py-1">
+            <AccountMetaRow icon={ShieldCheck} label="Role" value={roleLabel} />
+            <AccountMetaRow icon={Mail} label="Email" value={user.email} />
+            <AccountMetaRow icon={Globe2} label="Timezone" value={labConfig.defaultTimezone} />
+          </div>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem onSelect={onLogout} variant="destructive" className="h-8 rounded-md">
             <LogOut data-icon="inline-start" aria-hidden="true" />
             Log out
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+function AccountMetaRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof ShieldCheck
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm">
+      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <span className="shrink-0 text-muted-foreground text-xs">{label}</span>
+      <span className="ml-auto truncate font-medium text-xs">{value}</span>
+    </div>
   )
 }
 
