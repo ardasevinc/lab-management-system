@@ -49,6 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import { useIsMobile } from "@/hooks/use-mobile"
 import type { Machine, User } from "@/lib/api"
 import { formatDate, formatTime } from "@/lib/time"
 import { cn } from "@/lib/utils"
@@ -341,9 +342,14 @@ function InviteUserSheet({
   onOpenChange: (open: boolean) => void
   onSubmit: (form: FormData) => void
 }) {
+  const isMobile = useIsMobile()
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-md sm:p-5">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-md sm:p-5"
+      >
         <form
           className="flex flex-col gap-4"
           onSubmit={(event) => {
@@ -560,6 +566,8 @@ function MachineEditorSheet({
   onSubmit: (value: MachineCreateValue | MachineUpdateValue) => void
   onDelete?: () => void
 }) {
+  const isMobile = useIsMobile()
+
   if (mode === "edit" && !machine) {
     return null
   }
@@ -576,7 +584,10 @@ function MachineEditorSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-lg sm:p-5">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-5"
+      >
         <form
           key={`${mode}-${defaults.id}`}
           className="grid gap-5"

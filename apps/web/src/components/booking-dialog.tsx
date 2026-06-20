@@ -23,6 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import { useIsMobile } from "@/hooks/use-mobile"
 import type { AuditEvent, Booking, Machine, User } from "@/lib/api"
 import { getBookingDialogDefaults } from "@/lib/booking-dialog-defaults"
 import { formatDateTime, fromLabDateTimeParts, toLabDateValue } from "@/lib/time"
@@ -72,6 +73,7 @@ export function BookingDialog({
   onSubmit,
   onDelete,
 }: BookingDialogProps) {
+  const isMobile = useIsMobile()
   const defaults = getBookingDialogDefaults({ booking, initialRange, initialType })
   const [bookingType, setBookingType] = useState<Booking["type"]>(defaults.type)
   const [ownerUserId, setOwnerUserId] = useState(booking?.userId ?? currentUser.id)
@@ -114,7 +116,10 @@ export function BookingDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-lg sm:p-5">
+      <SheetContent
+        side={isMobile ? "bottom" : "right"}
+        className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-5"
+      >
         <form
           className="flex flex-col gap-5"
           onSubmit={(event) => {
