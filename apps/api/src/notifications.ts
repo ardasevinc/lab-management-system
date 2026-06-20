@@ -68,13 +68,25 @@ export function startNotificationWorker(
     endingReminderMinutes: number
   },
 ) {
+  let inFlight: Promise<void> | null = null
+
   const run = () => {
-    processBookingReminders(db, mailer, input).catch((error) => {
-      console.error("[lab-api] notification worker failed", error)
-    })
+    if (inFlight) {
+      return inFlight
+    }
+
+    inFlight = processBookingReminders(db, mailer, input)
+      .catch((error) => {
+        console.error("[lab-api] notification worker failed", error)
+      })
+      .finally(() => {
+        inFlight = null
+      })
+
+    return inFlight
   }
 
-  run()
+  void run()
   return setInterval(run, input.intervalSeconds * 1000)
 }
 

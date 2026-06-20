@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:api:auth": "vitest run tests/api/auth.test.ts",
     "test:api:bookings": "vitest run tests/api/bookings.test.ts",
+    "test:api:notifications": "vitest run tests/api/notifications.test.ts",
     "test:web:calendar": "vitest run tests/web/calendar-geometry.test.ts",
     "test:watch": "vitest",
     "typecheck": "bun run --filter '*' typecheck"
