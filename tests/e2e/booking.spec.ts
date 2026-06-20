@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 const adminEmail = "admin@miralab.tr"
+const memberEmail = "member@miralab.tr"
 
 test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop week-board flow")
@@ -146,7 +147,10 @@ test("researchers can create and delete a booking from the responsive day agenda
 
   const consoleProblems = collectConsoleProblems(page)
   const bookingTitle = `E2E responsive ${testInfo.project.name} ${Date.now()}`
-  await loginAsAdmin(page)
+  await loginAsMember(page)
+
+  await page.goto("/admin")
+  await expect(page).toHaveURL(/\/schedule$/)
 
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
@@ -195,14 +199,22 @@ function unexpectedConsoleProblems(consoleProblems: string[]) {
 }
 
 async function loginAsAdmin(page: Page) {
+  await loginAs(page, adminEmail, /\/admin$/)
+}
+
+async function loginAsMember(page: Page) {
+  await loginAs(page, memberEmail, /\/schedule$/)
+}
+
+async function loginAs(page: Page, email: string, expectedUrl: RegExp) {
   await page.goto("/login")
   await expect(page.getByLabel("Email")).toBeVisible()
 
-  await page.getByLabel("Email").fill(adminEmail)
+  await page.getByLabel("Email").fill(email)
   await page.getByRole("button", { name: "Continue" }).click()
   await expect(page.getByLabel("Login code")).toBeVisible()
   await page.getByRole("button", { name: "Sign in" }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(expectedUrl)
 }
 
 async function createBookingFromPage(

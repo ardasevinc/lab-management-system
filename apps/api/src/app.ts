@@ -206,11 +206,19 @@ export function createApiApp({
   app.use("/bookings/*", requireAuth(db))
   registerBookingRoutes(app, { db, mailer: emailSender })
 
-  app.use("/admin/*", requireAuth(db))
-  app.use("/admin/*", async (c, next) => {
-    assertAdmin(c.get("user"))
-    await next()
-  })
+  for (const path of [
+    "/admin/users",
+    "/admin/users/*",
+    "/admin/machines",
+    "/admin/machines/*",
+    "/admin/invites",
+  ]) {
+    app.use(path, requireAuth(db))
+    app.use(path, async (c, next) => {
+      assertAdmin(c.get("user"))
+      await next()
+    })
+  }
 
   app.get("/admin/users", async (c) => c.json({ users: await listUsers(db) }))
 
