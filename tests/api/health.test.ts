@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { createApiApp } from "../../apps/api/src/app"
+import { machines } from "../../packages/db/src/schema"
 import { createTestDb } from "../helpers/db"
 
 let testDb: Awaited<ReturnType<typeof createTestDb>>
@@ -46,6 +47,24 @@ describe("health endpoint", () => {
       lab: "MIRALAB",
       checks: {
         database: "unhealthy",
+      },
+    })
+  })
+
+  it("returns 503 when no machine inventory is readable", async () => {
+    await testDb.db.delete(machines)
+
+    const app = createApiApp({ db: testDb.db })
+    const response = await app.request("/health")
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({
+      ok: false,
+      service: "lab-api",
+      lab: "MIRALAB",
+      checks: {
+        database: "ok",
+        machines: 0,
       },
     })
   })

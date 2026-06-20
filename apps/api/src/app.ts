@@ -314,6 +314,21 @@ function requireAuth(db: Db): MiddlewareHandler<{ Variables: { user: CurrentUser
 async function healthResponse(c: Context, db: Db) {
   try {
     const machines = await listMachines(db)
+    if (!machines.length) {
+      return c.json(
+        {
+          ok: false,
+          service: "lab-api",
+          lab: labConfig.shortName,
+          checks: {
+            database: "ok",
+            machines: 0,
+          },
+        },
+        503,
+      )
+    }
+
     return c.json({
       ok: true,
       service: "lab-api",
