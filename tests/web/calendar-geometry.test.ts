@@ -68,6 +68,23 @@ describe("calendar geometry", () => {
     })
   })
 
+  it("moves ranges across lab days while preserving duration", () => {
+    const nextDay = buildWeekDays(day)[1]
+    const range = moveRangeToDayAndMinutes(
+      {
+        startsAt: iso(10 * 60),
+        endsAt: iso(12 * 60),
+      },
+      nextDay,
+      13 * 60,
+    )
+
+    expect(range).toEqual({
+      startsAt: dateAtMinutes(nextDay, 13 * 60).toISOString(),
+      endsAt: dateAtMinutes(nextDay, 15 * 60).toISOString(),
+    })
+  })
+
   it("resizes the end with minimum duration", () => {
     const range = resizeRangeEnd(
       {

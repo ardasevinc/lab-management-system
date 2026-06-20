@@ -44,6 +44,8 @@ type Draft =
       kind: "move"
       day: Date
       booking: Booking
+      startX: number
+      currentX: number
       startY: number
       currentY: number
       originStartMinutes: number
@@ -85,7 +87,15 @@ export function WeekCalendar({
     }
 
     const onPointerMove = (event: PointerEvent) => {
-      setDraft((current) => (current ? { ...current, currentY: event.clientY } : current))
+      setDraft((current) =>
+        current
+          ? {
+              ...current,
+              ...(current.kind === "move" ? { currentX: event.clientX } : {}),
+              currentY: event.clientY,
+            }
+          : current,
+      )
     }
 
     const onPointerUp = () => {
@@ -106,9 +116,10 @@ export function WeekCalendar({
 
       if (draft.kind === "move" && moved) {
         const deltaMinutes = yToMinutes(draft.currentY - draft.startY) - dayStartHour * 60
+        const day = dayFromX(draft.currentX) ?? draft.day
         const range = moveRangeToDayAndMinutes(
           draft.booking,
-          draft.day,
+          day,
           draft.originStartMinutes + deltaMinutes,
         )
         onMoveBooking(draft.booking, range)
@@ -215,6 +226,7 @@ function DayColumn({
   return (
     <div
       ref={ref}
+      data-calendar-day={day.toISOString()}
       className="relative touch-none select-none border-border border-l bg-background"
       onPointerDown={(event) => {
         if (event.button !== 0 || event.target !== event.currentTarget) {
@@ -284,6 +296,8 @@ function DayColumn({
                 kind: "move",
                 day,
                 booking,
+                startX: event.clientX,
+                currentX: event.clientX,
                 startY: event.clientY,
                 currentY: event.clientY,
                 originStartMinutes: minutesSinceDayStart(start),
@@ -368,4 +382,14 @@ function sameDate(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   )
+}
+
+function dayFromX(clientX: number) {
+  const columns = Array.from(document.querySelectorAll<HTMLElement>("[data-calendar-day]"))
+  const column = columns.find((element) => {
+    const rect = element.getBoundingClientRect()
+    return clientX >= rect.left && clientX <= rect.right
+  })
+  const value = column?.dataset.calendarDay
+  return value ? new Date(value) : null
 }
