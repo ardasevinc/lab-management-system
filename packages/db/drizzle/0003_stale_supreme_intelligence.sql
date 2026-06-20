@@ -1,0 +1,1 @@
+ALTER TABLE `notification_deliveries` ADD `attempt_count` integer DEFAULT 0 NOT NULL;

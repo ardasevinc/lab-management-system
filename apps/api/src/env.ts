@@ -14,6 +14,8 @@ export type NotificationWorkerConfig = {
   intervalSeconds: number
   startReminderMinutes: number
   endingReminderMinutes: number
+  retryDelayMinutes: number
+  maxAttempts: number
 }
 
 export function databaseUrlFromEnv(
@@ -84,6 +86,18 @@ export function notificationWorkerConfigFromEnv(
       env.BOOKING_ENDING_REMINDER_MINUTES,
       "BOOKING_ENDING_REMINDER_MINUTES",
       15,
+      enabled,
+    ),
+    retryDelayMinutes: positiveIntegerFromEnv(
+      env.NOTIFICATION_RETRY_DELAY_MINUTES,
+      "NOTIFICATION_RETRY_DELAY_MINUTES",
+      5,
+      enabled,
+    ),
+    maxAttempts: positiveIntegerFromEnv(
+      env.NOTIFICATION_MAX_ATTEMPTS,
+      "NOTIFICATION_MAX_ATTEMPTS",
+      3,
       enabled,
     ),
   }

@@ -154,6 +154,41 @@ export async function markNotificationFailed(db: Db, id: string, error: string, 
     .where(eq(notificationDeliveries.id, id))
 }
 
+export async function markNotificationRetryOrFailed(
+  db: Db,
+  id: string,
+  input: {
+    error: string
+    now?: Date
+    retryDelayMinutes: number
+    maxAttempts: number
+  },
+) {
+  const now = input.now ?? new Date()
+  const [delivery] = await db
+    .select({ attemptCount: notificationDeliveries.attemptCount })
+    .from(notificationDeliveries)
+    .where(eq(notificationDeliveries.id, id))
+    .limit(1)
+
+  if (!delivery) {
+    return
+  }
+
+  const attemptCount = delivery.attemptCount + 1
+  const shouldRetry = attemptCount < input.maxAttempts
+  await db
+    .update(notificationDeliveries)
+    .set({
+      status: shouldRetry ? "pending" : "failed",
+      error: input.error,
+      attemptCount,
+      scheduledFor: shouldRetry ? new Date(now.getTime() + input.retryDelayMinutes * 60_000) : now,
+      updatedAt: now,
+    })
+    .where(eq(notificationDeliveries.id, id))
+}
+
 async function listReminderCandidates(
   db: Db,
   input: {

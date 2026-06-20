@@ -155,6 +155,7 @@ export const notificationDeliveries = sqliteTable(
       .notNull()
       .default("pending"),
     error: text("error"),
+    attemptCount: integer("attempt_count").notNull().default(0),
     scheduledFor: integer("scheduled_for", { mode: "timestamp" }).notNull(),
     sentAt: integer("sent_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),

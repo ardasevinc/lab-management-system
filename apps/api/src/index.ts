@@ -40,6 +40,8 @@ if (notificationWorkerConfig.enabled) {
     intervalSeconds: notificationWorkerConfig.intervalSeconds,
     startReminderMinutes: notificationWorkerConfig.startReminderMinutes,
     endingReminderMinutes: notificationWorkerConfig.endingReminderMinutes,
+    retryDelayMinutes: notificationWorkerConfig.retryDelayMinutes,
+    maxAttempts: notificationWorkerConfig.maxAttempts,
     publicAppUrl: runtimeConfig.publicAppUrl,
   })
 }

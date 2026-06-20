@@ -7,6 +7,7 @@ import {
   getBookingNotificationContextForUser,
   listDueNotificationDeliveries,
   markNotificationFailed,
+  markNotificationRetryOrFailed,
   markNotificationSent,
   type NotificationKind,
 } from "@lab/db"
@@ -48,9 +49,13 @@ export async function processBookingReminders(
     endingReminderMinutes: number
     now?: Date
     publicAppUrl?: string
+    retryDelayMinutes?: number
+    maxAttempts?: number
   },
 ) {
   const now = input.now ?? new Date()
+  const retryDelayMinutes = input.retryDelayMinutes ?? 5
+  const maxAttempts = input.maxAttempts ?? 3
   await enqueueDueBookingReminders(db, {
     startReminderMinutes: input.startReminderMinutes,
     endingReminderMinutes: input.endingReminderMinutes,
@@ -72,7 +77,12 @@ export async function processBookingReminders(
       await mailer.sendBookingEmail(bookingEmailForKind(context, delivery.kind, input))
       await markNotificationSent(db, delivery.id, now)
     } catch (error) {
-      await markNotificationFailed(db, delivery.id, errorMessage(error), now)
+      await markNotificationRetryOrFailed(db, delivery.id, {
+        error: errorMessage(error),
+        now,
+        retryDelayMinutes,
+        maxAttempts,
+      })
     }
   }
 }
@@ -85,6 +95,8 @@ export function startNotificationWorker(
     startReminderMinutes: number
     endingReminderMinutes: number
     publicAppUrl?: string
+    retryDelayMinutes?: number
+    maxAttempts?: number
   },
 ) {
   let inFlight: Promise<void> | null = null

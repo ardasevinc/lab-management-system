@@ -157,6 +157,8 @@ describe("api runtime env", () => {
       intervalSeconds: 60,
       startReminderMinutes: 15,
       endingReminderMinutes: 15,
+      retryDelayMinutes: 5,
+      maxAttempts: 3,
     })
   })
 
@@ -167,12 +169,16 @@ describe("api runtime env", () => {
         NOTIFICATION_WORKER_INTERVAL_SECONDS: "30",
         BOOKING_START_REMINDER_MINUTES: "20",
         BOOKING_ENDING_REMINDER_MINUTES: "10",
+        NOTIFICATION_RETRY_DELAY_MINUTES: "7",
+        NOTIFICATION_MAX_ATTEMPTS: "4",
       }),
     ).toEqual({
       enabled: true,
       intervalSeconds: 30,
       startReminderMinutes: 20,
       endingReminderMinutes: 10,
+      retryDelayMinutes: 7,
+      maxAttempts: 4,
     })
   })
 
@@ -190,5 +196,12 @@ describe("api runtime env", () => {
         BOOKING_START_REMINDER_MINUTES: "0",
       }),
     ).toThrow("BOOKING_START_REMINDER_MINUTES must be a positive integer")
+
+    expect(() =>
+      notificationWorkerConfigFromEnv({
+        REMINDERS_ENABLED: "1",
+        NOTIFICATION_MAX_ATTEMPTS: "0",
+      }),
+    ).toThrow("NOTIFICATION_MAX_ATTEMPTS must be a positive integer")
   })
 })

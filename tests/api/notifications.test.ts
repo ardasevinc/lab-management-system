@@ -80,6 +80,115 @@ describe("booking notifications", () => {
     expect(sentSubjects).toEqual(["MIRALAB booking ending soon: Ending run"])
   })
 
+  it("retries reminder deliveries after transient mailer failures", async () => {
+    const sentSubjects: string[] = []
+    let attempts = 0
+    await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Retry reminder run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendBookingEmail(email: { subject: string }) {
+        attempts += 1
+        if (attempts === 1) {
+          throw new Error("SES temporary failure")
+        }
+        sentSubjects.push(email.subject)
+      },
+    }
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      retryDelayMinutes: 5,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+
+    let delivery = await testDb.db.query.notificationDeliveries.findFirst()
+    expect(sentSubjects).toEqual([])
+    expect(delivery).toEqual(
+      expect.objectContaining({
+        status: "pending",
+        error: "SES temporary failure",
+        attemptCount: 1,
+        scheduledFor: new Date("2026-05-10T10:05:00.000Z"),
+      }),
+    )
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      retryDelayMinutes: 5,
+      now: new Date("2026-05-10T10:04:00.000Z"),
+    })
+
+    expect(sentSubjects).toEqual([])
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      retryDelayMinutes: 5,
+      now: new Date("2026-05-10T10:05:00.000Z"),
+    })
+
+    delivery = await testDb.db.query.notificationDeliveries.findFirst()
+    expect(sentSubjects).toEqual(["MIRALAB booking starting soon: Retry reminder run"])
+    expect(delivery).toEqual(
+      expect.objectContaining({
+        status: "sent",
+        error: null,
+        attemptCount: 1,
+      }),
+    )
+  })
+
+  it("marks reminder deliveries failed after max transient mailer attempts", async () => {
+    await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Failing reminder run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendBookingEmail() {
+        throw new Error("SES still down")
+      },
+    }
+
+    for (const now of [
+      "2026-05-10T10:00:00.000Z",
+      "2026-05-10T10:05:00.000Z",
+      "2026-05-10T10:10:00.000Z",
+    ]) {
+      await processBookingReminders(testDb.db, mailer, {
+        startReminderMinutes: 15,
+        endingReminderMinutes: 15,
+        retryDelayMinutes: 5,
+        maxAttempts: 3,
+        now: new Date(now),
+      })
+    }
+
+    const delivery = await testDb.db.query.notificationDeliveries.findFirst()
+    expect(delivery).toEqual(
+      expect.objectContaining({
+        status: "failed",
+        error: "SES still down",
+        attemptCount: 3,
+      }),
+    )
+  })
+
   it("does not enqueue reminders for disabled users", async () => {
     const sentSubjects: string[] = []
     await createBooking(testDb.db, {
