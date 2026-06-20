@@ -248,6 +248,84 @@ describe("booking API", () => {
     expect(deleteResponse.status).toBe(200)
   })
 
+  it("records admin-readable audit events for booking changes", async () => {
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Audited run",
+        startsAt: "2026-05-10T15:00:00.000Z",
+        endsAt: "2026-05-10T16:00:00.000Z",
+        reason: "Initial request",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Audited run updated",
+        reason: "Researcher changed the slot title",
+      }),
+    })
+    const deleteResponse = await app.request(
+      `/bookings/${booking.id}?reason=${encodeURIComponent("Cancelled by admin")}`,
+      {
+        method: "DELETE",
+        headers: authHeaders,
+      },
+    )
+    const auditResponse = await app.request(`/bookings/${booking.id}/audit`, {
+      headers: authHeaders,
+    })
+    const { events } = await auditResponse.json()
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(200)
+    expect(deleteResponse.status).toBe(200)
+    expect(auditResponse.status).toBe(200)
+    expect(events.map((event: { eventType: string }) => event.eventType)).toEqual([
+      "created",
+      "updated",
+      "deleted",
+    ])
+    expect(events).toEqual([
+      expect.objectContaining({
+        actorUserId: "admin-local",
+        eventType: "created",
+        reason: "Initial request",
+        payload: expect.objectContaining({
+          title: "Audited run",
+          userId: "member-local",
+        }),
+      }),
+      expect.objectContaining({
+        actorUserId: "admin-local",
+        eventType: "updated",
+        reason: "Researcher changed the slot title",
+        payload: expect.objectContaining({
+          before: expect.objectContaining({
+            title: "Audited run",
+          }),
+          after: expect.objectContaining({
+            title: "Audited run updated",
+          }),
+        }),
+      }),
+      expect.objectContaining({
+        actorUserId: "admin-local",
+        eventType: "deleted",
+        reason: "Cancelled by admin",
+        payload: expect.objectContaining({
+          title: "Audited run updated",
+        }),
+      }),
+    ])
+  })
+
   it("sends booking change emails for create, update, and delete", async () => {
     const sentBookingEmails: BookingEmail[] = []
     app = createApiApp({
@@ -407,6 +485,29 @@ describe("booking API", () => {
     expect(adminCreateResponse.status).toBe(201)
     expect(updateResponse.status).toBe(403)
     expect(deleteResponse.status).toBe(403)
+  })
+
+  it("requires admin role for booking audit history", async () => {
+    const memberHeaders = await login("member@miralab.tr")
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Private audit run",
+        startsAt: "2026-05-10T20:00:00.000Z",
+        endsAt: "2026-05-10T21:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const memberAuditResponse = await app.request(`/bookings/${booking.id}/audit`, {
+      headers: memberHeaders,
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(memberAuditResponse.status).toBe(403)
+    expect(await memberAuditResponse.json()).toEqual({ error: "Admin role required" })
   })
 })
 
