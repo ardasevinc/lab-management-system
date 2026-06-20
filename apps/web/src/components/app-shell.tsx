@@ -4,15 +4,12 @@ import {
   CalendarDays,
   ChevronsUpDown,
   Cpu,
-  Globe2,
   Home,
   LogOut,
-  Mail,
   MonitorCog,
   PanelLeft,
   Plus,
   Settings,
-  ShieldCheck,
   UsersRound,
   Wrench,
   X,
@@ -71,23 +68,29 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
-        <SidebarHeader className="px-3 pt-3 pb-2">
-          <div className="flex items-center gap-2 px-1.5 py-1">
-            <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+        <SidebarHeader className="px-3 pt-3 pb-1.5">
+          <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
               <Cpu aria-hidden="true" />
             </div>
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-              <div className="truncate font-semibold text-sm">{labConfig.shortName}</div>
-              <div className="truncate text-muted-foreground text-xs">{labConfig.appTitle}</div>
+              <div className="truncate font-semibold text-[0.92rem] leading-5">
+                {labConfig.shortName}
+              </div>
+              <div className="truncate text-muted-foreground text-xs leading-4">
+                {labConfig.appTitle}
+              </div>
             </div>
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-1 px-2.5">
-          <SidebarGroup className="gap-1 px-0 py-2.5">
-            <SidebarGroupLabel className="h-7 px-2.5 text-[0.72rem]">Workspace</SidebarGroupLabel>
+        <SidebarContent className="gap-2 px-3 py-1.5">
+          <SidebarGroup className="gap-1.5 px-0 py-2">
+            <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
+              Workspace
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
+              <SidebarMenu className="gap-1">
                 <NavItem
                   to="/schedule"
                   label="Schedule"
@@ -106,11 +109,13 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
 
           {isAdmin ? (
             <>
-              <SidebarSeparator className="my-1.5" />
-              <SidebarGroup className="gap-1 px-0 py-2.5">
-                <SidebarGroupLabel className="h-7 px-2.5 text-[0.72rem]">Admin</SidebarGroupLabel>
+              <SidebarSeparator className="my-1" />
+              <SidebarGroup className="gap-1.5 px-0 py-2">
+                <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
+                  Admin
+                </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu className="gap-0.5">
+                  <SidebarMenu className="gap-1">
                     <NavItem
                       to="/admin"
                       label="Overview"
@@ -142,7 +147,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           ) : null}
         </SidebarContent>
 
-        <SidebarFooter className="px-2 pb-3">
+        <SidebarFooter className="px-3 pb-3">
           <AccountMenu user={user} onLogout={onLogout} />
         </SidebarFooter>
       </Sidebar>
@@ -262,7 +267,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-8 rounded-md px-2.5 font-normal text-[0.88rem] text-sidebar-foreground/82 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-none"
+        className="h-9 rounded-lg px-2.5 font-normal text-[0.9rem] text-sidebar-foreground/78 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary/10 data-[active=true]:font-medium data-[active=true]:text-sidebar-primary data-[active=true]:shadow-[inset_2px_0_0_var(--sidebar-primary)]"
       >
         <Link
           to={to}
@@ -294,14 +299,16 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-9 rounded-md px-2 text-sidebar-foreground/88 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
+              className="h-11 rounded-lg px-2.5 text-sidebar-foreground/88 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar size="sm" className="rounded-md">
-                <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
+              <Avatar size="default">
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium text-sm">{displayName}</span>
-                <span className="truncate text-muted-foreground text-xs">{roleLabel}</span>
+                <span className="truncate font-medium text-sm leading-5">{displayName}</span>
+                <span className="truncate text-muted-foreground text-xs leading-4">
+                  {user.email}
+                </span>
               </div>
               <ChevronsUpDown
                 className="ml-auto group-data-[collapsible=icon]:hidden"
@@ -314,19 +321,24 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
       <DropdownMenuContent
         align="end"
         side={menuSide}
-        sideOffset={6}
-        className="w-70 max-w-[calc(100vw-2rem)] rounded-lg p-1"
+        sideOffset={8}
+        className="w-80 max-w-[calc(100vw-1.5rem)] rounded-xl p-2"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
-              <Avatar size="default" className="rounded-md">
-                <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
+            <div className="flex min-w-0 items-start gap-3 rounded-lg px-2 py-2.5">
+              <Avatar size="lg">
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 text-left leading-tight">
-                <span className="truncate font-medium text-sm text-popover-foreground">
-                  {displayName}
-                </span>
+              <div className="grid min-w-0 flex-1 gap-1 text-left">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium text-sm text-popover-foreground">
+                    {displayName}
+                  </span>
+                  <Badge variant="secondary" className="shrink-0 capitalize">
+                    {roleLabel}
+                  </Badge>
+                </div>
                 <span className="truncate text-muted-foreground text-xs">{user.email}</span>
               </div>
             </div>
@@ -334,15 +346,15 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <div className="grid gap-0.5 px-1 py-1">
-            <AccountMetaRow icon={ShieldCheck} label="Role" value={roleLabel} />
-            <AccountMetaRow icon={Mail} label="Email" value={user.email} />
-            <AccountMetaRow icon={Globe2} label="Timezone" value={labConfig.defaultTimezone} />
+          <div className="grid gap-1 px-1 py-1">
+            <AccountMetaRow label="Name" value={displayName} />
+            <AccountMetaRow label="Email" value={user.email} />
+            <AccountMetaRow label="Timezone" value={labConfig.defaultTimezone} />
           </div>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={onLogout} variant="destructive" className="h-8 rounded-md">
+          <DropdownMenuItem onSelect={onLogout} variant="destructive" className="h-9 rounded-lg">
             <LogOut data-icon="inline-start" aria-hidden="true" />
             Log out
           </DropdownMenuItem>
@@ -352,20 +364,11 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   )
 }
 
-function AccountMetaRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof ShieldCheck
-  label: string
-  value: string
-}) {
+function AccountMetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm">
-      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-      <span className="shrink-0 text-muted-foreground text-xs">{label}</span>
-      <span className="ml-auto truncate font-medium text-xs">{value}</span>
+    <div className="grid min-w-0 grid-cols-[5rem_minmax(0,1fr)] items-center gap-3 rounded-lg px-2 py-1.5 text-sm">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="truncate text-right font-medium text-xs">{value}</span>
     </div>
   )
 }
