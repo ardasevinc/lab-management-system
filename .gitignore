@@ -11,3 +11,6 @@ data/*.sqlite-*
 **/data/*.sqlite
 **/data/*.sqlite-*
 coverage
+.tmp
+playwright-report
+test-results
