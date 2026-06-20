@@ -46,6 +46,49 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin can assign a booking to a researcher from the booking sheet", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop owner-select flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E owner ${Date.now()}`
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByText("Week board")).toBeVisible()
+
+  const thirdDayColumn = page.locator("[data-calendar-day]").nth(2)
+  await expect(thirdDayColumn).toBeVisible()
+  const dayBox = await thirdDayColumn.boundingBox()
+
+  if (!dayBox) {
+    throw new Error("Calendar day column did not produce a bounding box.")
+  }
+
+  await thirdDayColumn.click({
+    position: {
+      x: dayBox.width / 2,
+      y: 120,
+    },
+  })
+
+  await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
+  await page.getByLabel("Title").fill(bookingTitle)
+  await page.getByRole("combobox", { name: "Owner" }).click()
+  await page.getByRole("option", { name: /MIRALAB Member/ }).click()
+  await page.getByRole("button", { name: "Create" }).click()
+
+  const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+  await expect(booking).toBeVisible()
+
+  const createdBooking = await findBookingFromPage(page, bookingTitle)
+  expect(createdBooking).toEqual(expect.objectContaining({ userId: "member-local" }))
+  await deleteBookingFromPage(page, createdBooking.id)
+  expect(consoleProblems).toEqual([])
+})
+
 test("moving a booking into an occupied slot surfaces a conflict", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop drag flow")
 
@@ -241,4 +284,52 @@ async function createBookingFromPage(
       throw new Error(`Failed to seed booking: ${response.status} ${await response.text()}`)
     }
   }, booking)
+}
+
+async function findBookingFromPage(
+  page: Page,
+  title: string,
+): Promise<{ id: string; userId: string }> {
+  return page.evaluate(async (bookingTitle) => {
+    const token = window.localStorage.getItem("lab_session_token")
+    const response = await window.fetch(
+      "/machines/tohum/bookings?start=2026-06-15T00%3A00%3A00.000Z&end=2026-06-22T00%3A00%3A00.000Z",
+      {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to list bookings: ${response.status} ${await response.text()}`)
+    }
+
+    const body = (await response.json()) as {
+      bookings: Array<{ id: string; title: string; userId: string }>
+    }
+    const booking = body.bookings.find((candidate) => candidate.title === bookingTitle)
+
+    if (!booking) {
+      throw new Error(`Booking not found: ${bookingTitle}`)
+    }
+
+    return { id: booking.id, userId: booking.userId }
+  }, title)
+}
+
+async function deleteBookingFromPage(page: Page, id: string) {
+  await page.evaluate(async (bookingId) => {
+    const token = window.localStorage.getItem("lab_session_token")
+    const response = await window.fetch(`/bookings/${bookingId}`, {
+      method: "DELETE",
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete booking: ${response.status} ${await response.text()}`)
+    }
+  }, id)
 }
