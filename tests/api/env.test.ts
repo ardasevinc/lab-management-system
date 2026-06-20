@@ -50,6 +50,36 @@ describe("api runtime env", () => {
     ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
   })
 
+  it("does not let APP_ENV bypass NODE_ENV=production", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        APP_ENV: "development",
+        NODE_ENV: "production",
+        PUBLIC_APP_URL: "http://localhost:3001",
+        CORS_ORIGINS: "http://localhost:3001",
+        SESSION_COOKIE_SECURE: "0",
+      }),
+    ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
+  })
+
+  it("rejects invalid app environment values", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        APP_ENV: "prod",
+        NODE_ENV: "production",
+        PUBLIC_APP_URL: "https://lms.miralab.tr",
+        CORS_ORIGINS: "https://lms.miralab.tr",
+        SESSION_COOKIE_SECURE: "1",
+      }),
+    ).toThrow("APP_ENV must be one of: development, production, test")
+
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        NODE_ENV: "prod",
+      }),
+    ).toThrow("NODE_ENV must be one of: development, production, test")
+  })
+
   it("requires an explicit absolute SQLite database path in production", () => {
     const productionEnv = {
       APP_ENV: "production",

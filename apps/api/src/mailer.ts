@@ -1,5 +1,6 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses"
 import { labConfig } from "@lab/config"
+import { appEnvFromEnv } from "./env"
 
 export type LoginOtpEmail = {
   to: string
@@ -32,7 +33,7 @@ type SesMailerConfig = {
 
 export function createMailerFromEnv(env: Record<string, string | undefined>): Mailer {
   const provider = env.EMAIL_PROVIDER ?? "console"
-  const appEnv = env.APP_ENV ?? env.NODE_ENV
+  const appEnv = appEnvFromEnv(env)
 
   if (appEnv === "production" && provider !== "ses") {
     throw new Error("EMAIL_PROVIDER=ses is required in production")

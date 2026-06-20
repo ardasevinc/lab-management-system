@@ -20,7 +20,7 @@ export function databaseUrlFromEnv(
   env: Record<string, string | undefined>,
   defaultDatabaseUrl: string,
 ) {
-  const appEnvironment = appEnv(env.APP_ENV ?? env.NODE_ENV)
+  const appEnvironment = appEnvFromEnv(env)
   const databaseUrl = env.DATABASE_URL ?? defaultDatabaseUrl
 
   assertValidDatabaseUrl(databaseUrl, {
@@ -33,7 +33,7 @@ export function databaseUrlFromEnv(
 
 export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig {
   const config = {
-    appEnv: appEnv(env.APP_ENV ?? env.NODE_ENV),
+    appEnv: appEnvFromEnv(env),
     publicAppUrl: env.PUBLIC_APP_URL ?? "http://localhost:5173",
     corsOrigins: splitCsv(env.CORS_ORIGINS ?? "http://localhost:5173"),
     sessionCookieSecure: env.SESSION_COOKIE_SECURE === "1",
@@ -43,6 +43,17 @@ export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>)
 
   assertValidRuntimeConfig(config)
   return config
+}
+
+export function appEnvFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig["appEnv"] {
+  const appEnvironment = parseAppEnv(env.APP_ENV, "APP_ENV")
+  const nodeEnvironment = parseAppEnv(env.NODE_ENV, "NODE_ENV")
+
+  if (appEnvironment === "production" || nodeEnvironment === "production") {
+    return "production"
+  }
+
+  return appEnvironment ?? nodeEnvironment ?? "development"
 }
 
 export function notificationWorkerConfigFromEnv(
@@ -127,12 +138,19 @@ function assertValidDatabaseUrl(
   }
 }
 
-function appEnv(value: string | undefined): ApiRuntimeConfig["appEnv"] {
-  if (value === "production" || value === "test") {
+function parseAppEnv(
+  value: string | undefined,
+  name: "APP_ENV" | "NODE_ENV",
+): ApiRuntimeConfig["appEnv"] | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  if (value === "development" || value === "production" || value === "test") {
     return value
   }
 
-  return "development"
+  throw new Error(`${name} must be one of: development, production, test`)
 }
 
 function splitCsv(value: string) {
