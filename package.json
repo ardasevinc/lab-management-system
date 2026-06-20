@@ -17,6 +17,8 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run",
+    "test:api:bookings": "vitest run tests/api/bookings.test.ts",
+    "test:web:calendar": "vitest run tests/web/calendar-geometry.test.ts",
     "test:watch": "vitest",
     "typecheck": "bun run --filter '*' typecheck"
   },
