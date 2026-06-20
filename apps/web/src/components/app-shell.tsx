@@ -69,7 +69,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader className="px-3 pt-3 pb-2">
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-2 px-1.5 py-1">
             <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
               <Cpu aria-hidden="true" />
             </div>
@@ -80,11 +80,11 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-1 px-2">
-          <SidebarGroup className="gap-1 px-0 py-2">
-            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+        <SidebarContent className="gap-1 px-2.5">
+          <SidebarGroup className="gap-1 px-0 py-2.5">
+            <SidebarGroupLabel className="h-7 px-2.5 text-[0.72rem]">Workspace</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5">
                 <NavItem
                   to="/schedule"
                   label="Schedule"
@@ -103,11 +103,11 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
 
           {isAdmin ? (
             <>
-              <SidebarSeparator className="my-1" />
-              <SidebarGroup className="gap-1 px-0 py-2">
-                <SidebarGroupLabel>Admin</SidebarGroupLabel>
+              <SidebarSeparator className="my-1.5" />
+              <SidebarGroup className="gap-1 px-0 py-2.5">
+                <SidebarGroupLabel className="h-7 px-2.5 text-[0.72rem]">Admin</SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
+                  <SidebarMenu className="gap-0.5">
                     <NavItem
                       to="/admin"
                       label="Overview"
@@ -253,7 +253,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-9 rounded-lg px-2.5 text-[0.92rem] data-[active=true]:bg-sidebar-accent/75 data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--sidebar-primary)] hover:bg-sidebar-accent/55"
+        className="h-8 rounded-md px-2.5 font-normal text-[0.88rem] text-sidebar-foreground/82 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-none"
       >
         <Link
           to={to}
@@ -284,7 +284,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-10 rounded-lg px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/70"
+              className="h-9 rounded-md px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/60"
             >
               <Avatar size="sm" className="rounded-md">
                 <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
@@ -305,20 +305,20 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={6}
-        className="w-64 max-w-[calc(100vw-2rem)] rounded-lg p-1.5"
+        className="w-72 max-w-[calc(100vw-2rem)] rounded-lg p-1"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
-              <Avatar size="default" className="rounded-lg">
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+            <div className="flex min-w-0 items-start gap-2.5 rounded-md px-2.5 py-2.5">
+              <Avatar size="default" className="mt-0.5 rounded-md">
+                <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 gap-0.5 text-left leading-tight">
-                <div className="flex min-w-0 items-center gap-2">
+              <div className="grid min-w-0 flex-1 gap-1 text-left leading-tight">
+                <div className="flex min-w-0 items-center justify-between gap-2">
                   <span className="truncate font-medium text-sm text-popover-foreground">
                     {displayName}
                   </span>
-                  <Badge variant="secondary" className="h-4 px-1.5 text-[0.68rem] capitalize">
+                  <Badge variant="outline" className="h-5 px-1.5 text-[0.68rem] capitalize">
                     {user.role}
                   </Badge>
                 </div>
@@ -329,7 +329,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={onLogout} className="h-8">
+          <DropdownMenuItem onSelect={onLogout} className="h-8 rounded-md">
             <LogOut data-icon="inline-start" aria-hidden="true" />
             Log out
           </DropdownMenuItem>
