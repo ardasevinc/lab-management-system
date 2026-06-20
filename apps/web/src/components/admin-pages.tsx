@@ -345,7 +345,7 @@ function InviteUserSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-md sm:p-5">
         <form
-          className="flex min-h-full flex-col gap-4"
+          className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault()
             onSubmit(new FormData(event.currentTarget))
@@ -353,6 +353,9 @@ function InviteUserSheet({
         >
           <SheetHeader className="px-0 pt-0">
             <SheetTitle>Invite user</SheetTitle>
+            <SheetDescription className="sr-only">
+              Invite a lab member and assign their access role.
+            </SheetDescription>
           </SheetHeader>
 
           <FieldGroup>
@@ -388,7 +391,7 @@ function InviteUserSheet({
             </Field>
           </FieldGroup>
 
-          <SheetFooter className="px-0 pb-0">
+          <SheetFooter className="mt-0 px-0 pb-0">
             <Button type="submit" disabled={pending}>
               <MailPlus data-icon="inline-start" aria-hidden="true" />
               {pending ? "Inviting" : "Send invite"}
@@ -666,7 +669,7 @@ function MachineEditorSheet({
             </Field>
           </FieldGroup>
 
-          <SheetFooter className="gap-2 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
+          <SheetFooter className="mt-0 gap-2 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
             {mode === "edit" && onDelete ? (
               <Button type="button" variant="outline" disabled={pending} onClick={onDelete}>
                 <Trash2 data-icon="inline-start" aria-hidden="true" />

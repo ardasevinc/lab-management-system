@@ -116,7 +116,7 @@ export function BookingDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-lg sm:p-5">
         <form
-          className="flex min-h-full flex-col gap-5"
+          className="flex flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -133,7 +133,9 @@ export function BookingDialog({
         >
           <SheetHeader className="px-0 pt-0">
             <SheetTitle>{sheetTitle}</SheetTitle>
-            {machine ? <SheetDescription>{machine.name}</SheetDescription> : null}
+            <SheetDescription className={machine ? undefined : "sr-only"}>
+              {machine ? machine.name : "Create or edit a machine reservation."}
+            </SheetDescription>
           </SheetHeader>
 
           <FieldGroup>
@@ -233,7 +235,7 @@ export function BookingDialog({
             </div>
           ) : null}
 
-          <SheetFooter className="px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
+          <SheetFooter className="mt-0 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
             {mode === "edit" ? (
               <Button type="button" variant="destructive" disabled={pending} onClick={onDelete}>
                 Delete
