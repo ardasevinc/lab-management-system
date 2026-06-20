@@ -241,7 +241,7 @@ function DayColumn({
           currentY: event.clientY,
           columnTop: rect.top,
         })
-        event.currentTarget.setPointerCapture(event.pointerId)
+        safelySetPointerCapture(event.currentTarget, event.pointerId)
 
         const minutes = yToMinutes(event.clientY - rect.top)
         const start = dateAtMinutes(day, minutes)
@@ -392,4 +392,13 @@ function dayFromX(clientX: number) {
   })
   const value = column?.dataset.calendarDay
   return value ? new Date(value) : null
+}
+
+function safelySetPointerCapture(element: HTMLElement, pointerId: number) {
+  try {
+    element.setPointerCapture(pointerId)
+  } catch {
+    // Synthetic pointer events and some interrupted browser gestures do not have
+    // an active pointer to capture. The global move/up listeners still handle it.
+  }
 }

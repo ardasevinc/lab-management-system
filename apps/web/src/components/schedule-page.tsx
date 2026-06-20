@@ -341,7 +341,7 @@ function MobileDayTimeline({
               currentY: event.clientY,
               columnTop: rect.top,
             })
-            event.currentTarget.setPointerCapture(event.pointerId)
+            safelySetPointerCapture(event.currentTarget, event.pointerId)
           }}
         >
           {hours.slice(0, -1).map((hour) => (
@@ -415,6 +415,15 @@ function getMobileDraftStyle(
   const height = Math.max(28, Math.abs(draft.currentY - draft.startY))
 
   return { top, height }
+}
+
+function safelySetPointerCapture(element: HTMLElement, pointerId: number) {
+  try {
+    element.setPointerCapture(pointerId)
+  } catch {
+    // Synthetic pointer events and some interrupted browser gestures do not have
+    // an active pointer to capture. The global move/up listeners still handle it.
+  }
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
