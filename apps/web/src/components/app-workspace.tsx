@@ -168,6 +168,7 @@ export function AppWorkspace() {
           title: value.title,
           notes: value.notes || null,
           type: value.type,
+          userId: value.userId,
           startsAt: value.startsAt,
           endsAt: value.endsAt,
           reason: value.reason || null,
@@ -190,6 +191,7 @@ export function AppWorkspace() {
           title: value.title,
           notes: value.notes || null,
           type: value.type,
+          userId: value.userId,
           startsAt: value.startsAt,
           endsAt: value.endsAt,
           reason: value.reason || null,
@@ -444,6 +446,8 @@ export function AppWorkspace() {
         mode={dialogState?.mode ?? "create"}
         booking={dialogState?.booking ?? null}
         machine={selectedMachine}
+        currentUser={user}
+        users={users}
         isAdmin={user.role === "admin"}
         initialRange={dialogState?.range ?? null}
         initialType={dialogState?.initialType}
@@ -486,6 +490,7 @@ function bookingToDialogValue(
     title: booking.title,
     notes: booking.notes ?? "",
     type: booking.type,
+    userId: booking.userId,
     startsAt: range.startsAt,
     endsAt: range.endsAt,
     reason: "",

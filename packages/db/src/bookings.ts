@@ -29,7 +29,7 @@ export type CreateBookingInput = {
 export type UpdateBookingInput = Partial<
   Pick<
     CreateBookingInput,
-    "machineId" | "title" | "notes" | "type" | "startsAt" | "endsAt" | "reason"
+    "machineId" | "userId" | "title" | "notes" | "type" | "startsAt" | "endsAt" | "reason"
   >
 > & {
   actorUserId: string
@@ -109,6 +109,7 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
 
     const next = {
       machineId: input.machineId ?? current.machineId,
+      userId: input.userId ?? current.userId,
       title: input.title ?? current.title,
       notes: input.notes === undefined ? current.notes : input.notes,
       type: input.type ?? current.type,
@@ -118,6 +119,7 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
 
     assertValidBookingRange(next.startsAt, next.endsAt)
     await assertMachineExists(tx, next.machineId)
+    await assertUserExists(tx, next.userId)
     await assertNoBookingOverlap(tx, {
       machineId: next.machineId,
       startsAt: next.startsAt,

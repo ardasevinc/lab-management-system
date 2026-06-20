@@ -670,6 +670,78 @@ describe("booking API", () => {
     expect(deleteResponse.status).toBe(403)
   })
 
+  it("lets admins reassign a booking owner", async () => {
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "admin-local",
+        title: "Owner handoff",
+        startsAt: "2026-05-10T20:00:00.000Z",
+        endsAt: "2026-05-10T21:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: "member-local",
+        reason: "Assign to researcher",
+      }),
+    })
+    const updateBody = await updateResponse.json()
+    const auditResponse = await app.request(`/bookings/${booking.id}/audit`, {
+      headers: authHeaders,
+    })
+    const { events } = await auditResponse.json()
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(200)
+    expect(updateBody.booking.userId).toBe("member-local")
+    expect(events.at(-1)).toEqual(
+      expect.objectContaining({
+        eventType: "updated",
+        reason: "Assign to researcher",
+        payload: expect.objectContaining({
+          before: expect.objectContaining({ userId: "admin-local" }),
+          after: expect.objectContaining({ userId: "member-local" }),
+        }),
+      }),
+    )
+  })
+
+  it("prevents members from reassigning their own bookings", async () => {
+    const memberHeaders = await login("member@miralab.tr")
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Member-owned run",
+        startsAt: "2026-05-10T22:00:00.000Z",
+        endsAt: "2026-05-10T23:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: "admin-local",
+      }),
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(403)
+    expect(await updateResponse.json()).toEqual({
+      error: "Admins are required for this booking change",
+    })
+  })
+
   it("requires admin role for booking audit history", async () => {
     const memberHeaders = await login("member@miralab.tr")
     const createResponse = await app.request("/bookings", {

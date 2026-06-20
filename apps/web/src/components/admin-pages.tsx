@@ -353,7 +353,6 @@ function InviteUserSheet({
         >
           <SheetHeader className="px-0 pt-0">
             <SheetTitle>Invite user</SheetTitle>
-            <SheetDescription>Add a researcher to the invite-only workspace.</SheetDescription>
           </SheetHeader>
 
           <FieldGroup>

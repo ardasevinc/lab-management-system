@@ -84,13 +84,13 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-2 px-3 py-1.5">
-          <SidebarGroup className="gap-1.5 px-0 py-2">
-            <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
+        <SidebarContent className="gap-1.5 px-3 py-1">
+          <SidebarGroup className="gap-1 px-0 py-1.5">
+            <SidebarGroupLabel className="h-5 px-2 text-[0.7rem] tracking-normal">
               Workspace
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-1">
+              <SidebarMenu className="gap-0.5">
                 <NavItem
                   to="/schedule"
                   label="Schedule"
@@ -110,12 +110,12 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           {isAdmin ? (
             <>
               <SidebarSeparator className="my-1" />
-              <SidebarGroup className="gap-1.5 px-0 py-2">
-                <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
+              <SidebarGroup className="gap-1 px-0 py-1.5">
+                <SidebarGroupLabel className="h-5 px-2 text-[0.7rem] tracking-normal">
                   Admin
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu className="gap-1">
+                  <SidebarMenu className="gap-0.5">
                     <NavItem
                       to="/admin"
                       label="Overview"
@@ -267,7 +267,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-9 rounded-lg px-2.5 font-normal text-[0.9rem] text-sidebar-foreground/78 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-primary/10 data-[active=true]:font-medium data-[active=true]:text-sidebar-primary data-[active=true]:shadow-[inset_2px_0_0_var(--sidebar-primary)]"
+        className="h-8 rounded-md px-2 font-normal text-[0.875rem] text-sidebar-foreground/78 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground"
       >
         <Link
           to={to}

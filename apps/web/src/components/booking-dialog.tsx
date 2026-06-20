@@ -23,7 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
-import type { AuditEvent, Booking, Machine } from "@/lib/api"
+import type { AuditEvent, Booking, Machine, User } from "@/lib/api"
 import { getBookingDialogDefaults } from "@/lib/booking-dialog-defaults"
 import { formatDateTime, fromLabDateTimeParts, toLabDateValue } from "@/lib/time"
 
@@ -31,6 +31,7 @@ export type BookingDialogValue = {
   title: string
   notes: string
   type: "normal" | "maintenance"
+  userId?: string
   startsAt: string
   endsAt: string
   reason: string
@@ -41,6 +42,8 @@ type BookingDialogProps = {
   mode: "create" | "edit"
   booking: Booking | null
   machine: Machine | null
+  currentUser: User
+  users: User[]
   isAdmin: boolean
   initialRange?: { startsAt: string; endsAt: string } | null
   initialType?: Booking["type"]
@@ -57,6 +60,8 @@ export function BookingDialog({
   mode,
   booking,
   machine,
+  currentUser,
+  users,
   isAdmin,
   initialRange,
   initialType,
@@ -68,7 +73,9 @@ export function BookingDialog({
   onDelete,
 }: BookingDialogProps) {
   const defaults = getBookingDialogDefaults({ booking, initialRange, initialType })
-  const isMaintenance = defaults.type === "maintenance"
+  const [bookingType, setBookingType] = useState<Booking["type"]>(defaults.type)
+  const [ownerUserId, setOwnerUserId] = useState(booking?.userId ?? currentUser.id)
+  const isMaintenance = bookingType === "maintenance"
   const sheetTitle =
     mode === "create"
       ? isMaintenance
@@ -91,7 +98,19 @@ export function BookingDialog({
     setStartsTime(defaults.startsTime)
     setEndsDate(defaults.endsDate)
     setEndsTime(defaults.endsTime)
-  }, [open, defaults.startsDate, defaults.startsTime, defaults.endsDate, defaults.endsTime])
+    setBookingType(defaults.type)
+    setOwnerUserId(booking?.userId ?? currentUser.id)
+  }, [
+    open,
+    defaults.startsDate,
+    defaults.startsTime,
+    defaults.endsDate,
+    defaults.endsTime,
+    defaults.type,
+    booking?.userId,
+    currentUser.id,
+  ])
+  const ownerOptions = getOwnerOptions(users, currentUser, booking?.userId)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -105,6 +124,7 @@ export function BookingDialog({
               title: String(form.get("title") ?? ""),
               notes: String(form.get("notes") ?? ""),
               type: String(form.get("type") ?? "normal") as "normal" | "maintenance",
+              userId: isAdmin && bookingType === "normal" ? ownerUserId : undefined,
               startsAt: fromLabDateTimeParts(startsDate, startsTime),
               endsAt: fromLabDateTimeParts(endsDate, endsTime),
               reason: String(form.get("reason") ?? ""),
@@ -113,13 +133,7 @@ export function BookingDialog({
         >
           <SheetHeader className="px-0 pt-0">
             <SheetTitle>{sheetTitle}</SheetTitle>
-            <SheetDescription>
-              {machine
-                ? `${machine.name} ${isMaintenance ? "maintenance" : "booking"} details`
-                : isMaintenance
-                  ? "Maintenance details"
-                  : "Booking details"}
-            </SheetDescription>
+            {machine ? <SheetDescription>{machine.name}</SheetDescription> : null}
           </SheetHeader>
 
           <FieldGroup>
@@ -151,7 +165,12 @@ export function BookingDialog({
 
             <Field>
               <FieldLabel htmlFor="type">Type</FieldLabel>
-              <Select name="type" defaultValue={defaults.type} disabled={!isAdmin}>
+              <Select
+                name="type"
+                value={bookingType}
+                disabled={!isAdmin}
+                onValueChange={(type) => setBookingType(type as Booking["type"])}
+              >
                 <SelectTrigger id="type" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -163,6 +182,26 @@ export function BookingDialog({
                 </SelectContent>
               </Select>
             </Field>
+
+            {isAdmin && !isMaintenance ? (
+              <Field>
+                <FieldLabel htmlFor="userId">Owner</FieldLabel>
+                <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+                  <SelectTrigger id="userId" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {ownerOptions.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {formatUserOption(user)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : null}
 
             <Field>
               <FieldLabel htmlFor="notes">Notes</FieldLabel>
@@ -215,6 +254,31 @@ export function BookingDialog({
       </SheetContent>
     </Sheet>
   )
+}
+
+function getOwnerOptions(users: User[], currentUser: User, selectedUserId?: string) {
+  const byId = new Map<string, User>()
+  for (const user of [currentUser, ...users]) {
+    byId.set(user.id, user)
+  }
+
+  return [...byId.values()].sort((left, right) => {
+    if (left.id === selectedUserId) {
+      return -1
+    }
+    if (right.id === selectedUserId) {
+      return 1
+    }
+    if (left.active !== right.active) {
+      return left.active ? -1 : 1
+    }
+    return left.name.localeCompare(right.name)
+  })
+}
+
+function formatUserOption(user: User) {
+  const status = user.active ? "" : " · disabled"
+  return `${user.name} · ${user.email}${status}`
 }
 
 function DateTimeField({

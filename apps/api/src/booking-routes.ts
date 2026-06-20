@@ -85,9 +85,16 @@ export function registerBookingRoutes(
           throw new NotFoundError("Booking not found")
         }
 
+        const nextUserId = body.data.userId ?? current.userId
+        const nextType = body.data.type ?? current.type
+
         assertCanWriteBooking(user, {
           userId: current.userId,
-          type: body.data.type ?? current.type,
+          type: current.type,
+        })
+        assertCanWriteBooking(user, {
+          userId: nextUserId,
+          type: nextType,
         })
 
         const booking = await updateBooking(db, c.req.param("id"), {
