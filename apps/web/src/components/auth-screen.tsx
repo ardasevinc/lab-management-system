@@ -1,7 +1,8 @@
 import { labConfig } from "@lab/config"
 import { useMutation } from "@tanstack/react-query"
-import { ArrowLeft, Cpu, KeyRound, Mail } from "lucide-react"
+import { ArrowLeft, KeyRound, Mail } from "lucide-react"
 import { useState } from "react"
+import { BrandMark } from "@/components/brand-mark"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -49,9 +50,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
       <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
         <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
           <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <Cpu className="size-5" aria-hidden="true" />
-            </div>
+            <BrandMark className="size-9 shadow-sm" />
             <div>
               <p className="font-medium text-white/50 text-xs uppercase tracking-[0.18em]">
                 {labConfig.shortName}
@@ -74,9 +73,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
           <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
-                <div className="mb-4 grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground shadow-sm lg:hidden">
-                  <Cpu className="size-5" aria-hidden="true" />
-                </div>
+                <BrandMark className="mb-4 size-10 shadow-sm lg:hidden" />
                 <p className="font-medium text-muted-foreground text-sm">{labConfig.shortName}</p>
                 <h2 className="font-semibold text-2xl tracking-tight">{labConfig.appTitle}</h2>
               </div>

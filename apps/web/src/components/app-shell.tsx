@@ -3,7 +3,6 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router"
 import {
   CalendarDays,
   ChevronsUpDown,
-  Cpu,
   Home,
   LogOut,
   MonitorCog,
@@ -15,6 +14,7 @@ import {
   X,
 } from "lucide-react"
 import { useWorkspace } from "@/components/app-workspace"
+import { BrandMark } from "@/components/brand-mark"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -70,9 +70,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
       <Sidebar variant="inset" collapsible="icon">
         <SidebarHeader className="px-3 pt-3 pb-1.5">
           <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-              <Cpu aria-hidden="true" />
-            </div>
+            <BrandMark className="size-9 shrink-0 shadow-sm" />
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <div className="truncate font-semibold text-[0.92rem] leading-5">
                 {labConfig.shortName}
