@@ -100,42 +100,52 @@ function bookingEmailForKind(
     case "booking_created":
       return {
         to: context.user.email,
-        subject: `MIRALAB booking created: ${context.booking.title}`,
+        subject: `${labConfig.shortName} booking created: ${context.booking.title}`,
         headline: "Booking created",
         body: `Your ${context.machine.name} booking has been created.`,
         details,
+        actionLabel: "Open schedule",
+        actionUrl: scheduleUrl(),
       }
     case "booking_updated":
       return {
         to: context.user.email,
-        subject: `MIRALAB booking updated: ${context.booking.title}`,
+        subject: `${labConfig.shortName} booking updated: ${context.booking.title}`,
         headline: "Booking updated",
         body: `Your ${context.machine.name} booking has been updated.`,
         details,
+        actionLabel: "Open schedule",
+        actionUrl: scheduleUrl(),
       }
     case "booking_deleted":
       return {
         to: context.user.email,
-        subject: `MIRALAB booking deleted: ${context.booking.title}`,
+        subject: `${labConfig.shortName} booking deleted: ${context.booking.title}`,
         headline: "Booking deleted",
         body: `Your ${context.machine.name} booking has been deleted.`,
         details,
+        actionLabel: "Open schedule",
+        actionUrl: scheduleUrl(),
       }
     case "booking_start_reminder":
       return {
         to: context.user.email,
-        subject: `MIRALAB booking starting soon: ${context.booking.title}`,
+        subject: `${labConfig.shortName} booking starting soon: ${context.booking.title}`,
         headline: "Booking starting soon",
         body: `Your ${context.machine.name} booking starts soon.`,
         details,
+        actionLabel: "Open schedule",
+        actionUrl: scheduleUrl(),
       }
     case "booking_ending_reminder":
       return {
         to: context.user.email,
-        subject: `MIRALAB booking ending soon: ${context.booking.title}`,
+        subject: `${labConfig.shortName} booking ending soon: ${context.booking.title}`,
         headline: "Booking ending soon",
         body: `Your ${context.machine.name} booking ends soon.`,
         details,
+        actionLabel: "Open schedule",
+        actionUrl: scheduleUrl(),
       }
   }
 }
@@ -157,6 +167,10 @@ function formatLabTimezone(date: Date) {
   })
 
   return `${formatted} ${labConfig.defaultTimezone}`
+}
+
+function scheduleUrl() {
+  return `${labConfig.baseUrl.replace(/\/$/, "")}/schedule`
 }
 
 function errorMessage(error: unknown) {

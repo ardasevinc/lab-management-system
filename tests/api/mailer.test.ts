@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { renderLoginOtpHtml, renderLoginOtpText } from "../../apps/api/src/mailer"
+import {
+  renderBookingHtml,
+  renderBookingText,
+  renderLoginOtpHtml,
+  renderLoginOtpText,
+} from "../../apps/api/src/mailer"
 
 describe("mailer templates", () => {
   it("renders login OTP text in the configured lab timezone", () => {
@@ -21,5 +26,50 @@ describe("mailer templates", () => {
     expect(html).toContain("&lt;123456&gt;")
     expect(html).toContain("May 10, 2026, 1:10 PM Europe/Istanbul")
     expect(html).not.toContain("<123456>")
+  })
+
+  it("renders booking email text with schedule action and support contact", () => {
+    expect(
+      renderBookingText({
+        to: "member@miralab.tr",
+        subject: "MIRALAB booking created: Training",
+        headline: "Booking created",
+        body: "Your tohum booking has been created.",
+        details: [{ label: "Machine", value: "tohum" }],
+        actionLabel: "Open schedule",
+        actionUrl: "https://miralab.tr/schedule",
+      }),
+    ).toBe(
+      [
+        "Booking created",
+        "",
+        "Your tohum booking has been created.",
+        "",
+        "Machine: tohum",
+        "",
+        "Open schedule: https://miralab.tr/schedule",
+        "",
+        "Need help? Contact support@miralab.tr.",
+      ].join("\n"),
+    )
+  })
+
+  it("renders booking email HTML with escaped details, schedule action, and support contact", () => {
+    const html = renderBookingHtml({
+      to: "member@miralab.tr",
+      subject: "MIRALAB booking created: <Training>",
+      headline: "Booking <created>",
+      body: "Your tohum booking has been created.",
+      details: [{ label: "Title", value: "<Training>" }],
+      actionLabel: "Open schedule",
+      actionUrl: "https://miralab.tr/schedule",
+    })
+
+    expect(html).toContain("MIRALAB")
+    expect(html).toContain("Booking &lt;created&gt;")
+    expect(html).toContain("&lt;Training&gt;")
+    expect(html).toContain("https://miralab.tr/schedule")
+    expect(html).toContain("mailto:support@miralab.tr")
+    expect(html).not.toContain("<Training>")
   })
 })

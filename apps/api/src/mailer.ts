@@ -13,6 +13,8 @@ export type BookingEmail = {
   headline: string
   body: string
   details: Array<{ label: string; value: string }>
+  actionLabel?: string
+  actionUrl?: string
 }
 
 export type Mailer = {
@@ -165,23 +167,31 @@ function formatLabTimezone(date: Date) {
   return `${formatted} ${labConfig.defaultTimezone}`
 }
 
-function renderBookingText(email: BookingEmail) {
-  return [
+export function renderBookingText(email: BookingEmail) {
+  const lines = [
     email.headline,
     "",
     email.body,
     "",
     ...email.details.map((detail) => `${detail.label}: ${detail.value}`),
-  ].join("\n")
+  ]
+
+  if (email.actionUrl) {
+    lines.push("", `${email.actionLabel ?? "Open booking"}: ${email.actionUrl}`)
+  }
+
+  lines.push("", `Need help? Contact ${labConfig.email.supportAddress}.`)
+
+  return lines.join("\n")
 }
 
-function renderBookingHtml(email: BookingEmail) {
+export function renderBookingHtml(email: BookingEmail) {
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#f4f7f8;color:#172124;font-family:Arial,sans-serif;">
     <main style="max-width:560px;margin:0 auto;padding:32px 20px;">
       <section style="background:#ffffff;border:1px solid #d8e2e4;border-radius:12px;padding:24px;">
-        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">MIRALAB</p>
+        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(labConfig.shortName)}</p>
         <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">${escapeHtml(email.headline)}</h1>
         <p style="margin:0 0 18px;color:#455157;font-size:15px;line-height:1.5;">${escapeHtml(email.body)}</p>
         <dl style="margin:0;display:grid;gap:10px;">
@@ -194,6 +204,12 @@ function renderBookingHtml(email: BookingEmail) {
             )
             .join("")}
         </dl>
+        ${
+          email.actionUrl
+            ? `<p style="margin:22px 0 0;"><a href="${escapeHtml(email.actionUrl)}" style="display:inline-block;border-radius:10px;background:#007f67;color:#ffffff;font-size:14px;font-weight:700;line-height:1;text-decoration:none;padding:13px 16px;">${escapeHtml(email.actionLabel ?? "Open booking")}</a></p>`
+            : ""
+        }
+        <p style="margin:22px 0 0;color:#647176;font-size:12px;line-height:1.5;">Need help? Contact <a href="mailto:${escapeHtml(labConfig.email.supportAddress)}" style="color:#007f67;text-decoration:none;">${escapeHtml(labConfig.email.supportAddress)}</a>.</p>
       </section>
     </main>
   </body>

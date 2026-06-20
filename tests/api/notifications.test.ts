@@ -111,6 +111,12 @@ describe("booking notifications", () => {
       { label: "Starts", value: "May 10, 2026, 1:10 PM Europe/Istanbul" },
       { label: "Ends", value: "May 10, 2026, 2:00 PM Europe/Istanbul" },
     ])
+    expect(sentEmails[0]).toEqual(
+      expect.objectContaining({
+        actionLabel: "Open schedule",
+        actionUrl: "https://miralab.tr/schedule",
+      }),
+    )
   })
 
   it("does not overlap worker runs while a send is still in flight", async () => {
