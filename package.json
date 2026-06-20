@@ -17,6 +17,7 @@
     "verify:sqlite-restore": "bun scripts/restore-sqlite-backup.ts",
     "verify:caprover-env": "bun scripts/verify-caprover-env.ts",
     "verify:docker-build": "sh scripts/verify-docker-build.sh",
+    "verify:docker-runtime": "sh scripts/verify-docker-runtime.sh",
     "check": "bun run lint && bun run typecheck && bun run test",
     "full-gate": "bun run check && bun run build",
     "lint": "biome check .",
