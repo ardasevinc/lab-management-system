@@ -89,6 +89,34 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin can create a maintenance block from the maintenance route", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop maintenance flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const maintenanceTitle = `E2E maintenance ${Date.now()}`
+  await loginAsAdmin(page)
+
+  await page.goto("/admin/maintenance")
+  await expect(page.getByRole("heading", { name: "Maintenance" })).toBeVisible()
+  await page.getByRole("button", { name: "Add maintenance" }).click()
+
+  await expect(page.getByRole("heading", { name: "New maintenance block" })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Type" })).toHaveText("Maintenance")
+  await page.getByLabel("Title").fill(maintenanceTitle)
+  await page.getByRole("button", { name: "Create" }).click()
+
+  await expect(page.locator("tbody").getByText(maintenanceTitle)).toBeVisible()
+
+  const createdBooking = await findBookingFromPage(page, maintenanceTitle)
+  expect(createdBooking).toEqual(
+    expect.objectContaining({ type: "maintenance", userId: "admin-local" }),
+  )
+  await deleteBookingFromPage(page, createdBooking.id)
+  expect(consoleProblems).toEqual([])
+})
+
 test("moving a booking into an occupied slot surfaces a conflict", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop drag flow")
 
@@ -289,7 +317,7 @@ async function createBookingFromPage(
 async function findBookingFromPage(
   page: Page,
   title: string,
-): Promise<{ id: string; userId: string }> {
+): Promise<{ id: string; type: "normal" | "maintenance"; userId: string }> {
   return page.evaluate(async (bookingTitle) => {
     const token = window.localStorage.getItem("lab_session_token")
     const response = await window.fetch(
@@ -306,7 +334,7 @@ async function findBookingFromPage(
     }
 
     const body = (await response.json()) as {
-      bookings: Array<{ id: string; title: string; userId: string }>
+      bookings: Array<{ id: string; title: string; type: "normal" | "maintenance"; userId: string }>
     }
     const booking = body.bookings.find((candidate) => candidate.title === bookingTitle)
 
@@ -314,7 +342,7 @@ async function findBookingFromPage(
       throw new Error(`Booking not found: ${bookingTitle}`)
     }
 
-    return { id: booking.id, userId: booking.userId }
+    return { id: booking.id, type: booking.type, userId: booking.userId }
   }, title)
 }
 
