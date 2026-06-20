@@ -1,4 +1,5 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses"
+import { labConfig } from "@lab/config"
 
 export type LoginOtpEmail = {
   to: string
@@ -76,16 +77,7 @@ export function createSesMailer(config: SesMailerConfig): Mailer {
             Body: {
               Text: {
                 Charset: "UTF-8",
-                Data: [
-                  `Your MIRALAB login code is ${email.code}.`,
-                  `It expires at ${expiresAt.toLocaleString("en-US", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                    timeZone: "Europe/Istanbul",
-                  })} Europe/Istanbul.`,
-                  "",
-                  "If you did not request this code, you can ignore this email.",
-                ].join("\n"),
+                Data: renderLoginOtpText(email.code, expiresAt),
               },
               Html: {
                 Charset: "UTF-8",
@@ -135,27 +127,42 @@ function quoteDisplayName(name: string) {
   return `"${name.replaceAll('"', '\\"')}"`
 }
 
-function renderLoginOtpHtml(code: string, expiresAt: Date) {
-  const expiry = expiresAt.toLocaleString("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Europe/Istanbul",
-  })
+export function renderLoginOtpText(code: string, expiresAt: Date) {
+  return [
+    `Your ${labConfig.shortName} login code is ${code}.`,
+    `It expires at ${formatLabTimezone(expiresAt)}.`,
+    "",
+    "If you did not request this code, you can ignore this email.",
+  ].join("\n")
+}
+
+export function renderLoginOtpHtml(code: string, expiresAt: Date) {
+  const expiry = formatLabTimezone(expiresAt)
 
   return `<!doctype html>
 <html>
   <body style="margin:0;background:#f4f7f8;color:#172124;font-family:Arial,sans-serif;">
     <main style="max-width:520px;margin:0 auto;padding:32px 20px;">
       <section style="background:#ffffff;border:1px solid #d8e2e4;border-radius:12px;padding:24px;">
-        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">MIRALAB</p>
+        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(labConfig.shortName)}</p>
         <h1 style="margin:0 0 18px;font-size:22px;line-height:1.25;">Your login code</h1>
-        <p style="margin:0 0 16px;color:#455157;font-size:15px;line-height:1.5;">Use this one-time code to sign in to the MIRALAB booking system.</p>
+        <p style="margin:0 0 16px;color:#455157;font-size:15px;line-height:1.5;">Use this one-time code to sign in to the ${escapeHtml(labConfig.shortName)} booking system.</p>
         <div style="margin:0 0 16px;padding:14px 16px;border-radius:10px;background:#e7f5f1;color:#007f67;font-size:28px;font-weight:700;letter-spacing:0.18em;text-align:center;">${escapeHtml(code)}</div>
-        <p style="margin:0;color:#647176;font-size:13px;line-height:1.5;">Expires at ${escapeHtml(expiry)} Europe/Istanbul. Ignore this email if you did not request it.</p>
+        <p style="margin:0;color:#647176;font-size:13px;line-height:1.5;">Expires at ${escapeHtml(expiry)}. Ignore this email if you did not request it.</p>
       </section>
     </main>
   </body>
 </html>`
+}
+
+function formatLabTimezone(date: Date) {
+  const formatted = date.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: labConfig.defaultTimezone,
+  })
+
+  return `${formatted} ${labConfig.defaultTimezone}`
 }
 
 function renderBookingText(email: BookingEmail) {
