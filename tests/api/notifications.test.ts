@@ -45,4 +45,36 @@ describe("booking notifications", () => {
 
     expect(sentSubjects).toEqual(["MIRALAB booking starting soon: Reminder run"])
   })
+
+  it("sends ending reminders once", async () => {
+    const sentSubjects: string[] = []
+    await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Ending run",
+      startsAt: new Date("2026-05-10T09:00:00.000Z"),
+      endsAt: new Date("2026-05-10T10:10:00.000Z"),
+    })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendBookingEmail(email: { subject: string }) {
+        sentSubjects.push(email.subject)
+      },
+    }
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+
+    expect(sentSubjects).toEqual(["MIRALAB booking ending soon: Ending run"])
+  })
 })
