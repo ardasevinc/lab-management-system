@@ -132,6 +132,25 @@ describe("auth and invites", () => {
     expect(await response.json()).toEqual({ error: "Admins cannot change their own access" })
   })
 
+  it("lets admins change another user's role", async () => {
+    const adminHeaders = await login("admin@miralab.tr")
+    const response = await app.request("/admin/users/member-local", {
+      method: "PATCH",
+      headers: { ...adminHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ role: "admin" }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.user).toEqual(
+      expect.objectContaining({
+        id: "member-local",
+        role: "admin",
+        active: true,
+      }),
+    )
+  })
+
   it("sets a secure domain session cookie in production", async () => {
     app = createApiApp({
       db: testDb.db,

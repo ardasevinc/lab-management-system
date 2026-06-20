@@ -259,9 +259,12 @@ export function AdminUsersPage() {
                   <div className="truncate text-muted-foreground text-xs">{user.email}</div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
-                  <Badge variant="outline" className="capitalize">
-                    {user.role}
-                  </Badge>
+                  <UserRoleSelect
+                    user={user}
+                    currentUserId={workspace.user.id}
+                    pending={workspace.userAccessPendingId === user.id}
+                    onChange={(role) => workspace.updateUserAccess(user, { role })}
+                  />
                   <UserStatusBadge active={user.active} />
                 </div>
               </div>
@@ -291,9 +294,12 @@ export function AdminUsersPage() {
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="capitalize">
-                    {user.role}
-                  </Badge>
+                  <UserRoleSelect
+                    user={user}
+                    currentUserId={workspace.user.id}
+                    pending={workspace.userAccessPendingId === user.id}
+                    onChange={(role) => workspace.updateUserAccess(user, { role })}
+                  />
                 </TableCell>
                 <TableCell>
                   <UserStatusBadge active={user.active} />
@@ -317,6 +323,38 @@ export function AdminUsersPage() {
 
 function UserStatusBadge({ active }: { active: boolean }) {
   return <Badge variant={active ? "secondary" : "outline"}>{active ? "active" : "disabled"}</Badge>
+}
+
+function UserRoleSelect({
+  user,
+  currentUserId,
+  pending,
+  onChange,
+}: {
+  user: User
+  currentUserId: string
+  pending: boolean
+  onChange: (role: User["role"]) => void
+}) {
+  const isSelf = user.id === currentUserId
+
+  return (
+    <Select
+      value={user.role}
+      disabled={isSelf || pending}
+      onValueChange={(role) => onChange(role as User["role"])}
+    >
+      <SelectTrigger className="h-8 w-[116px] capitalize">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          <SelectItem value="member">Member</SelectItem>
+          <SelectItem value="admin">Admin</SelectItem>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  )
 }
 
 function UserAccessButton({
