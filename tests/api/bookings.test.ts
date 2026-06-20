@@ -217,6 +217,22 @@ describe("booking API", () => {
     expect(gap.status).toBe(201)
   })
 
+  it("allows only one winner for simultaneous overlapping create requests", async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        createBookingRequest({
+          title: `Concurrent run ${index + 1}`,
+          startsAt: "2026-05-18T10:00:00.000Z",
+          endsAt: "2026-05-18T11:00:00.000Z",
+        }),
+      ),
+    )
+    const statuses = responses.map((response) => response.status)
+
+    expect(statuses.filter((status) => status === 201)).toHaveLength(1)
+    expect(statuses.filter((status) => status === 409)).toHaveLength(7)
+  })
+
   it("treats maintenance blocks as reserved time and frees deleted slots", async () => {
     const maintenance = await app.request("/bookings", {
       method: "POST",

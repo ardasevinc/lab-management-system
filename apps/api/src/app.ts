@@ -93,6 +93,7 @@ export function createApiApp({
   const app = new Hono<{ Variables: { user: CurrentUser } }>()
   const runtimeConfig = { ...defaultRuntimeConfig, ...config }
   const emailSender = mailer ?? createConsoleMailer()
+  const enqueueBookingWrite = createSerialQueue()
 
   app.onError((error, c) => apiErrorResponse(c, error))
 
@@ -210,21 +211,23 @@ export function createApiApp({
       return c.json({ error: "Invalid booking", issues: body.error.issues }, 400)
     }
 
-    return handleApiResult(c, async () => {
-      const user = c.get("user")
-      const userId = body.data.userId ?? user.id
-      assertCanWriteBooking(user, { userId, type: body.data.type })
-      const booking = await createBooking(db, {
-        ...body.data,
-        userId,
-        startsAt: new Date(body.data.startsAt),
-        endsAt: new Date(body.data.endsAt),
-        actorUserId: user.id,
-      })
-      notifyBookingChange(db, emailSender, booking.id, "booking_created")
+    return handleApiResult(c, () =>
+      enqueueBookingWrite(async () => {
+        const user = c.get("user")
+        const userId = body.data.userId ?? user.id
+        assertCanWriteBooking(user, { userId, type: body.data.type })
+        const booking = await createBooking(db, {
+          ...body.data,
+          userId,
+          startsAt: new Date(body.data.startsAt),
+          endsAt: new Date(body.data.endsAt),
+          actorUserId: user.id,
+        })
+        notifyBookingChange(db, emailSender, booking.id, "booking_created")
 
-      return c.json({ booking }, 201)
-    })
+        return c.json({ booking }, 201)
+      }),
+    )
   })
 
   app.patch("/bookings/:id", async (c) => {
@@ -234,45 +237,49 @@ export function createApiApp({
       return c.json({ error: "Invalid booking update", issues: body.error.issues }, 400)
     }
 
-    return handleApiResult(c, async () => {
-      const user = c.get("user")
-      const current = await getBooking(db, c.req.param("id"))
+    return handleApiResult(c, () =>
+      enqueueBookingWrite(async () => {
+        const user = c.get("user")
+        const current = await getBooking(db, c.req.param("id"))
 
-      if (!current) {
-        throw new NotFoundError("Booking not found")
-      }
+        if (!current) {
+          throw new NotFoundError("Booking not found")
+        }
 
-      assertCanWriteBooking(user, {
-        userId: current.userId,
-        type: body.data.type ?? current.type,
-      })
+        assertCanWriteBooking(user, {
+          userId: current.userId,
+          type: body.data.type ?? current.type,
+        })
 
-      const booking = await updateBooking(db, c.req.param("id"), {
-        ...body.data,
-        startsAt: body.data.startsAt ? new Date(body.data.startsAt) : undefined,
-        endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
-        actorUserId: user.id,
-      })
-      notifyBookingChange(db, emailSender, booking.id, "booking_updated")
+        const booking = await updateBooking(db, c.req.param("id"), {
+          ...body.data,
+          startsAt: body.data.startsAt ? new Date(body.data.startsAt) : undefined,
+          endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
+          actorUserId: user.id,
+        })
+        notifyBookingChange(db, emailSender, booking.id, "booking_updated")
 
-      return c.json({ booking })
-    })
+        return c.json({ booking })
+      }),
+    )
   })
 
   app.delete("/bookings/:id", async (c) =>
-    handleApiResult(c, async () => {
-      const user = c.get("user")
-      const current = await getBooking(db, c.req.param("id"))
+    handleApiResult(c, () =>
+      enqueueBookingWrite(async () => {
+        const user = c.get("user")
+        const current = await getBooking(db, c.req.param("id"))
 
-      if (!current) {
-        throw new NotFoundError("Booking not found")
-      }
+        if (!current) {
+          throw new NotFoundError("Booking not found")
+        }
 
-      assertCanWriteBooking(user, current)
-      await deleteBooking(db, c.req.param("id"), user.id, c.req.query("reason"))
-      notifyBookingChange(db, emailSender, current.id, "booking_deleted")
-      return c.json({ ok: true })
-    }),
+        assertCanWriteBooking(user, current)
+        await deleteBooking(db, c.req.param("id"), user.id, c.req.query("reason"))
+        notifyBookingChange(db, emailSender, current.id, "booking_deleted")
+        return c.json({ ok: true })
+      }),
+    ),
   )
 
   app.get("/bookings/:id/audit", async (c) =>
@@ -379,6 +386,19 @@ async function handleApiResult(c: Context, fn: () => Promise<Response>) {
     return await fn()
   } catch (error) {
     return apiErrorResponse(c, error)
+  }
+}
+
+function createSerialQueue() {
+  let queue = Promise.resolve()
+
+  return async function enqueue<T>(operation: () => Promise<T>) {
+    const result = queue.then(operation, operation)
+    queue = result.then(
+      () => undefined,
+      () => undefined,
+    )
+    return result
   }
 }
 
