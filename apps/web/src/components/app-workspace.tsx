@@ -58,12 +58,14 @@ type WorkspaceContextValue = {
   machineUpdatePendingId: string | null
   machineDeletePendingId: string | null
   workspaceError: string | null
+  adminSheetError: string | null
   setSelectedMachineSlug: (slug: string) => void
   goToPreviousWeek: () => void
   goToNextWeek: () => void
   goToCurrentWeek: () => void
   goToWeek: (date: Date) => void
   clearWorkspaceError: () => void
+  clearAdminSheetError: () => void
   openNewBooking: () => void
   openMaintenanceBooking: () => void
   inviteUser: (form: FormData, options?: { onSuccess?: () => void }) => void
@@ -101,6 +103,7 @@ export function AppWorkspace() {
   const [dialogState, setDialogState] = useState<DialogState>(null)
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [workspaceError, setWorkspaceError] = useState<string | null>(null)
+  const [adminSheetError, setAdminSheetError] = useState<string | null>(null)
   const hasStoredToken = Boolean(getStoredToken())
 
   const meQuery = useQuery({
@@ -239,7 +242,12 @@ export function AppWorkspace() {
         }),
       }),
     onSuccess: () => {
+      setAdminSheetError(null)
+      setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+    },
+    onError: (error: Error) => {
+      setAdminSheetError(error.message)
     },
   })
 
@@ -273,12 +281,13 @@ export function AppWorkspace() {
         body: JSON.stringify(value),
       }).then(() => ({ onSuccess })),
     onSuccess: ({ onSuccess }) => {
+      setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["machines"] })
       onSuccess?.()
     },
     onError: (error: Error) => {
-      setWorkspaceError(error.message)
+      setAdminSheetError(error.message)
     },
   })
 
@@ -289,12 +298,13 @@ export function AppWorkspace() {
         body: JSON.stringify(value),
       }).then(() => ({ onSuccess })),
     onSuccess: ({ onSuccess }) => {
+      setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["machines"] })
       onSuccess?.()
     },
     onError: (error: Error) => {
-      setWorkspaceError(error.message)
+      setAdminSheetError(error.message)
     },
   })
 
@@ -311,12 +321,13 @@ export function AppWorkspace() {
         setSelectedMachineSlug(remainingMachines[0].slug)
       }
 
+      setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["machines"] })
       onSuccess?.()
     },
     onError: (error: Error) => {
-      setWorkspaceError(error.message)
+      setAdminSheetError(error.message)
     },
   })
 
@@ -371,12 +382,14 @@ export function AppWorkspace() {
       ? machineDeleteMutation.variables.machine.id
       : null,
     workspaceError,
+    adminSheetError,
     setSelectedMachineSlug,
     goToPreviousWeek: () => setVisibleWeekDate((date) => addWeeks(date, -1)),
     goToNextWeek: () => setVisibleWeekDate((date) => addWeeks(date, 1)),
     goToCurrentWeek: () => setVisibleWeekDate(new Date()),
     goToWeek: (date) => setVisibleWeekDate(date),
     clearWorkspaceError: () => setWorkspaceError(null),
+    clearAdminSheetError: () => setAdminSheetError(null),
     openNewBooking: () => {
       setDialogError(null)
       setWorkspaceError(null)
@@ -395,25 +408,34 @@ export function AppWorkspace() {
         },
       })
     },
-    inviteUser: (form, options) => inviteMutation.mutate(form, { onSuccess: options?.onSuccess }),
+    inviteUser: (form, options) => {
+      setAdminSheetError(null)
+      inviteMutation.mutate(form, { onSuccess: options?.onSuccess })
+    },
     updateUserAccess: (targetUser, access) =>
       userAccessMutation.mutate({ id: targetUser.id, value: access }),
-    updateMachine: (machine, machineUpdate, options) =>
+    updateMachine: (machine, machineUpdate, options) => {
+      setAdminSheetError(null)
       machineUpdateMutation.mutate({
         id: machine.id,
         value: machineUpdate,
         onSuccess: options?.onSuccess,
-      }),
-    createMachine: (machineCreate, options) =>
+      })
+    },
+    createMachine: (machineCreate, options) => {
+      setAdminSheetError(null)
       machineCreateMutation.mutate({
         value: machineCreate,
         onSuccess: options?.onSuccess,
-      }),
-    deleteMachine: (machine, options) =>
+      })
+    },
+    deleteMachine: (machine, options) => {
+      setAdminSheetError(null)
       machineDeleteMutation.mutate({
         machine,
         onSuccess: options?.onSuccess,
-      }),
+      })
+    },
     createRange: (range) => {
       setDialogError(null)
       setWorkspaceError(null)

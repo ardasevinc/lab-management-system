@@ -22,7 +22,7 @@ import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -322,7 +322,13 @@ export function AdminUsersPage() {
       <InviteUserSheet
         open={inviteOpen}
         pending={workspace.invitePending}
-        onOpenChange={setInviteOpen}
+        error={workspace.adminSheetError}
+        onOpenChange={(open) => {
+          if (!open) {
+            workspace.clearAdminSheetError()
+          }
+          setInviteOpen(open)
+        }}
         onSubmit={(form) => {
           workspace.inviteUser(form, { onSuccess: () => setInviteOpen(false) })
         }}
@@ -334,11 +340,13 @@ export function AdminUsersPage() {
 function InviteUserSheet({
   open,
   pending,
+  error,
   onOpenChange,
   onSubmit,
 }: {
   open: boolean
   pending: boolean
+  error: string | null
   onOpenChange: (open: boolean) => void
   onSubmit: (form: FormData) => void
 }) {
@@ -396,6 +404,8 @@ function InviteUserSheet({
               </Select>
             </Field>
           </FieldGroup>
+
+          {error ? <FieldError>{error}</FieldError> : null}
 
           <SheetFooter className="mt-0 px-0 pb-0">
             <Button type="submit" disabled={pending}>
@@ -505,8 +515,10 @@ export function AdminMachinesPage() {
           workspace.machineUpdatePendingId === editingMachine?.id ||
           workspace.machineDeletePendingId === editingMachine?.id
         }
+        error={workspace.adminSheetError}
         onOpenChange={(open) => {
           if (!open) {
+            workspace.clearAdminSheetError()
             setEditingMachine(null)
           }
         }}
@@ -534,8 +546,10 @@ export function AdminMachinesPage() {
         machine={null}
         open={creatingMachine}
         pending={workspace.machineCreatePending}
+        error={workspace.adminSheetError}
         onOpenChange={(open) => {
           if (!open) {
+            workspace.clearAdminSheetError()
             setCreatingMachine(false)
           }
         }}
@@ -554,6 +568,7 @@ function MachineEditorSheet({
   machine,
   open,
   pending,
+  error,
   onOpenChange,
   onSubmit,
   onDelete,
@@ -562,6 +577,7 @@ function MachineEditorSheet({
   machine: Machine | null
   open: boolean
   pending: boolean
+  error: string | null
   onOpenChange: (open: boolean) => void
   onSubmit: (value: MachineCreateValue | MachineUpdateValue) => void
   onDelete?: () => void
@@ -679,6 +695,8 @@ function MachineEditorSheet({
               />
             </Field>
           </FieldGroup>
+
+          {error ? <FieldError>{error}</FieldError> : null}
 
           <SheetFooter className="mt-0 gap-2 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
             {mode === "edit" && onDelete ? (
