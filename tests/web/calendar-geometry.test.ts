@@ -34,6 +34,24 @@ describe("calendar geometry", () => {
     })
   })
 
+  it("normalizes upward drag-create ranges", () => {
+    const range = normalizeRange(day, 14 * 60 + 10, 10 * 60 + 40)
+
+    expect(range).toEqual({
+      startsAt: iso(10 * 60 + 30),
+      endsAt: iso(14 * 60),
+    })
+  })
+
+  it("keeps drag-create ranges inside the visible day", () => {
+    const range = normalizeRange(day, 7 * 60 + 30, 23 * 60)
+
+    expect(range).toEqual({
+      startsAt: iso(8 * 60),
+      endsAt: iso(22 * 60),
+    })
+  })
+
   it("creates a one-hour default range for click bookings", () => {
     const range = defaultRangeAtMinutes(day, 10 * 60 + 10)
 
