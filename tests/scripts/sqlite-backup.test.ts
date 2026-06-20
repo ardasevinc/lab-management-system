@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process"
 import { existsSync, mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "@lab/db"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 let tempDir: string
@@ -51,6 +52,35 @@ describe("SQLite backup scripts", () => {
         stdio: ["ignore", "pipe", "pipe"],
       }),
     ).toThrow(/DATABASE_URL must use file: for SQLite backups/)
+  })
+
+  it("runs a restore drill against a migrated app backup", async () => {
+    const databasePath = join(tempDir, "app.sqlite")
+    const backupDir = join(tempDir, "backups")
+    const client = createDatabaseClient(`file:${databasePath}`)
+    const db = createDbFromClient(client)
+
+    try {
+      await migrate(client)
+      await seedInitialData(db, new Date("2026-05-10T09:00:00.000Z"))
+    } finally {
+      client.close()
+    }
+
+    const backupFile = execFileSync("sh", ["scripts/backup-sqlite.sh"], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        DATABASE_URL: `file:${databasePath}`,
+        BACKUP_DIR: backupDir,
+      },
+    }).trim()
+
+    const restoreOutput = execFileSync("bun", ["scripts/restore-sqlite-backup.ts", backupFile], {
+      encoding: "utf8",
+    }).trim()
+
+    expect(restoreOutput).toBe(`restore drill passed for ${backupFile}`)
   })
 })
 

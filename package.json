@@ -14,6 +14,7 @@
     "backup:sqlite": "sh scripts/backup-sqlite.sh",
     "backup:cron-entry": "sh scripts/backup-cron-entry.sh",
     "verify:sqlite-backup": "sh scripts/verify-sqlite-backup.sh",
+    "verify:sqlite-restore": "bun scripts/restore-sqlite-backup.ts",
     "check": "bun run lint && bun run typecheck && bun run test",
     "full-gate": "bun run check && bun run build",
     "lint": "biome check .",
