@@ -51,6 +51,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import type { Machine, User } from "@/lib/api"
 import { formatDate, formatTime } from "@/lib/time"
+import { cn } from "@/lib/utils"
 
 export function AdminOverviewPage() {
   const workspace = useWorkspace()
@@ -189,6 +190,7 @@ export function AdminOverviewPage() {
 
 export function AdminUsersPage() {
   const workspace = useWorkspace()
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   if (workspace.user.role !== "admin") {
     return <Navigate to="/schedule" replace />
@@ -197,58 +199,16 @@ export function AdminUsersPage() {
   const activeUsers = workspace.users.filter((user) => user.active).length
 
   return (
-    <AdminPageFrame title="Users" description="Invite researchers and review access.">
-      <section className="rounded-lg border border-border bg-card">
-        <div className="border-border border-b px-4 py-3">
-          <h2 className="font-medium text-sm">Invite user</h2>
-        </div>
-        <form
-          className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px_auto]"
-          onSubmit={(event) => {
-            event.preventDefault()
-            workspace.inviteUser(new FormData(event.currentTarget))
-            event.currentTarget.reset()
-          }}
-        >
-          <FieldGroup className="contents">
-            <Field>
-              <FieldLabel htmlFor="invite-email">Email</FieldLabel>
-              <Input
-                id="invite-email"
-                name="email"
-                type="email"
-                placeholder="user@miralab.tr"
-                autoComplete="email"
-                spellCheck={false}
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="invite-name">Name</FieldLabel>
-              <Input id="invite-name" name="name" placeholder="Researcher name" required />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="invite-role">Role</FieldLabel>
-              <Select name="role" defaultValue="member">
-                <SelectTrigger id="invite-role" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          </FieldGroup>
-          <Button type="submit" className="self-end" disabled={workspace.invitePending}>
-            <MailPlus data-icon="inline-start" aria-hidden="true" />
-            Invite
-          </Button>
-        </form>
-      </section>
-
+    <AdminPageFrame
+      title="Users"
+      description="Members and access."
+      action={
+        <Button type="button" onClick={() => setInviteOpen(true)}>
+          <MailPlus data-icon="inline-start" aria-hidden="true" />
+          Invite user
+        </Button>
+      }
+    >
       <section className="rounded-lg border border-border bg-card">
         <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
           <h2 className="font-medium text-sm">Members</h2>
@@ -323,7 +283,86 @@ export function AdminUsersPage() {
           </TableBody>
         </Table>
       </section>
+      <InviteUserSheet
+        open={inviteOpen}
+        pending={workspace.invitePending}
+        onOpenChange={setInviteOpen}
+        onSubmit={(form) => {
+          workspace.inviteUser(form, { onSuccess: () => setInviteOpen(false) })
+        }}
+      />
     </AdminPageFrame>
+  )
+}
+
+function InviteUserSheet({
+  open,
+  pending,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean
+  pending: boolean
+  onOpenChange: (open: boolean) => void
+  onSubmit: (form: FormData) => void
+}) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-md sm:p-5">
+        <form
+          className="flex min-h-full flex-col gap-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            onSubmit(new FormData(event.currentTarget))
+          }}
+        >
+          <SheetHeader className="px-0 pt-0">
+            <SheetTitle>Invite user</SheetTitle>
+            <SheetDescription>Add a researcher to the invite-only workspace.</SheetDescription>
+          </SheetHeader>
+
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="invite-email">Email</FieldLabel>
+              <Input
+                id="invite-email"
+                name="email"
+                type="email"
+                placeholder="user@miralab.tr"
+                autoComplete="email"
+                spellCheck={false}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="invite-name">Name</FieldLabel>
+              <Input id="invite-name" name="name" placeholder="Researcher name" required />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="invite-role">Role</FieldLabel>
+              <Select name="role" defaultValue="member">
+                <SelectTrigger id="invite-role" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+          </FieldGroup>
+
+          <SheetFooter className="px-0 pb-0">
+            <Button type="submit" disabled={pending}>
+              <MailPlus data-icon="inline-start" aria-hidden="true" />
+              {pending ? "Inviting" : "Send invite"}
+            </Button>
+          </SheetFooter>
+        </form>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -713,10 +752,15 @@ function AdminPageFrame({
 }) {
   return (
     <main className="min-w-0 p-3 sm:p-4">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-semibold text-2xl tracking-tight">{title}</h1>
-          <p className="mt-1 text-muted-foreground text-sm">{description}</p>
+      <div
+        className={cn(
+          "flex items-center justify-end gap-3 sm:mb-4 sm:items-end sm:justify-between",
+          action ? "mb-3" : "mb-0",
+        )}
+      >
+        <div className="sr-only sm:not-sr-only">
+          <h1 className="font-semibold text-xl tracking-tight sm:text-2xl">{title}</h1>
+          <p className="mt-1 hidden text-muted-foreground text-sm sm:block">{description}</p>
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>

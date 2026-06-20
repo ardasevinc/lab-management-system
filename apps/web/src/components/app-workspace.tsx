@@ -64,7 +64,7 @@ type WorkspaceContextValue = {
   clearWorkspaceError: () => void
   openNewBooking: () => void
   openMaintenanceBooking: () => void
-  inviteUser: (form: FormData) => void
+  inviteUser: (form: FormData, options?: { onSuccess?: () => void }) => void
   updateUserAccess: (user: User, value: { active?: boolean; role?: User["role"] }) => void
   updateMachine: (
     machine: Machine,
@@ -380,7 +380,7 @@ export function AppWorkspace() {
         },
       })
     },
-    inviteUser: (form) => inviteMutation.mutate(form),
+    inviteUser: (form, options) => inviteMutation.mutate(form, { onSuccess: options?.onSuccess }),
     updateUserAccess: (targetUser, access) =>
       userAccessMutation.mutate({ id: targetUser.id, value: access }),
     updateMachine: (machine, machineUpdate, options) =>
