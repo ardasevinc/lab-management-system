@@ -769,6 +769,52 @@ describe("booking API", () => {
     )
   })
 
+  it("blocks assigning bookings to disabled users", async () => {
+    const disableResponse = await app.request("/admin/users/member-local", {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    })
+    const createForDisabled = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Disabled owner create",
+        startsAt: "2026-05-10T21:00:00.000Z",
+        endsAt: "2026-05-10T22:00:00.000Z",
+      }),
+    })
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "admin-local",
+        title: "Disabled owner handoff",
+        startsAt: "2026-05-10T22:00:00.000Z",
+        endsAt: "2026-05-10T23:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const reassignToDisabled = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: "member-local",
+      }),
+    })
+
+    expect(disableResponse.status).toBe(200)
+    expect(createForDisabled.status).toBe(400)
+    expect(await createForDisabled.json()).toEqual({ error: "Booking owner is not active" })
+    expect(createResponse.status).toBe(201)
+    expect(reassignToDisabled.status).toBe(400)
+    expect(await reassignToDisabled.json()).toEqual({ error: "Booking owner is not active" })
+  })
+
   it("prevents members from reassigning their own bookings", async () => {
     const memberHeaders = await login("member@miralab.tr")
     const createResponse = await app.request("/bookings", {

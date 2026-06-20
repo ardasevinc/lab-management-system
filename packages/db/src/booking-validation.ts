@@ -57,4 +57,14 @@ export async function assertUserExists(db: QueryDb, id: string) {
   if (!user) {
     throw new NotFoundError("User not found")
   }
+
+  return user
+}
+
+export async function assertActiveUserExists(db: QueryDb, id: string) {
+  const user = await assertUserExists(db, id)
+
+  if (!user.active) {
+    throw new InvalidBookingRangeError("Booking owner is not active")
+  }
 }

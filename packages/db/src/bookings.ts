@@ -2,6 +2,7 @@ import { and, asc, eq, gt, isNull, lt } from "drizzle-orm"
 import type { Db } from "."
 import { insertBookingAudit } from "./booking-audit"
 import {
+  assertActiveUserExists,
   assertMachineBookable,
   assertMachineExists,
   assertNoBookingOverlap,
@@ -59,7 +60,7 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
 
   return db.transaction(async (tx) => {
     await assertMachineBookable(tx, input.machineId)
-    await assertUserExists(tx, input.userId)
+    await assertActiveUserExists(tx, input.userId)
     await assertUserExists(tx, input.actorUserId)
     await assertNoBookingOverlap(tx, {
       machineId: input.machineId,
@@ -119,7 +120,9 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
 
     assertValidBookingRange(next.startsAt, next.endsAt)
     await assertMachineExists(tx, next.machineId)
-    await assertUserExists(tx, next.userId)
+    if (input.userId !== undefined) {
+      await assertActiveUserExists(tx, next.userId)
+    }
     await assertNoBookingOverlap(tx, {
       machineId: next.machineId,
       startsAt: next.startsAt,
