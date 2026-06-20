@@ -177,121 +177,51 @@ body {
 .auth-background {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 28% 48%, rgba(54, 255, 216, 0.32), transparent 16rem),
-    radial-gradient(circle at 16% 38%, rgba(255, 211, 122, 0.16), transparent 8rem),
-    radial-gradient(circle at 82% 62%, rgba(18, 128, 118, 0.34), transparent 18rem),
+  background-image:
+    linear-gradient(90deg, rgba(1, 8, 10, 0.34), rgba(1, 8, 10, 0.12) 44%, rgba(1, 8, 10, 0.44)),
+    url("/assets/auth-background.webp"),
+    radial-gradient(circle at 28% 48%, rgba(54, 255, 216, 0.28), transparent 16rem),
     linear-gradient(
       118deg,
       rgba(1, 6, 8, 0.99) 0 32%,
       rgba(2, 24, 28, 0.9) 56%,
       rgba(2, 68, 64, 0.8)
-    ),
-    linear-gradient(
-      145deg,
-      transparent 0 52%,
-      rgba(24, 204, 175, 0.3) 52.1% 52.45%,
-      transparent 52.6%
-    ),
-    linear-gradient(
-      34deg,
-      transparent 0 34%,
-      rgba(196, 255, 240, 0.12) 34.05% 34.22%,
-      transparent 34.36% 72%,
-      rgba(245, 190, 96, 0.14) 72.06% 72.2%,
-      transparent 72.34%
-    ),
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size:
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    auto,
-    80px 80px,
-    80px 80px;
+    );
+  background-position: center, center, center, center;
+  background-size: cover, cover, auto, cover;
 }
 
 .auth-background::before {
   position: absolute;
   inset: 0;
   content: "";
-  background-image:
-    radial-gradient(circle at 19% 41%, rgba(214, 255, 246, 0.9) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 28% 48%, rgba(214, 255, 246, 0.7) 0 2px, transparent 2.5px),
-    radial-gradient(circle at 38% 38%, rgba(214, 255, 246, 0.5) 0 1.5px, transparent 2px),
-    radial-gradient(circle at 31% 58%, rgba(245, 190, 96, 0.68) 0 1.5px, transparent 2px),
-    linear-gradient(
-      110deg,
-      transparent 0 14%,
-      rgba(105, 255, 223, 0.28) 14.08% 14.24%,
-      transparent 14.4% 100%
-    ),
-    linear-gradient(
-      132deg,
-      transparent 0 62%,
-      rgba(245, 190, 96, 0.22) 62.08% 62.22%,
-      transparent 62.38% 100%
-    ),
-    linear-gradient(
-      62deg,
-      transparent 0 28%,
-      rgba(105, 255, 223, 0.18) 28.06% 28.2%,
-      transparent 28.34% 100%
-    ),
-    linear-gradient(24deg, rgba(29, 224, 188, 0.4), transparent 42%),
-    linear-gradient(215deg, rgba(41, 124, 145, 0.4), transparent 48%);
-  filter: saturate(1.05);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size:
+    80px 80px,
+    80px 80px;
+  opacity: 0.42;
 }
 
 .auth-background::after {
   position: absolute;
   inset: 0;
   content: "";
-  opacity: 0.76;
-  background-image:
-    radial-gradient(rgba(196, 255, 240, 0.22) 0.8px, transparent 1px),
-    linear-gradient(
-      42deg,
-      transparent 0 24%,
-      rgba(114, 255, 226, 0.16) 24.1% 24.28%,
-      transparent 24.42% 52%,
-      rgba(114, 255, 226, 0.1) 52.08% 52.2%,
-      transparent 52.34%
-    ),
-    linear-gradient(
-      144deg,
-      transparent 0 46%,
-      rgba(245, 190, 96, 0.14) 46.08% 46.22%,
-      transparent 46.38%
-    ),
-    linear-gradient(
-      90deg,
-      transparent 0 2px,
-      rgba(255, 255, 255, 0.07) 2px 3px,
-      transparent 3px 100%
-    ),
-    linear-gradient(
-      0deg,
-      transparent 0 2px,
-      rgba(255, 255, 255, 0.055) 2px 3px,
-      transparent 3px 100%
-    );
-  background-position:
-    0 0,
-    0 0,
-    0 0,
-    8% 0,
-    0 18%;
-  background-size:
-    26px 26px,
-    auto,
-    auto,
-    160px 160px,
-    160px 160px;
-  mask-image: linear-gradient(90deg, black, rgba(0, 0, 0, 0.68) 36%, black 100%);
+  background:
+    radial-gradient(circle at 20% 62%, rgba(30, 255, 221, 0.22), transparent 24rem),
+    radial-gradient(circle at 48% 32%, rgba(245, 190, 96, 0.12), transparent 15rem),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.54) 78%, rgba(0, 0, 0, 0.72));
+}
+
+@media (max-width: 1023px) {
+  .auth-background {
+    background-position:
+      center,
+      34% center,
+      center,
+      center;
+  }
 }
 
 .auth-panel {

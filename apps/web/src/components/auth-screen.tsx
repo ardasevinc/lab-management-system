@@ -1,6 +1,6 @@
 import { labConfig } from "@lab/config"
 import { useMutation } from "@tanstack/react-query"
-import { ArrowLeft, Cpu, KeyRound, Mail, ShieldCheck } from "lucide-react"
+import { ArrowLeft, Cpu, KeyRound, Mail } from "lucide-react"
 import { useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -44,7 +44,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
   return (
     <main className="relative min-h-[100dvh] overflow-hidden bg-[#07100f] text-white">
       <div className="auth-background" aria-hidden="true" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.92),rgba(3,7,9,0.62)_52%,rgba(3,7,9,0.2))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.72),rgba(3,7,9,0.42)_48%,rgba(3,7,9,0.62))]" />
 
       <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
         <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
@@ -67,10 +67,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
             </h2>
           </div>
 
-          <div className="flex max-w-xl items-center gap-3 border-white/12 border-t pt-5 text-white/58 text-sm">
-            <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>Invite-only access.</span>
-          </div>
+          <div className="h-px max-w-xl bg-white/12" />
         </div>
 
         <div className="grid min-h-[calc(100dvh-2rem)] place-items-center lg:min-h-full">
@@ -126,7 +123,6 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
                         aria-invalid={error ? true : undefined}
                       />
                     </div>
-                    <FieldDescription>Use your invited lab email.</FieldDescription>
                     {error ? <FieldError>{error}</FieldError> : null}
                   </Field>
                 </FieldGroup>
@@ -178,7 +174,6 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
                         aria-invalid={error ? true : undefined}
                       />
                     </div>
-                    <FieldDescription>Enter the one-time code sent to your email.</FieldDescription>
                     {error ? <FieldError>{error}</FieldError> : null}
                   </Field>
                 </FieldGroup>
