@@ -26,8 +26,14 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 tmp_file="$backup_dir/lab-$stamp.sqlite.tmp"
 backup_file="$backup_dir/lab-$stamp.sqlite"
 
+cleanup_tmp() {
+  rm -f "$tmp_file"
+}
+trap cleanup_tmp EXIT
+
 sqlite3 "$database_path" ".backup '$tmp_file'"
 mv "$tmp_file" "$backup_file"
+trap - EXIT
 
 case "$retention_days" in
   ''|*[!0-9]*)

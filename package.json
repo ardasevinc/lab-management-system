@@ -12,6 +12,7 @@
     "dev:api": "bun run --cwd apps/api dev",
     "build": "bun run --filter '*' build",
     "backup:sqlite": "sh scripts/backup-sqlite.sh",
+    "verify:sqlite-backup": "sh scripts/verify-sqlite-backup.sh",
     "check": "bun run lint && bun run typecheck && bun run test",
     "full-gate": "bun run check && bun run build",
     "lint": "biome check .",
