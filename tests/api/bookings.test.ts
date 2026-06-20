@@ -182,6 +182,87 @@ describe("booking API", () => {
     expect(maintenanceResponse.status).toBe(403)
     expect(adminResponse.status).toBe(403)
   })
+
+  it("lets members manage their own normal bookings", async () => {
+    const memberHeaders = await login("member@miralab.tr")
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Member run",
+        startsAt: "2026-05-10T16:00:00.000Z",
+        endsAt: "2026-05-10T17:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Member run updated",
+      }),
+    })
+    const deleteResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "DELETE",
+      headers: memberHeaders,
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(booking.userId).toBe("member-local")
+    expect(updateResponse.status).toBe(200)
+    expect((await updateResponse.json()).booking.title).toBe("Member run updated")
+    expect(deleteResponse.status).toBe(200)
+  })
+
+  it("prevents members from managing another user's bookings", async () => {
+    const memberHeaders = await login("member@miralab.tr")
+    const createForAdminResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "admin-local",
+        title: "Not mine",
+        startsAt: "2026-05-10T16:00:00.000Z",
+        endsAt: "2026-05-10T17:00:00.000Z",
+      }),
+    })
+
+    const adminCreateResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "admin-local",
+        title: "Admin run",
+        startsAt: "2026-05-10T18:00:00.000Z",
+        endsAt: "2026-05-10T19:00:00.000Z",
+      }),
+    })
+    const { booking } = await adminCreateResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Take over",
+      }),
+    })
+    const deleteResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "DELETE",
+      headers: memberHeaders,
+    })
+
+    expect(createForAdminResponse.status).toBe(403)
+    expect(await createForAdminResponse.json()).toEqual({
+      error: "Admins are required for this booking change",
+    })
+    expect(adminCreateResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(403)
+    expect(deleteResponse.status).toBe(403)
+  })
 })
 
 async function login(email: string) {
