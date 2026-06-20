@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import type { AuditEvent, Booking, Machine } from "@/lib/api"
-import { formatDateTime, fromLabDateTimeParts, toLabDateValue, toLabTimeValue } from "@/lib/time"
+import { getBookingDialogDefaults } from "@/lib/booking-dialog-defaults"
+import { formatDateTime, fromLabDateTimeParts, toLabDateValue } from "@/lib/time"
 
 export type BookingDialogValue = {
   title: string
@@ -66,7 +67,7 @@ export function BookingDialog({
   onSubmit,
   onDelete,
 }: BookingDialogProps) {
-  const defaults = dialogDefaults(booking, initialRange, initialType)
+  const defaults = getBookingDialogDefaults({ booking, initialRange, initialType })
   const isMaintenance = defaults.type === "maintenance"
   const sheetTitle =
     mode === "create"
@@ -281,24 +282,4 @@ function DateTimeField({
       </FieldGroup>
     </Field>
   )
-}
-
-function dialogDefaults(
-  booking: Booking | null,
-  range?: { startsAt: string; endsAt: string } | null,
-  initialType: Booking["type"] = "normal",
-) {
-  const now = new Date()
-  now.setMinutes(0, 0, 0)
-  const later = new Date(now.getTime() + 60 * 60_000)
-
-  return {
-    title: booking?.title ?? "",
-    notes: booking?.notes ?? "",
-    type: booking?.type ?? initialType,
-    startsDate: toLabDateValue(booking?.startsAt ?? range?.startsAt ?? now),
-    startsTime: toLabTimeValue(booking?.startsAt ?? range?.startsAt ?? now),
-    endsDate: toLabDateValue(booking?.endsAt ?? range?.endsAt ?? later),
-    endsTime: toLabTimeValue(booking?.endsAt ?? range?.endsAt ?? later),
-  }
 }
