@@ -47,6 +47,7 @@ type WorkspaceContextValue = {
   goToPreviousWeek: () => void
   goToNextWeek: () => void
   goToCurrentWeek: () => void
+  goToWeek: (date: Date) => void
   clearWorkspaceError: () => void
   openNewBooking: () => void
   openMaintenanceBooking: () => void
@@ -254,6 +255,7 @@ export function AppWorkspace() {
     goToPreviousWeek: () => setVisibleWeekDate((date) => addWeeks(date, -1)),
     goToNextWeek: () => setVisibleWeekDate((date) => addWeeks(date, 1)),
     goToCurrentWeek: () => setVisibleWeekDate(new Date()),
+    goToWeek: (date) => setVisibleWeekDate(date),
     clearWorkspaceError: () => setWorkspaceError(null),
     openNewBooking: () => {
       setDialogError(null)

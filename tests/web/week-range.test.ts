@@ -9,4 +9,11 @@ describe("week range", () => {
     expect(toLocalDateValue(range.start)).toBe("2026-06-15")
     expect(toLocalDateValue(range.end)).toBe("2026-06-22")
   })
+
+  it("maps weekend date picks to their containing week", () => {
+    const range = getWeekRange(new Date(2026, 5, 21, 18))
+
+    expect(toLocalDateValue(range.start)).toBe("2026-06-15")
+    expect(toLocalDateValue(range.end)).toBe("2026-06-22")
+  })
 })

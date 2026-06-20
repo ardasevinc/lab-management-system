@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useWorkspace } from "@/components/app-workspace"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { WeekCalendar } from "@/components/week-calendar"
 import type { Booking } from "@/lib/api"
 import {
@@ -18,6 +20,7 @@ import {
   yToMinutes,
 } from "@/lib/calendar-geometry"
 import { formatDate, formatTime } from "@/lib/time"
+import { cn } from "@/lib/utils"
 
 export function SchedulePage() {
   const {
@@ -31,6 +34,7 @@ export function SchedulePage() {
     goToCurrentWeek,
     goToNextWeek,
     goToPreviousWeek,
+    goToWeek,
     moveBooking,
     openNewBooking,
     resizeBooking,
@@ -87,9 +91,11 @@ export function SchedulePage() {
           </div>
           <WeekNavigation
             className="mt-3 lg:hidden"
+            selectedDate={new Date(weekRange.start)}
             onPrevious={goToPreviousWeek}
             onToday={goToCurrentWeek}
             onNext={goToNextWeek}
+            onSelectDate={goToWeek}
           />
         </div>
 
@@ -141,9 +147,11 @@ export function SchedulePage() {
             <span className="truncate font-medium text-sm">Week board</span>
           </div>
           <WeekNavigation
+            selectedDate={new Date(weekRange.start)}
             onPrevious={goToPreviousWeek}
             onToday={goToCurrentWeek}
             onNext={goToNextWeek}
+            onSelectDate={goToWeek}
           />
         </div>
         <div className="calendar-frame">
@@ -164,17 +172,24 @@ export function SchedulePage() {
 
 function WeekNavigation({
   className,
+  selectedDate,
   onPrevious,
   onToday,
   onNext,
+  onSelectDate,
 }: {
   className?: string
+  selectedDate: Date
   onPrevious: () => void
   onToday: () => void
   onNext: () => void
+  onSelectDate: (date: Date) => void
 }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const weekLabel = format(selectedDate, "MMM d")
+
   return (
-    <div className={["flex items-center gap-1.5", className].filter(Boolean).join(" ")}>
+    <div className={cn("flex items-center gap-1.5", className)}>
       <Button
         type="button"
         variant="outline"
@@ -184,6 +199,27 @@ function WeekNavigation({
       >
         <ChevronLeft aria-hidden="true" />
       </Button>
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" size="sm" className="min-w-28 justify-start">
+            <CalendarDays data-icon="inline-start" aria-hidden="true" />
+            <span className="truncate">Week of {weekLabel}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              if (date) {
+                onSelectDate(date)
+                setPickerOpen(false)
+              }
+            }}
+            autoFocus
+          />
+        </PopoverContent>
+      </Popover>
       <Button type="button" variant="outline" size="sm" onClick={onToday}>
         Today
       </Button>
