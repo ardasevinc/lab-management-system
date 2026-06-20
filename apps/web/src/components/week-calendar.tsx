@@ -9,6 +9,7 @@ import {
   dateAtMinutes,
   dayEndHour,
   dayStartHour,
+  defaultRangeAtMinutes,
   hasConflict,
   hourHeightPx,
   minutesSinceDayStart,
@@ -96,11 +97,10 @@ export function WeekCalendar({
       suppressClickRef.current = moved
 
       if (draft.kind === "create") {
-        const range = normalizeRange(
-          draft.day,
-          yToMinutes(draft.startY - draft.columnTop),
-          yToMinutes(draft.currentY - draft.columnTop),
-        )
+        const startMinutes = yToMinutes(draft.startY - draft.columnTop)
+        const range = moved
+          ? normalizeRange(draft.day, startMinutes, yToMinutes(draft.currentY - draft.columnTop))
+          : defaultRangeAtMinutes(draft.day, startMinutes)
         onCreateRange(range)
       }
 

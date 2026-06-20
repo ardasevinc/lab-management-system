@@ -22,6 +22,7 @@ export type PackedBooking = Booking & {
 export const dayStartHour = 8
 export const dayEndHour = 22
 export const snapStepMinutes = 30
+export const defaultBookingDurationMinutes = 60
 export const hourHeightPx = 56
 
 export function startOfWeek(date: Date) {
@@ -66,6 +67,22 @@ export function normalizeRange(day: Date, startMinutes: number, endMinutes: numb
   return {
     startsAt: dateAtMinutes(day, snappedStart).toISOString(),
     endsAt: dateAtMinutes(day, endsAt).toISOString(),
+  }
+}
+
+export function defaultRangeAtMinutes(
+  day: Date,
+  startMinutes: number,
+  durationMinutes = defaultBookingDurationMinutes,
+) {
+  const duration = Math.max(snapStepMinutes, durationMinutes)
+  const snappedStart = clampMinutesToDay(snapMinutes(startMinutes))
+  const latestStart = dayEndHour * 60 - duration
+  const clampedStart = Math.min(Math.max(dayStartHour * 60, snappedStart), latestStart)
+
+  return {
+    startsAt: dateAtMinutes(day, clampedStart).toISOString(),
+    endsAt: dateAtMinutes(day, clampedStart + duration).toISOString(),
   }
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Booking } from "../../apps/web/src/lib/api"
 import {
   dateAtMinutes,
+  defaultRangeAtMinutes,
   hasConflict,
   moveRangeToDayAndMinutes,
   normalizeRange,
@@ -25,6 +26,24 @@ describe("calendar geometry", () => {
     expect(range).toEqual({
       startsAt: iso(10 * 60),
       endsAt: iso(10 * 60 + 30),
+    })
+  })
+
+  it("creates a one-hour default range for click bookings", () => {
+    const range = defaultRangeAtMinutes(day, 10 * 60 + 10)
+
+    expect(range).toEqual({
+      startsAt: iso(10 * 60),
+      endsAt: iso(11 * 60),
+    })
+  })
+
+  it("keeps default click bookings inside the visible day", () => {
+    const range = defaultRangeAtMinutes(day, 21 * 60 + 50)
+
+    expect(range).toEqual({
+      startsAt: iso(21 * 60),
+      endsAt: iso(22 * 60),
     })
   })
 

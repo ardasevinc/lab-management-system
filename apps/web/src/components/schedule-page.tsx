@@ -14,6 +14,7 @@ import {
   type CalendarRange,
   dayEndHour,
   dayStartHour,
+  defaultRangeAtMinutes,
   hourHeightPx,
   normalizeRange,
   packOverlaps,
@@ -271,9 +272,11 @@ function MobileDayTimeline({
 
       const moved = Math.abs(draft.currentY - draft.startY) > 4
       const startMinutes = yToMinutes(draft.startY - draft.columnTop)
-      const endMinutes = moved ? yToMinutes(draft.currentY - draft.columnTop) : startMinutes + 60
+      const range = moved
+        ? normalizeRange(day, startMinutes, yToMinutes(draft.currentY - draft.columnTop))
+        : defaultRangeAtMinutes(day, startMinutes)
 
-      onCreateRange(normalizeRange(day, startMinutes, endMinutes))
+      onCreateRange(range)
       setDraft(null)
     }
 
