@@ -63,124 +63,145 @@ export function AdminOverviewPage() {
   const nextBooking = workspace.upcomingBookings[0]
   const activeMachines = workspace.machines.filter((machine) => machine.active).length
   const selectedMachine = workspace.selectedMachine
+  const weekBookings = [...workspace.bookings].sort((left, right) =>
+    left.startsAt.localeCompare(right.startsAt),
+  )
 
   return (
     <AdminPageFrame
       title="Admin overview"
       description="Bookings and access for the selected machine."
+      action={
+        <div className="flex items-center gap-2">
+          <Button type="button" onClick={workspace.openNewBooking}>
+            <Clock3 data-icon="inline-start" aria-hidden="true" />
+            New booking
+          </Button>
+          <Button type="button" variant="outline" onClick={workspace.openMaintenanceBooking}>
+            <Wrench data-icon="inline-start" aria-hidden="true" />
+            <span className="hidden sm:inline">Maintenance</span>
+            <span className="sm:hidden">Maint.</span>
+          </Button>
+        </div>
+      }
     >
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <SummaryPanel
-          icon={MonitorCog}
-          label="Machines"
-          value={`${activeMachines}/${workspace.machines.length}`}
-          detail="bookable"
-        />
-        <SummaryPanel
-          icon={CalendarDays}
-          label="Bookings"
-          value={String(workspace.dashboardStats.weekBookings)}
-          detail="this week"
-        />
-        <SummaryPanel
-          icon={Clock3}
-          label="Hours"
-          value={`${workspace.dashboardStats.weekHours}h`}
-          detail="reserved"
-        />
-        <SummaryPanel
-          icon={Wrench}
-          label="Maintenance"
-          value={String(workspace.dashboardStats.maintenanceCount)}
-          detail="blocks this week"
-        />
-      </div>
-
-      <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
-          <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
-            <div>
-              <h2 className="font-medium text-sm">Operations</h2>
-              <p className="text-muted-foreground text-xs">Current machine and queue.</p>
-            </div>
-            <Badge variant="outline">{workspace.users.length} users</Badge>
-          </div>
-
-          <div className="divide-y divide-border">
-            <div className="grid gap-3 px-4 py-3 md:grid-cols-[120px_minmax(0,1fr)_auto]">
-              <div className="text-muted-foreground text-sm">Machine</div>
-              <div className="min-w-0">
-                <div className="truncate font-medium">{selectedMachine?.name ?? "No machine"}</div>
-                <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
-                  {selectedMachine?.description ?? "No selected machine."}
-                </p>
-                {selectedMachine?.specs.length ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {selectedMachine.specs.map((spec) => (
-                      <Badge key={spec} variant="outline">
-                        {spec}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex flex-col gap-3 border-border border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate font-medium text-base">
+                {selectedMachine?.name ?? "No machine selected"}
+              </h2>
               <Badge variant={selectedMachine?.active ? "secondary" : "outline"}>
                 {selectedMachine?.active ? "bookable" : "inactive"}
               </Badge>
             </div>
-
-            <div className="grid gap-3 px-4 py-3 md:grid-cols-[120px_minmax(0,1fr)_auto]">
-              <div className="text-muted-foreground text-sm">Next</div>
-              {nextBooking ? (
-                <>
-                  <button
-                    type="button"
-                    className="min-w-0 text-left transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onClick={() => workspace.editBooking(nextBooking)}
-                  >
-                    <div className="truncate font-medium">{nextBooking.title}</div>
-                    <div className="mt-1 text-muted-foreground text-sm tabular-nums">
-                      {formatDate(nextBooking.startsAt)} · {formatTime(nextBooking.startsAt)} -{" "}
-                      {formatTime(nextBooking.endsAt)}
-                    </div>
-                  </button>
-                  <Badge variant={nextBooking.type === "maintenance" ? "outline" : "secondary"}>
-                    {nextBooking.type}
-                  </Badge>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <div className="font-medium">No upcoming bookings</div>
-                    <div className="mt-1 text-muted-foreground text-sm">
-                      The selected week is open.
-                    </div>
-                  </div>
-                  <Badge variant="outline">open</Badge>
-                </>
-              )}
-            </div>
+            <p className="mt-1 line-clamp-1 text-muted-foreground text-sm">
+              {selectedMachine?.description ?? "Select a machine before accepting bookings."}
+            </p>
           </div>
+          <Badge variant="outline" className="w-fit">
+            {workspace.users.length} users
+          </Badge>
         </div>
 
-        <div className="rounded-lg border border-border bg-card">
-          <div className="border-border border-b px-4 py-3">
-            <h2 className="font-medium text-sm">Actions</h2>
+        <div className="grid grid-cols-2 gap-px bg-border xl:grid-cols-4">
+          <SummaryPanel
+            icon={MonitorCog}
+            label="Machines"
+            value={`${activeMachines}/${workspace.machines.length}`}
+            detail="bookable"
+          />
+          <SummaryPanel
+            icon={CalendarDays}
+            label="Bookings"
+            value={String(workspace.dashboardStats.weekBookings)}
+            detail="this week"
+          />
+          <SummaryPanel
+            icon={Clock3}
+            label="Hours"
+            value={`${workspace.dashboardStats.weekHours}h`}
+            detail="reserved"
+          />
+          <SummaryPanel
+            icon={Wrench}
+            label="Maintenance"
+            value={String(workspace.dashboardStats.maintenanceCount)}
+            detail="blocks"
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
+            <h2 className="font-medium text-sm">Week queue</h2>
+            <Badge variant="outline">{weekBookings.length} total</Badge>
           </div>
-          <div className="grid gap-2 p-4">
-            <Button type="button" className="justify-start" onClick={workspace.openNewBooking}>
-              <Clock3 data-icon="inline-start" aria-hidden="true" />
-              New booking
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="justify-start"
-              onClick={workspace.openMaintenanceBooking}
-            >
-              <Wrench data-icon="inline-start" aria-hidden="true" />
-              Add maintenance
-            </Button>
+          {weekBookings.length ? (
+            <div className="divide-y divide-border">
+              {weekBookings.slice(0, 6).map((booking) => (
+                <button
+                  key={booking.id}
+                  type="button"
+                  className="grid w-full gap-2 px-4 py-3 text-left transition hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  onClick={() => workspace.editBooking(booking)}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-sm">{booking.title}</div>
+                    <div className="mt-1 text-muted-foreground text-xs tabular-nums">
+                      {formatDate(booking.startsAt)} · {formatTime(booking.startsAt)} -{" "}
+                      {formatTime(booking.endsAt)}
+                    </div>
+                  </div>
+                  <Badge variant={booking.type === "maintenance" ? "outline" : "secondary"}>
+                    {booking.type === "maintenance" ? "maintenance" : "booking"}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <Empty className="items-start justify-start p-4 text-left">
+              <EmptyHeader className="items-start text-left">
+                <EmptyTitle>No reservations this week</EmptyTitle>
+                <EmptyDescription>
+                  No booking or maintenance block exists for this machine in the selected week.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </div>
+
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          <div className="border-border border-b px-4 py-3">
+            <h2 className="font-medium text-sm">Machine status</h2>
+          </div>
+          <div className="divide-y divide-border">
+            <OverviewDetailRow
+              label="Next"
+              value={nextBooking?.title ?? "No upcoming booking"}
+              detail={
+                nextBooking
+                  ? `${formatDate(nextBooking.startsAt)} · ${formatTime(nextBooking.startsAt)} - ${formatTime(nextBooking.endsAt)}`
+                  : "No booking or maintenance block is scheduled."
+              }
+              badge={nextBooking?.type ?? "open"}
+              onClick={nextBooking ? () => workspace.editBooking(nextBooking) : undefined}
+            />
+            <OverviewDetailRow
+              label="Specs"
+              value={selectedMachine?.specs[0] ?? "No primary spec"}
+              detail={
+                selectedMachine?.specs.slice(1).join(", ") ||
+                "Machine metadata can be edited from Admin > Machines."
+              }
+            />
+            <OverviewDetailRow
+              label="Access"
+              value={selectedMachine?.accessNotes || "Shared by admins"}
+              detail="Keep access notes off public booking details."
+            />
           </div>
         </div>
       </section>
@@ -769,6 +790,44 @@ function AdminPageFrame({
   )
 }
 
+function OverviewDetailRow({
+  label,
+  value,
+  detail,
+  badge,
+  onClick,
+}: {
+  label: string
+  value: string
+  detail: string
+  badge?: string
+  onClick?: () => void
+}) {
+  const Comp = onClick ? "button" : "div"
+
+  return (
+    <Comp
+      type={onClick ? "button" : undefined}
+      className={cn(
+        "grid w-full gap-2 px-4 py-3 text-left",
+        onClick
+          ? "transition hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          : null,
+      )}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-muted-foreground text-xs">{label}</div>
+        {badge ? <Badge variant="outline">{badge}</Badge> : null}
+      </div>
+      <div className="min-w-0">
+        <div className="line-clamp-2 font-medium text-sm">{value}</div>
+        <div className="mt-1 line-clamp-2 text-muted-foreground text-xs">{detail}</div>
+      </div>
+    </Comp>
+  )
+}
+
 function SummaryPanel({
   icon: Icon,
   label,
@@ -781,7 +840,7 @@ function SummaryPanel({
   detail: string
 }) {
   return (
-    <section className="rounded-lg border border-border bg-card px-4 py-3">
+    <section className="bg-card px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-muted-foreground text-xs">{label}</div>
