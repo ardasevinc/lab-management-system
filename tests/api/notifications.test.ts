@@ -1,5 +1,6 @@
 import { createBooking } from "@lab/db"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import type { BookingEmail } from "../../apps/api/src/mailer"
 import { processBookingReminders } from "../../apps/api/src/notifications"
 import { createTestDb } from "../helpers/db"
 
@@ -76,5 +77,38 @@ describe("booking notifications", () => {
     })
 
     expect(sentSubjects).toEqual(["MIRALAB booking ending soon: Ending run"])
+  })
+
+  it("formats booking email details in the lab timezone", async () => {
+    const sentEmails: BookingEmail[] = []
+    await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Timezone run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendBookingEmail(email: BookingEmail) {
+        sentEmails.push(email)
+      },
+    }
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+
+    expect(sentEmails).toHaveLength(1)
+    expect(sentEmails[0].details).toEqual([
+      { label: "Machine", value: "tohum" },
+      { label: "Title", value: "Timezone run" },
+      { label: "Starts", value: "May 10, 2026, 1:10 PM Europe/Istanbul" },
+      { label: "Ends", value: "May 10, 2026, 2:00 PM Europe/Istanbul" },
+    ])
   })
 })

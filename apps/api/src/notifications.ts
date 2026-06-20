@@ -1,3 +1,4 @@
+import { labConfig } from "@lab/config"
 import {
   type Db,
   enqueueDueBookingReminders,
@@ -131,17 +132,19 @@ function bookingDetails(context: BookingNotificationContext) {
   return [
     { label: "Machine", value: context.machine.name },
     { label: "Title", value: context.booking.title },
-    { label: "Starts", value: formatIstanbul(context.booking.startsAt) },
-    { label: "Ends", value: formatIstanbul(context.booking.endsAt) },
+    { label: "Starts", value: formatLabTimezone(context.booking.startsAt) },
+    { label: "Ends", value: formatLabTimezone(context.booking.endsAt) },
   ]
 }
 
-function formatIstanbul(date: Date) {
-  return date.toLocaleString("en-US", {
+function formatLabTimezone(date: Date) {
+  const formatted = date.toLocaleString("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: "Europe/Istanbul",
+    timeZone: labConfig.defaultTimezone,
   })
+
+  return `${formatted} ${labConfig.defaultTimezone}`
 }
 
 function errorMessage(error: unknown) {
