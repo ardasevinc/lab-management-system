@@ -13,7 +13,7 @@ type AuthScreenProps = {
 }
 
 export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
-  const [email, setEmail] = useState("admin@miralab.tr")
+  const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
   const [devCode, setDevCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -114,6 +114,7 @@ export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
                         className="pl-9"
                         type="email"
                         name="email"
+                        placeholder="you@lab.edu"
                         value={email}
                         onChange={(event) => {
                           setEmail(event.target.value)
