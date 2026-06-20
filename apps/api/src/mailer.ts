@@ -33,6 +33,10 @@ type SesMailerConfig = {
 export function createMailerFromEnv(env: Record<string, string | undefined>): Mailer {
   const provider = env.EMAIL_PROVIDER ?? "console"
 
+  if (env.APP_ENV === "production" && provider !== "ses") {
+    throw new Error("EMAIL_PROVIDER=ses is required in production")
+  }
+
   if (provider === "ses") {
     return createSesMailer({
       region: requiredEnv(env.AWS_REGION, "AWS_REGION"),
@@ -41,6 +45,10 @@ export function createMailerFromEnv(env: Record<string, string | undefined>): Ma
       replyTo: emptyToUndefined(env.SES_REPLY_TO),
       configurationSet: emptyToUndefined(env.SES_CONFIGURATION_SET),
     })
+  }
+
+  if (provider !== "console") {
+    throw new Error("EMAIL_PROVIDER must be one of: console, ses")
   }
 
   return createConsoleMailer()

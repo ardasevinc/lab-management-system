@@ -1,10 +1,30 @@
 import { describe, expect, it } from "vitest"
 import {
+  createMailerFromEnv,
   renderBookingHtml,
   renderBookingText,
   renderLoginOtpHtml,
   renderLoginOtpText,
 } from "../../apps/api/src/mailer"
+
+describe("mailer env", () => {
+  it("rejects console mailer in production", () => {
+    expect(() =>
+      createMailerFromEnv({
+        APP_ENV: "production",
+        EMAIL_PROVIDER: "console",
+      }),
+    ).toThrow("EMAIL_PROVIDER=ses is required in production")
+  })
+
+  it("rejects unknown mailer providers", () => {
+    expect(() =>
+      createMailerFromEnv({
+        EMAIL_PROVIDER: "sess",
+      }),
+    ).toThrow("EMAIL_PROVIDER must be one of: console, ses")
+  })
+})
 
 describe("mailer templates", () => {
   it("renders login OTP text in the configured lab timezone", () => {
