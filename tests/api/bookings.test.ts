@@ -167,6 +167,56 @@ describe("booking API", () => {
     expect(await collision.json()).toEqual({ error: "Booking overlaps an existing booking" })
   })
 
+  it("rejects contained and enveloping overlaps while allowing gaps", async () => {
+    const early = await createBookingRequest({
+      title: "Early dense run",
+      startsAt: "2026-05-10T08:00:00.000Z",
+      endsAt: "2026-05-10T09:00:00.000Z",
+    })
+    const middle = await createBookingRequest({
+      title: "Middle dense run",
+      startsAt: "2026-05-10T10:00:00.000Z",
+      endsAt: "2026-05-10T12:00:00.000Z",
+    })
+    const late = await createBookingRequest({
+      title: "Late dense run",
+      startsAt: "2026-05-10T13:00:00.000Z",
+      endsAt: "2026-05-10T14:00:00.000Z",
+    })
+
+    const contained = await createBookingRequest({
+      title: "Contained conflict",
+      startsAt: "2026-05-10T10:30:00.000Z",
+      endsAt: "2026-05-10T11:00:00.000Z",
+    })
+    const enveloping = await createBookingRequest({
+      title: "Enveloping conflict",
+      startsAt: "2026-05-10T09:30:00.000Z",
+      endsAt: "2026-05-10T12:30:00.000Z",
+    })
+    const multiple = await createBookingRequest({
+      title: "Multi booking conflict",
+      startsAt: "2026-05-10T08:30:00.000Z",
+      endsAt: "2026-05-10T13:30:00.000Z",
+    })
+    const gap = await createBookingRequest({
+      title: "Gap run",
+      startsAt: "2026-05-10T09:00:00.000Z",
+      endsAt: "2026-05-10T10:00:00.000Z",
+    })
+
+    expect(early.status).toBe(201)
+    expect(middle.status).toBe(201)
+    expect(late.status).toBe(201)
+    expect(contained.status).toBe(409)
+    expect(await contained.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    expect(enveloping.status).toBe(409)
+    expect(await enveloping.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    expect(multiple.status).toBe(409)
+    expect(await multiple.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    expect(gap.status).toBe(201)
+  })
+
   it("treats maintenance blocks as reserved time and frees deleted slots", async () => {
     const maintenance = await app.request("/bookings", {
       method: "POST",
@@ -526,6 +576,26 @@ async function login(email: string) {
   const { token } = await verify.json()
 
   return { authorization: `Bearer ${token}` }
+}
+
+function createBookingRequest(input: {
+  title: string
+  startsAt: string
+  endsAt: string
+  machineId?: string
+  userId?: string
+}) {
+  return app.request("/bookings", {
+    method: "POST",
+    headers: { ...authHeaders, "content-type": "application/json" },
+    body: JSON.stringify({
+      machineId: input.machineId ?? "tohum",
+      userId: input.userId ?? "member-local",
+      title: input.title,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    }),
+  })
 }
 
 async function waitForBookingEmails(emails: BookingEmail[], count: number) {
