@@ -3,6 +3,25 @@ import { expect, type Locator, type Page, test } from "@playwright/test"
 const adminEmail = "admin@miralab.tr"
 const memberEmail = "member@miralab.tr"
 
+test("login returns users to the requested workspace route", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop route-preservation smoke")
+
+  const consoleProblems = collectConsoleProblems(page)
+
+  await page.goto("/machines")
+  await expect(page).toHaveURL(/\/login\?redirect=%2Fmachines$/)
+  await expect(page.getByLabel("Email")).toBeVisible()
+
+  await page.getByLabel("Email").fill(adminEmail)
+  await page.getByRole("button", { name: "Continue" }).click()
+  await expect(page.getByLabel("Login code")).toBeVisible()
+  await page.getByRole("button", { name: "Sign in" }).click()
+
+  await expect(page).toHaveURL(/\/machines$/)
+  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop week-board flow")
 
