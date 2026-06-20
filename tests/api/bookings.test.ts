@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { createApiApp } from "../../apps/api/src/app"
+import type { BookingEmail } from "../../apps/api/src/mailer"
 import { createTestDb } from "../helpers/db"
 
 let testDb: Awaited<ReturnType<typeof createTestDb>>
@@ -159,6 +160,62 @@ describe("booking API", () => {
     expect(deleteResponse.status).toBe(200)
   })
 
+  it("sends booking change emails for create, update, and delete", async () => {
+    const sentBookingEmails: BookingEmail[] = []
+    app = createApiApp({
+      db: testDb.db,
+      mailer: {
+        async sendLoginOtp() {},
+        async sendBookingEmail(email) {
+          sentBookingEmails.push(email)
+        },
+      },
+    })
+
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Notification run",
+        startsAt: "2026-05-10T13:00:00.000Z",
+        endsAt: "2026-05-10T14:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+    await waitForBookingEmails(sentBookingEmails, 1)
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Notification run updated",
+      }),
+    })
+    await waitForBookingEmails(sentBookingEmails, 2)
+
+    const deleteResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    })
+    await waitForBookingEmails(sentBookingEmails, 3)
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(200)
+    expect(deleteResponse.status).toBe(200)
+    expect(sentBookingEmails.map((email) => email.subject)).toEqual([
+      "MIRALAB booking created: Notification run",
+      "MIRALAB booking updated: Notification run updated",
+      "MIRALAB booking deleted: Notification run updated",
+    ])
+    expect(sentBookingEmails.map((email) => email.to)).toEqual([
+      "member@miralab.tr",
+      "member@miralab.tr",
+      "member@miralab.tr",
+    ])
+  })
+
   it("rejects unauthenticated machine access", async () => {
     const response = await app.request("/machines")
     expect(response.status).toBe(401)
@@ -280,4 +337,14 @@ async function login(email: string) {
   const { token } = await verify.json()
 
   return { authorization: `Bearer ${token}` }
+}
+
+async function waitForBookingEmails(emails: BookingEmail[], count: number) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (emails.length >= count) {
+      return
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  }
 }
