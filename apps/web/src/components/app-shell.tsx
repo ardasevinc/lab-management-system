@@ -2,11 +2,11 @@ import { labConfig } from "@lab/config"
 import { Link, Outlet, useRouterState } from "@tanstack/react-router"
 import {
   CalendarDays,
+  ChevronsUpDown,
   Cpu,
   Home,
   LogOut,
   MonitorCog,
-  MoreHorizontal,
   PanelLeft,
   Plus,
   Settings,
@@ -273,8 +273,9 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
-  const { isMobile, state } = useSidebar()
-  const menuSide = isMobile || state === "expanded" ? "top" : "right"
+  const { isMobile } = useSidebar()
+  const menuSide = isMobile ? "top" : "right"
+  const displayName = user.name || user.email
 
   return (
     <DropdownMenu>
@@ -283,16 +284,16 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-12 rounded-lg px-2 data-[state=open]:bg-sidebar-accent/65 data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/55"
+              className="h-10 rounded-lg px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/70"
             >
-              <Avatar size="default">
-                <AvatarFallback>{initials}</AvatarFallback>
+              <Avatar size="sm" className="rounded-md">
+                <AvatarFallback className="rounded-md">{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium">{user.name}</span>
+              <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate font-medium text-sm">{displayName}</span>
                 <span className="truncate text-muted-foreground text-xs">{user.email}</span>
               </div>
-              <MoreHorizontal
+              <ChevronsUpDown
                 className="ml-auto group-data-[collapsible=icon]:hidden"
                 aria-hidden="true"
               />
@@ -301,28 +302,34 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         </SidebarMenuItem>
       </SidebarMenu>
       <DropdownMenuContent
-        align="start"
+        align="end"
         side={menuSide}
-        sideOffset={8}
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-64"
+        sideOffset={6}
+        className="w-64 max-w-[calc(100vw-2rem)] rounded-lg p-1.5"
       >
-        <DropdownMenuLabel className="p-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <Avatar size="default">
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div className="grid min-w-0 flex-1 gap-0.5">
-              <div className="truncate font-medium leading-none">{user.name}</div>
-              <div className="truncate text-muted-foreground text-xs">{user.email}</div>
-              <Badge variant="secondary" className="mt-1 w-fit capitalize">
-                {user.role}
-              </Badge>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="p-0 font-normal">
+            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
+              <Avatar size="default" className="rounded-lg">
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+              </Avatar>
+              <div className="grid min-w-0 flex-1 gap-0.5 text-left leading-tight">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium text-sm text-popover-foreground">
+                    {displayName}
+                  </span>
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[0.68rem] capitalize">
+                    {user.role}
+                  </Badge>
+                </div>
+                <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+              </div>
             </div>
-          </div>
-        </DropdownMenuLabel>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={onLogout}>
+          <DropdownMenuItem onSelect={onLogout} className="h-8">
             <LogOut data-icon="inline-start" aria-hidden="true" />
             Log out
           </DropdownMenuItem>
