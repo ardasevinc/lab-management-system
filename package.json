@@ -27,6 +27,7 @@
     "test:db:machines": "vitest run tests/db/machines.test.ts",
     "test:web:booking-dialog": "vitest run tests/web/booking-dialog-defaults.test.ts",
     "test:web:calendar": "vitest run tests/web/calendar-geometry.test.ts",
+    "test:web:schedule-defaults": "vitest run tests/web/schedule-defaults.test.ts",
     "test:watch": "vitest",
     "typecheck": "bun run --filter '*' typecheck"
   },

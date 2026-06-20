@@ -20,6 +20,7 @@ import {
   packOverlaps,
   yToMinutes,
 } from "@/lib/calendar-geometry"
+import { dayAgendaDefaultRange } from "@/lib/schedule-defaults"
 import { formatDate, formatTime } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
@@ -37,7 +38,6 @@ export function SchedulePage() {
     goToPreviousWeek,
     goToWeek,
     moveBooking,
-    openNewBooking,
     resizeBooking,
   } = useWorkspace()
   const [selectedDay, setSelectedDay] = useState(() => new Date())
@@ -114,7 +114,12 @@ export function SchedulePage() {
             <h2 className="font-medium text-sm">Day agenda</h2>
             <p className="text-muted-foreground text-xs">{format(selectedDay, "EEEE, MMM d")}</p>
           </div>
-          <Button type="button" size="sm" variant="outline" onClick={openNewBooking}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => createRange(dayAgendaDefaultRange(selectedDay))}
+          >
             Book
           </Button>
         </div>
