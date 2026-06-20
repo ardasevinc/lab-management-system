@@ -1,27 +1,17 @@
 import { labConfig } from "@lab/config"
 import {
-  AuthError,
-  BookingConflictError,
-  ConflictError,
-  createBooking,
   createInvite,
   createMachine,
   type Db,
-  deleteBooking,
   deleteMachine,
   deleteSession,
   ForbiddenError,
-  getBooking,
   getMachineBySlug,
   getSessionUser,
-  InvalidBookingRangeError,
-  listBookingAuditEvents,
   listBookingsForMachine,
   listMachines,
   listUsers,
-  NotFoundError,
   requestLoginOtp,
-  updateBooking,
   updateMachine,
   updateUserAccess,
   verifyLoginOtp,
@@ -31,24 +21,10 @@ import { Hono } from "hono"
 import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { cors } from "hono/cors"
 import { z } from "zod"
+import { apiErrorResponse, handleApiResult } from "./api-errors"
+import { registerBookingRoutes } from "./booking-routes"
 import type { ApiRuntimeConfig } from "./env"
 import { createConsoleMailer, type Mailer } from "./mailer"
-import { sendBookingNotification } from "./notifications"
-
-const bookingBodySchema = z.object({
-  machineId: z.string().min(1),
-  userId: z.string().min(1).optional(),
-  title: z.string().min(1),
-  notes: z.string().nullable().optional(),
-  type: z.enum(["normal", "maintenance"]).default("normal"),
-  startsAt: z.string().datetime(),
-  endsAt: z.string().datetime(),
-  reason: z.string().nullable().optional(),
-})
-
-const bookingPatchSchema = bookingBodySchema
-  .partial()
-  .refine((value) => Object.keys(value).length > 0, "At least one field is required")
 
 const bookingRangeSchema = z.object({
   start: z.string().datetime(),
@@ -124,7 +100,6 @@ export function createApiApp({
   const app = new Hono<{ Variables: { user: CurrentUser } }>()
   const runtimeConfig = { ...defaultRuntimeConfig, ...config }
   const emailSender = mailer ?? createConsoleMailer()
-  const enqueueBookingWrite = createSerialQueue()
 
   app.onError((error, c) => apiErrorResponse(c, error))
 
@@ -229,90 +204,7 @@ export function createApiApp({
 
   app.use("/bookings", requireAuth(db))
   app.use("/bookings/*", requireAuth(db))
-  app.post("/bookings", async (c) => {
-    const body = bookingBodySchema.safeParse(await c.req.json())
-
-    if (!body.success) {
-      return c.json({ error: "Invalid booking", issues: body.error.issues }, 400)
-    }
-
-    return handleApiResult(c, () =>
-      enqueueBookingWrite(async () => {
-        const user = c.get("user")
-        const userId = body.data.userId ?? user.id
-        assertCanWriteBooking(user, { userId, type: body.data.type })
-        const booking = await createBooking(db, {
-          ...body.data,
-          userId,
-          startsAt: new Date(body.data.startsAt),
-          endsAt: new Date(body.data.endsAt),
-          actorUserId: user.id,
-        })
-        notifyBookingChange(db, emailSender, booking.id, "booking_created")
-
-        return c.json({ booking }, 201)
-      }),
-    )
-  })
-
-  app.patch("/bookings/:id", async (c) => {
-    const body = bookingPatchSchema.safeParse(await c.req.json())
-
-    if (!body.success) {
-      return c.json({ error: "Invalid booking update", issues: body.error.issues }, 400)
-    }
-
-    return handleApiResult(c, () =>
-      enqueueBookingWrite(async () => {
-        const user = c.get("user")
-        const current = await getBooking(db, c.req.param("id"))
-
-        if (!current) {
-          throw new NotFoundError("Booking not found")
-        }
-
-        assertCanWriteBooking(user, {
-          userId: current.userId,
-          type: body.data.type ?? current.type,
-        })
-
-        const booking = await updateBooking(db, c.req.param("id"), {
-          ...body.data,
-          startsAt: body.data.startsAt ? new Date(body.data.startsAt) : undefined,
-          endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
-          actorUserId: user.id,
-        })
-        notifyBookingChange(db, emailSender, booking.id, "booking_updated")
-
-        return c.json({ booking })
-      }),
-    )
-  })
-
-  app.delete("/bookings/:id", async (c) =>
-    handleApiResult(c, () =>
-      enqueueBookingWrite(async () => {
-        const user = c.get("user")
-        const current = await getBooking(db, c.req.param("id"))
-
-        if (!current) {
-          throw new NotFoundError("Booking not found")
-        }
-
-        assertCanWriteBooking(user, current)
-        await deleteBooking(db, c.req.param("id"), user.id, c.req.query("reason"))
-        notifyBookingChange(db, emailSender, current.id, "booking_deleted")
-        return c.json({ ok: true })
-      }),
-    ),
-  )
-
-  app.get("/bookings/:id/audit", async (c) =>
-    handleApiResult(c, async () => {
-      assertAdmin(c.get("user"))
-      return c.json({ events: await listBookingAuditEvents(db, c.req.param("id")) })
-    }),
-  )
+  registerBookingRoutes(app, { db, mailer: emailSender })
 
   app.use("/admin/*", requireAuth(db))
   app.use("/admin/*", async (c, next) => {
@@ -466,83 +358,10 @@ function clearSessionCookie(c: Context, config: ApiRuntimeConfig) {
   })
 }
 
-function assertCanWriteBooking(
-  user: CurrentUser,
-  booking: { userId: string; type: "normal" | "maintenance" },
-) {
-  if (user.role === "admin") {
-    return
-  }
-
-  if (booking.type === "maintenance" || booking.userId !== user.id) {
-    throw new ForbiddenError("Admins are required for this booking change")
-  }
-}
-
 function assertAdmin(user: CurrentUser) {
   if (user.role !== "admin") {
     throw new ForbiddenError("Admin role required")
   }
-}
-
-async function handleApiResult(c: Context, fn: () => Promise<Response>) {
-  try {
-    return await fn()
-  } catch (error) {
-    return apiErrorResponse(c, error)
-  }
-}
-
-function createSerialQueue() {
-  let queue = Promise.resolve()
-
-  return async function enqueue<T>(operation: () => Promise<T>) {
-    const result = queue.then(operation, operation)
-    queue = result.then(
-      () => undefined,
-      () => undefined,
-    )
-    return result
-  }
-}
-
-function notifyBookingChange(
-  db: Db,
-  mailer: Mailer,
-  bookingId: string,
-  kind: "booking_created" | "booking_updated" | "booking_deleted",
-) {
-  sendBookingNotification(db, mailer, { bookingId, kind }).catch((error) => {
-    console.error("[lab-api] booking notification failed", error)
-  })
-}
-
-function apiErrorResponse(c: Context, error: unknown) {
-  if (error instanceof BookingConflictError) {
-    return c.json({ error: error.message }, 409)
-  }
-
-  if (error instanceof ConflictError) {
-    return c.json({ error: error.message }, 409)
-  }
-
-  if (error instanceof InvalidBookingRangeError) {
-    return c.json({ error: error.message }, 400)
-  }
-
-  if (error instanceof NotFoundError) {
-    return c.json({ error: error.message }, 404)
-  }
-
-  if (error instanceof AuthError) {
-    return c.json({ error: error.message }, 401)
-  }
-
-  if (error instanceof ForbiddenError) {
-    return c.json({ error: error.message }, 403)
-  }
-
-  throw error
 }
 
 function sanitizeMachineInput<T extends { specs?: string[]; name?: string; slug?: string }>(
