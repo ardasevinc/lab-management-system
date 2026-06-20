@@ -506,7 +506,11 @@ export function AdminMachinesPage() {
         </Button>
       }
     >
-      <MachineInventory machines={workspace.machines} onEditMachine={setEditingMachine} />
+      <MachineInventory
+        machines={workspace.machines}
+        showAccessNotes
+        onEditMachine={setEditingMachine}
+      />
       <MachineEditorSheet
         mode="edit"
         machine={editingMachine}

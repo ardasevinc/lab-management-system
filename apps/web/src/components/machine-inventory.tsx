@@ -17,6 +17,8 @@ type MachineInventoryProps = {
   selectedMachineSlug?: string
   onSelectMachine?: (slug: string) => void
   onEditMachine?: (machine: Machine) => void
+  showAccessNotes?: boolean
+  title?: string
   selectionLabel?: string
 }
 
@@ -25,13 +27,15 @@ export function MachineInventory({
   selectedMachineSlug,
   onSelectMachine,
   onEditMachine,
+  showAccessNotes = false,
+  title = "Machine inventory",
   selectionLabel = "Use",
 }: MachineInventoryProps) {
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
         <div>
-          <h2 className="font-medium text-sm">Machine inventory</h2>
+          <h2 className="font-medium text-sm">{title}</h2>
           <p className="text-muted-foreground text-xs">{machines.length} configured</p>
         </div>
         <MonitorCog className="text-muted-foreground" aria-hidden="true" />
@@ -44,7 +48,7 @@ export function MachineInventory({
               <TableHead>Machine</TableHead>
               <TableHead className="w-28">State</TableHead>
               <TableHead>Specs</TableHead>
-              <TableHead>Access</TableHead>
+              {showAccessNotes ? <TableHead>Access</TableHead> : null}
               {onSelectMachine || onEditMachine ? (
                 <TableHead className="w-28 text-right">Actions</TableHead>
               ) : null}
@@ -68,9 +72,11 @@ export function MachineInventory({
                   <TableCell className="whitespace-normal">
                     <SpecList specs={machine.specs} />
                   </TableCell>
-                  <TableCell className="max-w-md whitespace-normal text-muted-foreground">
-                    {machine.accessNotes}
-                  </TableCell>
+                  {showAccessNotes ? (
+                    <TableCell className="max-w-md whitespace-normal text-muted-foreground">
+                      {machine.accessNotes || "No access notes"}
+                    </TableCell>
+                  ) : null}
                   {onSelectMachine || onEditMachine ? (
                     <TableCell className="text-right">
                       {onSelectMachine ? (
@@ -121,10 +127,12 @@ export function MachineInventory({
               </div>
 
               <dl className="mt-3 grid gap-2 text-sm">
-                <div className="grid gap-1">
-                  <dt className="text-muted-foreground text-xs">Access</dt>
-                  <dd>{machine.accessNotes}</dd>
-                </div>
+                {showAccessNotes ? (
+                  <div className="grid gap-1">
+                    <dt className="text-muted-foreground text-xs">Access</dt>
+                    <dd>{machine.accessNotes || "No access notes"}</dd>
+                  </div>
+                ) : null}
                 {machine.specs.length ? (
                   <div className="grid gap-1">
                     <dt className="text-muted-foreground text-xs">Specs</dt>
