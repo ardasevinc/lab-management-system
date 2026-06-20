@@ -87,6 +87,52 @@ test("moving a booking into an occupied slot surfaces a conflict", async ({ page
   expect(unexpectedConsoleProblems(consoleProblems)).toEqual([])
 })
 
+test("resizing a booking into an occupied slot surfaces a conflict", async ({ page }) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  const firstTitle = `E2E resize ${Date.now()}`
+  const secondTitle = `E2E resize occupied ${Date.now()}`
+  await createBookingFromPage(page, {
+    title: firstTitle,
+    startsAt: "2026-06-16T07:00:00.000Z",
+    endsAt: "2026-06-16T08:00:00.000Z",
+  })
+  await createBookingFromPage(page, {
+    title: secondTitle,
+    startsAt: "2026-06-16T08:30:00.000Z",
+    endsAt: "2026-06-16T09:30:00.000Z",
+  })
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+
+  const booking = page.getByRole("button", { name: new RegExp(firstTitle) })
+  await expect(booking).toBeVisible()
+
+  const bookingBox = await booking.boundingBox()
+  if (!bookingBox) {
+    throw new Error("Seeded booking did not produce a bounding box.")
+  }
+
+  await page.mouse.move(bookingBox.x + bookingBox.width / 2, bookingBox.y + bookingBox.height - 2)
+  await page.mouse.down()
+  await page.mouse.move(
+    bookingBox.x + bookingBox.width / 2,
+    bookingBox.y + bookingBox.height + 56,
+    {
+      steps: 8,
+    },
+  )
+  await page.mouse.up()
+
+  await expect(page.getByRole("alert")).toContainText("Booking overlaps an existing booking")
+  await expect(page.getByRole("button", { name: new RegExp(firstTitle) })).toContainText(
+    "10:00 - 11:00",
+  )
+  expect(unexpectedConsoleProblems(consoleProblems)).toEqual([])
+})
+
 function collectConsoleProblems(page: Page) {
   const consoleProblems: string[] = []
 
