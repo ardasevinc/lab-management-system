@@ -1,10 +1,16 @@
-import { and, asc, eq, gt, isNull, lt, ne } from "drizzle-orm"
+import { and, asc, eq, gt, isNull, lt } from "drizzle-orm"
 import type { Db } from "."
-import { BookingConflictError, InvalidBookingRangeError, NotFoundError } from "./errors"
-import { mapAuditEvent, mapBooking } from "./mappers"
-import { bookingAuditEvents, bookings, machines, users } from "./schema"
-
-type DbLike = Pick<Db, "insert" | "query" | "select" | "update">
+import { insertBookingAudit } from "./booking-audit"
+import {
+  assertMachineBookable,
+  assertMachineExists,
+  assertNoBookingOverlap,
+  assertUserExists,
+  assertValidBookingRange,
+} from "./booking-validation"
+import { NotFoundError } from "./errors"
+import { mapBooking } from "./mappers"
+import { bookings } from "./schema"
 
 export type BookingType = "normal" | "maintenance"
 
@@ -29,6 +35,8 @@ export type UpdateBookingInput = Partial<
   actorUserId: string
 }
 
+export { listBookingAuditEvents } from "./booking-audit"
+
 export async function listBookingsForMachine(db: Db, machineId: string, start: Date, end: Date) {
   const rows = await db
     .select()
@@ -47,13 +55,13 @@ export async function listBookingsForMachine(db: Db, machineId: string, start: D
 }
 
 export async function createBooking(db: Db, input: CreateBookingInput) {
-  assertValidRange(input.startsAt, input.endsAt)
+  assertValidBookingRange(input.startsAt, input.endsAt)
 
   return db.transaction(async (tx) => {
     await assertMachineBookable(tx, input.machineId)
     await assertUserExists(tx, input.userId)
     await assertUserExists(tx, input.actorUserId)
-    await assertNoOverlap(tx, {
+    await assertNoBookingOverlap(tx, {
       machineId: input.machineId,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
@@ -76,7 +84,7 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
     }
 
     await tx.insert(bookings).values(values)
-    await insertAudit(tx, {
+    await insertBookingAudit(tx, {
       bookingId: id,
       actorUserId: input.actorUserId,
       eventType: "created",
@@ -108,9 +116,9 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
       endsAt: input.endsAt ?? current.endsAt,
     }
 
-    assertValidRange(next.startsAt, next.endsAt)
+    assertValidBookingRange(next.startsAt, next.endsAt)
     await assertMachineExists(tx, next.machineId)
-    await assertNoOverlap(tx, {
+    await assertNoBookingOverlap(tx, {
       machineId: next.machineId,
       startsAt: next.startsAt,
       endsAt: next.endsAt,
@@ -127,7 +135,7 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
       .where(eq(bookings.id, id))
 
     const updated = { ...current, ...next, updatedAt: now }
-    await insertAudit(tx, {
+    await insertBookingAudit(tx, {
       bookingId: id,
       actorUserId: input.actorUserId,
       eventType: "updated",
@@ -157,7 +165,7 @@ export async function deleteBooking(
 
     const now = new Date()
     await tx.update(bookings).set({ deletedAt: now, updatedAt: now }).where(eq(bookings.id, id))
-    await insertAudit(tx, {
+    await insertBookingAudit(tx, {
       bookingId: id,
       actorUserId,
       eventType: "deleted",
@@ -172,89 +180,4 @@ export async function getBooking(db: Db, id: string) {
     where: and(eq(bookings.id, id), isNull(bookings.deletedAt)),
   })
   return row ? mapBooking(row) : null
-}
-
-export async function listBookingAuditEvents(db: Db, bookingId: string) {
-  const rows = await db
-    .select()
-    .from(bookingAuditEvents)
-    .where(eq(bookingAuditEvents.bookingId, bookingId))
-    .orderBy(asc(bookingAuditEvents.createdAt))
-
-  return rows.map(mapAuditEvent)
-}
-
-function assertValidRange(startsAt: Date, endsAt: Date) {
-  if (endsAt <= startsAt) {
-    throw new InvalidBookingRangeError()
-  }
-}
-
-async function assertNoOverlap(
-  db: DbLike,
-  input: { machineId: string; startsAt: Date; endsAt: Date; excludeBookingId?: string },
-) {
-  const conditions = [
-    eq(bookings.machineId, input.machineId),
-    isNull(bookings.deletedAt),
-    lt(bookings.startsAt, input.endsAt),
-    gt(bookings.endsAt, input.startsAt),
-  ]
-
-  if (input.excludeBookingId) {
-    conditions.push(ne(bookings.id, input.excludeBookingId))
-  }
-
-  const overlapping = await db.query.bookings.findFirst({
-    where: and(...conditions),
-  })
-
-  if (overlapping) {
-    throw new BookingConflictError()
-  }
-}
-
-async function assertMachineExists(db: DbLike, id: string) {
-  const machine = await db.query.machines.findFirst({ where: eq(machines.id, id) })
-  if (!machine) {
-    throw new NotFoundError("Machine not found")
-  }
-
-  return machine
-}
-
-async function assertMachineBookable(db: DbLike, id: string) {
-  const machine = await assertMachineExists(db, id)
-
-  if (!machine.active) {
-    throw new InvalidBookingRangeError("Machine is not bookable")
-  }
-}
-
-async function assertUserExists(db: DbLike, id: string) {
-  const user = await db.query.users.findFirst({ where: eq(users.id, id) })
-  if (!user) {
-    throw new NotFoundError("User not found")
-  }
-}
-
-async function insertAudit(
-  db: DbLike,
-  input: {
-    bookingId: string
-    actorUserId: string
-    eventType: "created" | "updated" | "deleted" | "admin_override"
-    reason?: string | null
-    payload: unknown
-  },
-) {
-  await db.insert(bookingAuditEvents).values({
-    id: crypto.randomUUID(),
-    bookingId: input.bookingId,
-    actorUserId: input.actorUserId,
-    eventType: input.eventType,
-    reason: input.reason ?? null,
-    payloadJson: JSON.stringify(input.payload),
-    createdAt: new Date(),
-  })
 }
