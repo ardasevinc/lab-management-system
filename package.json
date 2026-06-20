@@ -15,7 +15,6 @@
     "full-gate": "bun run check && bun run build",
     "lint": "biome check .",
     "format": "biome check --write .",
-    "qa:visual": "bash scripts/visual-qa.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "bun run --filter '*' typecheck"
