@@ -11,6 +11,8 @@ COPY packages/domain/package.json packages/domain/package.json
 
 RUN bun install --frozen-lockfile
 
+RUN apk add --no-cache sqlite
+
 COPY . .
 
 RUN bun run build
