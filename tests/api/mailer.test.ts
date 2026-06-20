@@ -17,6 +17,15 @@ describe("mailer env", () => {
     ).toThrow("EMAIL_PROVIDER=ses is required in production")
   })
 
+  it("treats NODE_ENV=production as production for provider validation", () => {
+    expect(() =>
+      createMailerFromEnv({
+        NODE_ENV: "production",
+        EMAIL_PROVIDER: "console",
+      }),
+    ).toThrow("EMAIL_PROVIDER=ses is required in production")
+  })
+
   it("rejects unknown mailer providers", () => {
     expect(() =>
       createMailerFromEnv({

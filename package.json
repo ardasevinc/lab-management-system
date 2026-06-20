@@ -20,6 +20,7 @@
     "test": "vitest run",
     "test:api:auth": "vitest run tests/api/auth.test.ts",
     "test:api:bookings": "vitest run tests/api/bookings.test.ts",
+    "test:api:env": "vitest run tests/api/env.test.ts",
     "test:api:health": "vitest run tests/api/health.test.ts",
     "test:api:mailer": "vitest run tests/api/mailer.test.ts",
     "test:api:notifications": "vitest run tests/api/notifications.test.ts",

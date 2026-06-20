@@ -35,6 +35,17 @@ describe("api runtime env", () => {
     ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
   })
 
+  it("treats NODE_ENV=production as production", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        NODE_ENV: "production",
+        PUBLIC_APP_URL: "http://localhost:3001",
+        CORS_ORIGINS: "http://localhost:3001",
+        SESSION_COOKIE_SECURE: "0",
+      }),
+    ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
+  })
+
   it("parses disabled notification worker defaults", () => {
     expect(notificationWorkerConfigFromEnv({})).toEqual({
       enabled: false,

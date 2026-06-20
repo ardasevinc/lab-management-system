@@ -16,7 +16,7 @@ export type NotificationWorkerConfig = {
 
 export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig {
   const config = {
-    appEnv: appEnv(env.APP_ENV),
+    appEnv: appEnv(env.APP_ENV ?? env.NODE_ENV),
     publicAppUrl: env.PUBLIC_APP_URL ?? "http://localhost:5173",
     corsOrigins: splitCsv(env.CORS_ORIGINS ?? "http://localhost:5173"),
     sessionCookieSecure: env.SESSION_COOKIE_SECURE === "1",

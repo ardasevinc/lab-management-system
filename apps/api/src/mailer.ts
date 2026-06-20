@@ -32,8 +32,9 @@ type SesMailerConfig = {
 
 export function createMailerFromEnv(env: Record<string, string | undefined>): Mailer {
   const provider = env.EMAIL_PROVIDER ?? "console"
+  const appEnv = env.APP_ENV ?? env.NODE_ENV
 
-  if (env.APP_ENV === "production" && provider !== "ses") {
+  if (appEnv === "production" && provider !== "ses") {
     throw new Error("EMAIL_PROVIDER=ses is required in production")
   }
 
