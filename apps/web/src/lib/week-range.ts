@@ -1,9 +1,11 @@
-import { addDays, startOfWeek } from "date-fns"
+import { addLabDays, fromLabDateTimeParts, startOfLabWeek } from "./time"
 
 export function getWeekRange(date: Date) {
-  const start = startOfWeek(date, { weekStartsOn: 1 })
-  start.setHours(0, 0, 0, 0)
-  const end = addDays(start, 7)
+  const start = startOfLabWeek(date)
+  const end = addLabDays(start, 7)
 
-  return { start: start.toISOString(), end: end.toISOString() }
+  return {
+    start: fromLabDateTimeParts(start, "00:00"),
+    end: fromLabDateTimeParts(end, "00:00"),
+  }
 }

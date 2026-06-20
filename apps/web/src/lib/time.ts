@@ -2,6 +2,10 @@ import { labConfig } from "@lab/config"
 
 const labTimeZone = labConfig.defaultTimezone
 
+export function labTimezone() {
+  return labTimeZone
+}
+
 export function toLabDateValue(value: string | Date) {
   const parts = dateTimeParts(value)
   return `${parts.year}-${parts.month}-${parts.day}`
@@ -21,6 +25,21 @@ export function fromLabDateTimeParts(date: string, time: string) {
   const correctedOffset = timeZoneOffsetMs(new Date(utc))
 
   return new Date(wallTimeAsUtc - correctedOffset).toISOString()
+}
+
+export function addLabDays(date: string, days: number) {
+  const [year, month, day] = date.split("-").map(Number)
+  const next = new Date(Date.UTC(year, month - 1, day + days, 12))
+  return `${next.getUTCFullYear()}-${pad(next.getUTCMonth() + 1)}-${pad(next.getUTCDate())}`
+}
+
+export function startOfLabWeek(value: string | Date) {
+  const date = toLabDateValue(value)
+  const [year, month, day] = date.split("-").map(Number)
+  const noonUtc = new Date(Date.UTC(year, month - 1, day, 12))
+  const dayOfWeek = noonUtc.getUTCDay()
+  const daysSinceMonday = (dayOfWeek + 6) % 7
+  return addLabDays(date, -daysSinceMonday)
 }
 
 export function toLocalInputValue(value: string | Date) {
@@ -103,4 +122,8 @@ function part(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTyp
   }
 
   return value
+}
+
+function pad(value: number) {
+  return String(value).padStart(2, "0")
 }

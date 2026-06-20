@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest"
 import type { Booking } from "../../apps/web/src/lib/api"
 import {
+  bookingStyle,
+  bookingsForDay,
+  buildWeekDays,
   dateAtMinutes,
   defaultRangeAtMinutes,
   hasConflict,
+  hourHeightPx,
+  minutesSinceDayStart,
   moveRangeToDayAndMinutes,
   normalizeRange,
   packOverlaps,
@@ -107,6 +112,47 @@ describe("calendar geometry", () => {
       { id: "a", column: 0, columnCount: 2 },
       { id: "b", column: 1, columnCount: 2 },
       { id: "c", column: 0, columnCount: 1 },
+    ])
+  })
+
+  it("creates slot dates in the lab timezone", () => {
+    expect(dateAtMinutes(day, 10 * 60).toISOString()).toBe("2026-05-11T07:00:00.000Z")
+  })
+
+  it("buckets UTC late-night bookings by lab day", () => {
+    const lateNightBooking = booking("late", "2026-05-10T21:30:00.000Z", "2026-05-10T22:30:00.000Z")
+    const sunday = new Date("2026-05-10T12:00:00.000Z")
+    const monday = new Date("2026-05-11T12:00:00.000Z")
+
+    expect(bookingsForDay([lateNightBooking], sunday)).toEqual([])
+    expect(bookingsForDay([lateNightBooking], monday)).toEqual([lateNightBooking])
+  })
+
+  it("places bookings by lab-time minutes", () => {
+    const [packed] = packOverlaps([
+      booking("late", "2026-05-10T21:30:00.000Z", "2026-05-10T22:30:00.000Z"),
+    ])
+
+    expect(minutesSinceDayStart(new Date(packed.startsAt))).toBe(30)
+    expect(bookingStyle(packed)).toEqual({
+      top: ((30 - 8 * 60) / 60) * hourHeightPx,
+      height: hourHeightPx,
+      left: 0,
+      width: 100,
+    })
+  })
+
+  it("builds week days from lab week boundaries", () => {
+    expect(
+      buildWeekDays(new Date("2026-05-10T21:30:00.000Z")).map((date) => date.toISOString()),
+    ).toEqual([
+      "2026-05-10T21:00:00.000Z",
+      "2026-05-11T21:00:00.000Z",
+      "2026-05-12T21:00:00.000Z",
+      "2026-05-13T21:00:00.000Z",
+      "2026-05-14T21:00:00.000Z",
+      "2026-05-15T21:00:00.000Z",
+      "2026-05-16T21:00:00.000Z",
     ])
   })
 })

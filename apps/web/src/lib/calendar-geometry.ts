@@ -1,13 +1,12 @@
-import {
-  addDays,
-  addMinutes,
-  startOfWeek as dateFnsStartOfWeek,
-  differenceInMinutes,
-  isSameDay,
-  setHours,
-  setMinutes,
-} from "date-fns"
+import { differenceInMinutes } from "date-fns"
 import type { Booking } from "./api"
+import {
+  addLabDays,
+  fromLabDateTimeParts,
+  startOfLabWeek,
+  toLabDateValue,
+  toLabTimeValue,
+} from "./time"
 
 export type CalendarRange = {
   startsAt: string
@@ -26,16 +25,20 @@ export const defaultBookingDurationMinutes = 60
 export const hourHeightPx = 56
 
 export function startOfWeek(date: Date) {
-  return dateFnsStartOfWeek(date, { weekStartsOn: 1 })
+  return new Date(fromLabDateTimeParts(startOfLabWeek(date), "00:00"))
 }
 
 export function buildWeekDays(date: Date) {
-  const start = startOfWeek(date)
-  return Array.from({ length: 7 }, (_, index) => addDays(start, index))
+  const start = startOfLabWeek(date)
+  return Array.from(
+    { length: 7 },
+    (_, index) => new Date(fromLabDateTimeParts(addLabDays(start, index), "00:00")),
+  )
 }
 
 export function minutesSinceDayStart(date: Date) {
-  return date.getHours() * 60 + date.getMinutes()
+  const [hours, minutes] = toLabTimeValue(date).split(":").map(Number)
+  return hours * 60 + minutes
 }
 
 export function minutesToY(minutes: number) {
@@ -55,7 +58,10 @@ export function clampMinutesToDay(minutes: number) {
 }
 
 export function dateAtMinutes(day: Date, minutes: number) {
-  return addMinutes(setMinutes(setHours(day, 0), 0), minutes)
+  const clampedMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.round(minutes)))
+  const hours = Math.floor(clampedMinutes / 60)
+  const remainingMinutes = clampedMinutes % 60
+  return new Date(fromLabDateTimeParts(toLabDateValue(day), timeValue(hours, remainingMinutes)))
 }
 
 export function normalizeRange(day: Date, startMinutes: number, endMinutes: number) {
@@ -137,7 +143,8 @@ export function hasConflict(range: CalendarRange, bookings: Booking[], excludeBo
 }
 
 export function bookingsForDay(bookings: Booking[], day: Date) {
-  return bookings.filter((booking) => isSameLocalDay(new Date(booking.startsAt), day))
+  const dayKey = toLabDateValue(day)
+  return bookings.filter((booking) => toLabDateValue(booking.startsAt) === dayKey)
 }
 
 export function packOverlaps(bookings: Booking[]): PackedBooking[] {
@@ -194,6 +201,6 @@ export function bookingStyle(booking: PackedBooking) {
   }
 }
 
-function isSameLocalDay(a: Date, b: Date) {
-  return isSameDay(a, b)
+function timeValue(hours: number, minutes: number) {
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
 }
