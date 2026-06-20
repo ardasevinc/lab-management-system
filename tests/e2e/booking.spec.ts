@@ -1,26 +1,12 @@
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
+
+const adminEmail = "admin@miralab.tr"
 
 test("admin can sign in and manage a tohum booking", async ({ page }) => {
-  const consoleProblems: string[] = []
   const bookingTitle = `E2E booking ${Date.now()}`
 
-  page.on("console", (message) => {
-    if (["error", "warning"].includes(message.type())) {
-      consoleProblems.push(`${message.type()}: ${message.text()}`)
-    }
-  })
-  page.on("pageerror", (error) => {
-    consoleProblems.push(`pageerror: ${error.message}`)
-  })
-
-  await page.goto("/login")
-  await expect(page.getByLabel("Email")).toBeVisible()
-
-  await page.getByLabel("Email").fill("admin@miralab.tr")
-  await page.getByRole("button", { name: "Continue" }).click()
-  await expect(page.getByLabel("Login code")).toBeVisible()
-  await page.getByRole("button", { name: "Sign in" }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
 
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
@@ -56,3 +42,105 @@ test("admin can sign in and manage a tohum booking", async ({ page }) => {
 
   expect(consoleProblems).toEqual([])
 })
+
+test("moving a booking into an occupied slot surfaces a conflict", async ({ page }) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  const firstTitle = `E2E movable ${Date.now()}`
+  const secondTitle = `E2E occupied ${Date.now()}`
+  await createBookingFromPage(page, {
+    title: firstTitle,
+    startsAt: "2026-06-15T07:00:00.000Z",
+    endsAt: "2026-06-15T08:00:00.000Z",
+  })
+  await createBookingFromPage(page, {
+    title: secondTitle,
+    startsAt: "2026-06-15T09:00:00.000Z",
+    endsAt: "2026-06-15T10:00:00.000Z",
+  })
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+
+  const movableBooking = page.getByRole("button", { name: new RegExp(firstTitle) })
+  await expect(movableBooking).toBeVisible()
+
+  const bookingBox = await movableBooking.boundingBox()
+  if (!bookingBox) {
+    throw new Error("Seeded booking did not produce a bounding box.")
+  }
+
+  await page.mouse.move(bookingBox.x + bookingBox.width / 2, bookingBox.y + bookingBox.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(
+    bookingBox.x + bookingBox.width / 2,
+    bookingBox.y + bookingBox.height / 2 + 112,
+    { steps: 8 },
+  )
+  await page.mouse.up()
+
+  await expect(page.getByRole("alert")).toContainText("Booking overlaps an existing booking")
+  await expect(page.getByRole("button", { name: new RegExp(firstTitle) })).toContainText(
+    "10:00 - 11:00",
+  )
+  expect(unexpectedConsoleProblems(consoleProblems)).toEqual([])
+})
+
+function collectConsoleProblems(page: Page) {
+  const consoleProblems: string[] = []
+
+  page.on("console", (message) => {
+    if (["error", "warning"].includes(message.type())) {
+      consoleProblems.push(`${message.type()}: ${message.text()}`)
+    }
+  })
+  page.on("pageerror", (error) => {
+    consoleProblems.push(`pageerror: ${error.message}`)
+  })
+
+  return consoleProblems
+}
+
+function unexpectedConsoleProblems(consoleProblems: string[]) {
+  return consoleProblems.filter(
+    (problem) => !problem.includes("the server responded with a status of 409 (Conflict)"),
+  )
+}
+
+async function loginAsAdmin(page: Page) {
+  await page.goto("/login")
+  await expect(page.getByLabel("Email")).toBeVisible()
+
+  await page.getByLabel("Email").fill(adminEmail)
+  await page.getByRole("button", { name: "Continue" }).click()
+  await expect(page.getByLabel("Login code")).toBeVisible()
+  await page.getByRole("button", { name: "Sign in" }).click()
+  await expect(page).toHaveURL(/\/admin$/)
+}
+
+async function createBookingFromPage(
+  page: Page,
+  booking: { title: string; startsAt: string; endsAt: string },
+) {
+  await page.evaluate(async (value) => {
+    const token = window.localStorage.getItem("lab_session_token")
+    const response = await window.fetch("/bookings", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: value.title,
+        startsAt: value.startsAt,
+        endsAt: value.endsAt,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to seed booking: ${response.status} ${await response.text()}`)
+    }
+  }, booking)
+}
