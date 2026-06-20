@@ -103,7 +103,11 @@ export function registerBookingRoutes(
           endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
           actorUserId: user.id,
         })
-        notifyBookingChange(db, mailer, booking.id, "booking_updated")
+        notifyBookingChange(db, mailer, booking.id, "booking_updated", booking.userId)
+
+        if (current.userId !== booking.userId) {
+          notifyBookingChange(db, mailer, booking.id, "booking_updated", current.userId)
+        }
 
         return c.json({ booking })
       }),
@@ -173,8 +177,9 @@ function notifyBookingChange(
   mailer: Mailer,
   bookingId: string,
   kind: "booking_created" | "booking_updated" | "booking_deleted",
+  recipientUserId?: string,
 ) {
-  sendBookingNotification(db, mailer, { bookingId, kind }).catch((error) => {
+  sendBookingNotification(db, mailer, { bookingId, kind, recipientUserId }).catch((error) => {
     console.error("[lab-api] booking notification failed", error)
   })
 }

@@ -548,6 +548,62 @@ describe("booking API", () => {
     ])
   })
 
+  it("notifies both previous and assigned owners when admins reassign a booking", async () => {
+    const sentBookingEmails: BookingEmail[] = []
+    app = createApiApp({
+      db: testDb.db,
+      mailer: {
+        async sendLoginOtp() {},
+        async sendBookingEmail(email) {
+          sentBookingEmails.push(email)
+        },
+      },
+    })
+
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "admin-local",
+        title: "Reassigned notification run",
+        startsAt: "2026-05-10T14:00:00.000Z",
+        endsAt: "2026-05-10T15:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+    await waitForBookingEmails(sentBookingEmails, 1)
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: "member-local",
+        reason: "Assign to researcher",
+      }),
+    })
+    await waitForBookingEmails(sentBookingEmails, 3)
+
+    const reassignmentEmails = sentBookingEmails.slice(1)
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(200)
+    expect(sentBookingEmails[0]).toEqual(
+      expect.objectContaining({
+        to: "admin@miralab.tr",
+        subject: "MIRALAB booking created: Reassigned notification run",
+      }),
+    )
+    expect(reassignmentEmails.map((email) => email.to).sort()).toEqual([
+      "admin@miralab.tr",
+      "member@miralab.tr",
+    ])
+    expect(reassignmentEmails.map((email) => email.subject)).toEqual([
+      "MIRALAB booking updated: Reassigned notification run",
+      "MIRALAB booking updated: Reassigned notification run",
+    ])
+  })
+
   it("rejects unauthenticated machine access", async () => {
     const response = await app.request("/machines")
     expect(response.status).toBe(401)

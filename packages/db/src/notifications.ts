@@ -27,6 +27,25 @@ export async function getBookingNotificationContext(db: Db, bookingId: string) {
   return rows[0] ?? null
 }
 
+export async function getBookingNotificationContextForUser(
+  db: Db,
+  input: { bookingId: string; userId: string },
+) {
+  const rows = await db
+    .select({
+      booking: bookings,
+      user: users,
+      machine: machines,
+    })
+    .from(bookings)
+    .innerJoin(machines, eq(bookings.machineId, machines.id))
+    .innerJoin(users, eq(users.id, input.userId))
+    .where(eq(bookings.id, input.bookingId))
+    .limit(1)
+
+  return rows[0] ?? null
+}
+
 export async function enqueueDueBookingReminders(
   db: Db,
   input: { startReminderMinutes: number; endingReminderMinutes: number; now?: Date },

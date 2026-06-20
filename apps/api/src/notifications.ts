@@ -3,6 +3,7 @@ import {
   type Db,
   enqueueDueBookingReminders,
   getBookingNotificationContext,
+  getBookingNotificationContextForUser,
   listDueNotificationDeliveries,
   markNotificationFailed,
   markNotificationSent,
@@ -17,9 +18,15 @@ type BookingNotificationContext = NonNullable<
 export async function sendBookingNotification(
   db: Db,
   mailer: Mailer,
-  input: { bookingId: string; kind: NotificationKind },
+  input: { bookingId: string; kind: NotificationKind; recipientUserId?: string },
 ) {
-  const context = await getBookingNotificationContext(db, input.bookingId)
+  const context = input.recipientUserId
+    ? await getBookingNotificationContextForUser(db, {
+        bookingId: input.bookingId,
+        userId: input.recipientUserId,
+      })
+    : await getBookingNotificationContext(db, input.bookingId)
+
   if (!context) {
     return
   }
