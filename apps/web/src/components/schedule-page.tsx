@@ -123,13 +123,14 @@ export function SchedulePage() {
             Book
           </Button>
         </div>
-        <div className="-mx-1 mb-3 flex gap-1 overflow-x-auto px-1 pb-1">
+        <div className="mb-3 grid grid-cols-7 gap-1">
           {mobileDays.map((day) => (
             <button
               key={day.toISOString()}
               type="button"
-              className="grid min-w-14 rounded-md border border-transparent px-2 py-1.5 text-center transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:border-primary/35 data-[active=true]:bg-accent"
+              className="grid min-w-0 rounded-md border border-transparent px-1 py-1.5 text-center transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:border-primary/35 data-[active=true]:bg-accent"
               data-active={isSameDay(day, selectedDay)}
+              data-mobile-day
               onClick={() => setSelectedDay(day)}
             >
               <span className="text-muted-foreground text-xs">{format(day, "EEE")}</span>

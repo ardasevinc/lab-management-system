@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test"
+import { expect, type Locator, type Page, test } from "@playwright/test"
 
 const adminEmail = "admin@miralab.tr"
 const memberEmail = "member@miralab.tr"
@@ -228,6 +228,12 @@ test("researchers can create and delete a booking from the responsive day agenda
   await expect(page.getByText("Day agenda")).toBeVisible()
   await expect(page.getByText("Week board")).toBeHidden()
 
+  const dayButtons = page.locator("[data-mobile-day]")
+  await expect(dayButtons).toHaveCount(7)
+  for (let index = 0; index < 7; index += 1) {
+    await expectElementWithinViewport(page, dayButtons.nth(index))
+  }
+
   await page.getByRole("button", { name: "Book" }).click()
   await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
   await page.getByLabel("Title").fill(bookingTitle)
@@ -360,4 +366,19 @@ async function deleteBookingFromPage(page: Page, id: string) {
       throw new Error(`Failed to delete booking: ${response.status} ${await response.text()}`)
     }
   }, id)
+}
+
+async function expectElementWithinViewport(page: Page, locator: Locator) {
+  const box = await locator.boundingBox()
+  const viewport = page.viewportSize()
+
+  expect(box).not.toBeNull()
+  expect(viewport).not.toBeNull()
+
+  if (!box || !viewport) {
+    return
+  }
+
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
 }
