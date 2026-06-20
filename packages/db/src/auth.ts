@@ -20,13 +20,20 @@ export async function requestLoginOtp(db: Db, emailInput: string, now = new Date
   }
 
   const code = randomOtp()
-  await db.insert(otpCodes).values({
-    id: crypto.randomUUID(),
-    email,
-    code,
-    consumedAt: null,
-    expiresAt: new Date(now.getTime() + otpTtlMs),
-    createdAt: now,
+  await db.transaction(async (tx) => {
+    await tx
+      .update(otpCodes)
+      .set({ consumedAt: now })
+      .where(and(eq(otpCodes.email, email), isNull(otpCodes.consumedAt)))
+
+    await tx.insert(otpCodes).values({
+      id: crypto.randomUUID(),
+      email,
+      code,
+      consumedAt: null,
+      expiresAt: new Date(now.getTime() + otpTtlMs),
+      createdAt: now,
+    })
   })
 
   return { email, code, expiresAt: new Date(now.getTime() + otpTtlMs).toISOString() }

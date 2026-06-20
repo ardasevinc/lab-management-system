@@ -67,6 +67,39 @@ describe("auth and invites", () => {
     expect(await meResponse.json()).toEqual({ user })
   })
 
+  it("invalidates older login codes when a new code is requested", async () => {
+    const firstRequest = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr" }),
+    })
+    const firstCode = (await firstRequest.json()).devCode
+
+    const secondRequest = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr" }),
+    })
+    const secondCode = (await secondRequest.json()).devCode
+
+    const staleVerify = await app.request("/auth/verify-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr", code: firstCode }),
+    })
+    const latestVerify = await app.request("/auth/verify-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr", code: secondCode }),
+    })
+
+    expect(firstRequest.status).toBe(200)
+    expect(secondRequest.status).toBe(200)
+    expect(staleVerify.status).toBe(401)
+    expect(await staleVerify.json()).toEqual({ error: "Invalid or expired login code" })
+    expect(latestVerify.status).toBe(200)
+  })
+
   it("lets admins deactivate and reactivate users", async () => {
     const adminHeaders = await login("admin@miralab.tr")
     const memberHeaders = await login("member@miralab.tr")
