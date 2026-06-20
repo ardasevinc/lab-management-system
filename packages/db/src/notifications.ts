@@ -27,6 +27,22 @@ export async function getBookingNotificationContext(db: Db, bookingId: string) {
   return rows[0] ?? null
 }
 
+export async function getActiveBookingNotificationContext(db: Db, bookingId: string) {
+  const rows = await db
+    .select({
+      booking: bookings,
+      user: users,
+      machine: machines,
+    })
+    .from(bookings)
+    .innerJoin(users, eq(bookings.userId, users.id))
+    .innerJoin(machines, eq(bookings.machineId, machines.id))
+    .where(and(eq(bookings.id, bookingId), eq(users.active, true)))
+    .limit(1)
+
+  return rows[0] ?? null
+}
+
 export async function getBookingNotificationContextForUser(
   db: Db,
   input: { bookingId: string; userId: string },
@@ -158,6 +174,7 @@ async function listReminderCandidates(
     .where(
       and(
         isNull(bookings.deletedAt),
+        eq(users.active, true),
         gt(targetColumn, input.after),
         lte(targetColumn, input.until),
       ),

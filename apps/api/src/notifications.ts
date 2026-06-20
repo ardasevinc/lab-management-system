@@ -2,6 +2,7 @@ import { labConfig } from "@lab/config"
 import {
   type Db,
   enqueueDueBookingReminders,
+  getActiveBookingNotificationContext,
   getBookingNotificationContext,
   getBookingNotificationContextForUser,
   listDueNotificationDeliveries,
@@ -50,11 +51,11 @@ export async function processBookingReminders(
   for (const delivery of dueDeliveries) {
     try {
       const context = delivery.bookingId
-        ? await getBookingNotificationContext(db, delivery.bookingId)
+        ? await getActiveBookingNotificationContext(db, delivery.bookingId)
         : null
 
       if (!context) {
-        await markNotificationFailed(db, delivery.id, "Booking not found", now)
+        await markNotificationFailed(db, delivery.id, "Booking reminder context not available", now)
         continue
       }
 

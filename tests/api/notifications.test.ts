@@ -1,4 +1,4 @@
-import { createBooking } from "@lab/db"
+import { createBooking, enqueueNotificationDelivery, updateUserAccess } from "@lab/db"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { BookingEmail } from "../../apps/api/src/mailer"
 import { processBookingReminders, startNotificationWorker } from "../../apps/api/src/notifications"
@@ -78,6 +78,77 @@ describe("booking notifications", () => {
     })
 
     expect(sentSubjects).toEqual(["MIRALAB booking ending soon: Ending run"])
+  })
+
+  it("does not enqueue reminders for disabled users", async () => {
+    const sentSubjects: string[] = []
+    await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Disabled reminder run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+    await updateUserAccess(testDb.db, "member-local", { active: false })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendBookingEmail(email: { subject: string }) {
+        sentSubjects.push(email.subject)
+      },
+    }
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+
+    const deliveries = await testDb.db.query.notificationDeliveries.findMany()
+    expect(sentSubjects).toEqual([])
+    expect(deliveries).toEqual([])
+  })
+
+  it("does not send pending reminders after the recipient is disabled", async () => {
+    const sentSubjects: string[] = []
+    const booking = await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Queued disabled reminder run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+    await enqueueNotificationDelivery(testDb.db, {
+      kind: "booking_start_reminder",
+      bookingId: booking.id,
+      recipientEmail: "member@miralab.tr",
+      scheduledFor: new Date("2026-05-10T10:00:00.000Z"),
+    })
+    await updateUserAccess(testDb.db, "member-local", { active: false })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendBookingEmail(email: { subject: string }) {
+        sentSubjects.push(email.subject)
+      },
+    }
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+
+    const delivery = await testDb.db.query.notificationDeliveries.findFirst()
+    expect(sentSubjects).toEqual([])
+    expect(delivery).toEqual(
+      expect.objectContaining({
+        status: "failed",
+        error: "Booking reminder context not available",
+      }),
+    )
   })
 
   it("formats booking email details in the lab timezone", async () => {
