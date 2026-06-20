@@ -127,6 +127,94 @@ describe("booking API", () => {
     expect(await second.json()).toEqual({ error: "Booking overlaps an existing booking" })
   })
 
+  it("allows adjacent bookings but rejects update collisions", async () => {
+    const morning = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Morning run",
+        startsAt: "2026-05-10T09:00:00.000Z",
+        endsAt: "2026-05-10T10:00:00.000Z",
+      }),
+    })
+    const adjacent = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Adjacent run",
+        startsAt: "2026-05-10T10:00:00.000Z",
+        endsAt: "2026-05-10T11:00:00.000Z",
+      }),
+    })
+    const { booking } = await adjacent.json()
+
+    const collision = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        startsAt: "2026-05-10T09:30:00.000Z",
+        endsAt: "2026-05-10T10:30:00.000Z",
+      }),
+    })
+
+    expect(morning.status).toBe(201)
+    expect(adjacent.status).toBe(201)
+    expect(collision.status).toBe(409)
+    expect(await collision.json()).toEqual({ error: "Booking overlaps an existing booking" })
+  })
+
+  it("treats maintenance blocks as reserved time and frees deleted slots", async () => {
+    const maintenance = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Driver upgrade",
+        type: "maintenance",
+        startsAt: "2026-05-10T12:00:00.000Z",
+        endsAt: "2026-05-10T13:00:00.000Z",
+      }),
+    })
+    const { booking } = await maintenance.json()
+
+    const blocked = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Training during maintenance",
+        startsAt: "2026-05-10T12:15:00.000Z",
+        endsAt: "2026-05-10T12:45:00.000Z",
+      }),
+    })
+    const deleteMaintenance = await app.request(`/bookings/${booking.id}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    })
+    const afterDelete = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Training after maintenance",
+        startsAt: "2026-05-10T12:15:00.000Z",
+        endsAt: "2026-05-10T12:45:00.000Z",
+      }),
+    })
+
+    expect(maintenance.status).toBe(201)
+    expect(blocked.status).toBe(409)
+    expect(await blocked.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    expect(deleteMaintenance.status).toBe(200)
+    expect(afterDelete.status).toBe(201)
+  })
+
   it("updates and deletes bookings", async () => {
     const createResponse = await app.request("/bookings", {
       method: "POST",
