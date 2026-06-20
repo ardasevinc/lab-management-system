@@ -154,7 +154,7 @@ export function createApiApp({
 
   app.post("/auth/logout", async (c) => {
     await deleteSession(db, sessionToken(c))
-    deleteCookie(c, "lab_session", { path: "/" })
+    clearSessionCookie(c, runtimeConfig)
     return c.json({ ok: true })
   })
 
@@ -344,6 +344,14 @@ function setSessionCookie(c: Context, token: string, expiresAt: string, config: 
     secure: config.sessionCookieSecure,
     domain: config.sessionCookieDomain,
     expires: new Date(expiresAt),
+  })
+}
+
+function clearSessionCookie(c: Context, config: ApiRuntimeConfig) {
+  deleteCookie(c, "lab_session", {
+    path: "/",
+    secure: config.sessionCookieSecure,
+    domain: config.sessionCookieDomain,
   })
 }
 
