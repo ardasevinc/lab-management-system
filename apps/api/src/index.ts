@@ -40,6 +40,7 @@ if (notificationWorkerConfig.enabled) {
     intervalSeconds: notificationWorkerConfig.intervalSeconds,
     startReminderMinutes: notificationWorkerConfig.startReminderMinutes,
     endingReminderMinutes: notificationWorkerConfig.endingReminderMinutes,
+    publicAppUrl: runtimeConfig.publicAppUrl,
   })
 }
 

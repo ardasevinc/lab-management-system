@@ -16,10 +16,15 @@ type BookingNotificationContext = NonNullable<
   Awaited<ReturnType<typeof getBookingNotificationContext>>
 >
 
+type NotificationOptions = {
+  publicAppUrl?: string
+}
+
 export async function sendBookingNotification(
   db: Db,
   mailer: Mailer,
   input: { bookingId: string; kind: NotificationKind; recipientUserId?: string },
+  options: NotificationOptions = {},
 ) {
   const context = input.recipientUserId
     ? await getBookingNotificationContextForUser(db, {
@@ -32,13 +37,18 @@ export async function sendBookingNotification(
     return
   }
 
-  await mailer.sendBookingEmail(bookingEmailForKind(context, input.kind))
+  await mailer.sendBookingEmail(bookingEmailForKind(context, input.kind, options))
 }
 
 export async function processBookingReminders(
   db: Db,
   mailer: Mailer,
-  input: { startReminderMinutes: number; endingReminderMinutes: number; now?: Date },
+  input: {
+    startReminderMinutes: number
+    endingReminderMinutes: number
+    now?: Date
+    publicAppUrl?: string
+  },
 ) {
   const now = input.now ?? new Date()
   await enqueueDueBookingReminders(db, {
@@ -59,7 +69,7 @@ export async function processBookingReminders(
         continue
       }
 
-      await mailer.sendBookingEmail(bookingEmailForKind(context, delivery.kind))
+      await mailer.sendBookingEmail(bookingEmailForKind(context, delivery.kind, input))
       await markNotificationSent(db, delivery.id, now)
     } catch (error) {
       await markNotificationFailed(db, delivery.id, errorMessage(error), now)
@@ -74,6 +84,7 @@ export function startNotificationWorker(
     intervalSeconds: number
     startReminderMinutes: number
     endingReminderMinutes: number
+    publicAppUrl?: string
   },
 ) {
   let inFlight: Promise<void> | null = null
@@ -101,6 +112,7 @@ export function startNotificationWorker(
 function bookingEmailForKind(
   context: BookingNotificationContext,
   kind: NotificationKind,
+  options: NotificationOptions,
 ): BookingEmail {
   const details = bookingDetails(context)
 
@@ -113,7 +125,7 @@ function bookingEmailForKind(
         body: `Your ${context.machine.name} booking has been created.`,
         details,
         actionLabel: "Open schedule",
-        actionUrl: scheduleUrl(),
+        actionUrl: scheduleUrl(options.publicAppUrl),
       }
     case "booking_updated":
       return {
@@ -123,7 +135,7 @@ function bookingEmailForKind(
         body: `Your ${context.machine.name} booking has been updated.`,
         details,
         actionLabel: "Open schedule",
-        actionUrl: scheduleUrl(),
+        actionUrl: scheduleUrl(options.publicAppUrl),
       }
     case "booking_deleted":
       return {
@@ -133,7 +145,7 @@ function bookingEmailForKind(
         body: `Your ${context.machine.name} booking has been deleted.`,
         details,
         actionLabel: "Open schedule",
-        actionUrl: scheduleUrl(),
+        actionUrl: scheduleUrl(options.publicAppUrl),
       }
     case "booking_start_reminder":
       return {
@@ -143,7 +155,7 @@ function bookingEmailForKind(
         body: `Your ${context.machine.name} booking starts soon.`,
         details,
         actionLabel: "Open schedule",
-        actionUrl: scheduleUrl(),
+        actionUrl: scheduleUrl(options.publicAppUrl),
       }
     case "booking_ending_reminder":
       return {
@@ -153,7 +165,7 @@ function bookingEmailForKind(
         body: `Your ${context.machine.name} booking ends soon.`,
         details,
         actionLabel: "Open schedule",
-        actionUrl: scheduleUrl(),
+        actionUrl: scheduleUrl(options.publicAppUrl),
       }
   }
 }
@@ -177,8 +189,8 @@ function formatLabTimezone(date: Date) {
   return `${formatted} ${labConfig.defaultTimezone}`
 }
 
-function scheduleUrl() {
-  return `${labConfig.baseUrl.replace(/\/$/, "")}/schedule`
+function scheduleUrl(publicAppUrl = labConfig.baseUrl) {
+  return `${publicAppUrl.replace(/\/$/, "")}/schedule`
 }
 
 function errorMessage(error: unknown) {

@@ -32,10 +32,15 @@ export function databaseUrlFromEnv(
 }
 
 export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig {
+  const environment = appEnvFromEnv(env)
   const config = {
-    appEnv: appEnvFromEnv(env),
-    publicAppUrl: env.PUBLIC_APP_URL ?? "http://localhost:5173",
-    corsOrigins: splitCsv(env.CORS_ORIGINS ?? "http://localhost:5173"),
+    appEnv: environment,
+    publicAppUrl: originFromEnv(env.PUBLIC_APP_URL ?? "http://localhost:5173", "PUBLIC_APP_URL", {
+      requireHttps: environment === "production",
+    }),
+    corsOrigins: splitCsv(env.CORS_ORIGINS ?? "http://localhost:5173").map((origin) =>
+      originFromEnv(origin, "CORS_ORIGINS", { requireHttps: environment === "production" }),
+    ),
     sessionCookieSecure: env.SESSION_COOKIE_SECURE === "1",
     sessionCookieDomain: emptyToUndefined(env.SESSION_COOKIE_DOMAIN),
     devShowOtp: env.DEV_SHOW_OTP === "1",
@@ -101,14 +106,8 @@ function assertValidRuntimeConfig(config: ApiRuntimeConfig) {
     throw new Error("SESSION_COOKIE_SECURE=1 is required in production")
   }
 
-  if (!config.publicAppUrl.startsWith("https://")) {
-    throw new Error("PUBLIC_APP_URL must be HTTPS in production")
-  }
-
-  for (const origin of config.corsOrigins) {
-    if (!origin.startsWith("https://")) {
-      throw new Error("CORS_ORIGINS must be HTTPS in production")
-    }
+  if (!config.corsOrigins.includes(config.publicAppUrl)) {
+    throw new Error("CORS_ORIGINS must include PUBLIC_APP_URL in production")
   }
 }
 
@@ -158,6 +157,34 @@ function splitCsv(value: string) {
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean)
+}
+
+function originFromEnv(
+  value: string,
+  name: "PUBLIC_APP_URL" | "CORS_ORIGINS",
+  input: { requireHttps: boolean },
+) {
+  let url: URL
+
+  try {
+    url = new URL(value)
+  } catch {
+    throw new Error(`${name} must be a valid URL origin`)
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error(`${name} must use http or https`)
+  }
+
+  if (input.requireHttps && url.protocol !== "https:") {
+    throw new Error(`${name} must be HTTPS in production`)
+  }
+
+  if (url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
+    throw new Error(`${name} must be an origin without path, query, or hash`)
+  }
+
+  return url.origin
 }
 
 function emptyToUndefined(value: string | undefined) {

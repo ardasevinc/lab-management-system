@@ -204,7 +204,7 @@ export function createApiApp({
 
   app.use("/bookings", requireAuth(db))
   app.use("/bookings/*", requireAuth(db))
-  registerBookingRoutes(app, { db, mailer: emailSender })
+  registerBookingRoutes(app, { db, mailer: emailSender, publicAppUrl: runtimeConfig.publicAppUrl })
 
   for (const path of [
     "/admin/users",

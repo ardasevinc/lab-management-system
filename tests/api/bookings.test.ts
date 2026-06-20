@@ -496,6 +496,10 @@ describe("booking API", () => {
     const sentBookingEmails: BookingEmail[] = []
     app = createApiApp({
       db: testDb.db,
+      config: {
+        publicAppUrl: "https://lms.miralab.tr",
+        corsOrigins: ["https://lms.miralab.tr"],
+      },
       mailer: {
         async sendLoginOtp() {},
         async sendBookingEmail(email) {
@@ -545,6 +549,11 @@ describe("booking API", () => {
       "member@miralab.tr",
       "member@miralab.tr",
       "member@miralab.tr",
+    ])
+    expect(sentBookingEmails.map((email) => email.actionUrl)).toEqual([
+      "https://lms.miralab.tr/schedule",
+      "https://lms.miralab.tr/schedule",
+      "https://lms.miralab.tr/schedule",
     ])
   })
 

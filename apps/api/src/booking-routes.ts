@@ -12,6 +12,7 @@ import {
 import type { Hono } from "hono"
 import { z } from "zod"
 import { handleApiResult } from "./api-errors"
+import type { ApiRuntimeConfig } from "./env"
 import type { Mailer } from "./mailer"
 import { sendBookingNotification } from "./notifications"
 
@@ -38,9 +39,10 @@ export function registerBookingRoutes(
   options: {
     db: Db
     mailer: Mailer
+    publicAppUrl: ApiRuntimeConfig["publicAppUrl"]
   },
 ) {
-  const { db, mailer } = options
+  const { db, mailer, publicAppUrl } = options
   const enqueueBookingWrite = createSerialQueue()
 
   app.post("/bookings", async (c) => {
@@ -62,7 +64,7 @@ export function registerBookingRoutes(
           endsAt: new Date(body.data.endsAt),
           actorUserId: user.id,
         })
-        notifyBookingChange(db, mailer, booking.id, "booking_created")
+        notifyBookingChange(db, mailer, publicAppUrl, booking.id, "booking_created")
 
         return c.json({ booking }, 201)
       }),
@@ -103,10 +105,17 @@ export function registerBookingRoutes(
           endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
           actorUserId: user.id,
         })
-        notifyBookingChange(db, mailer, booking.id, "booking_updated", booking.userId)
+        notifyBookingChange(db, mailer, publicAppUrl, booking.id, "booking_updated", booking.userId)
 
         if (current.userId !== booking.userId) {
-          notifyBookingChange(db, mailer, booking.id, "booking_updated", current.userId)
+          notifyBookingChange(
+            db,
+            mailer,
+            publicAppUrl,
+            booking.id,
+            "booking_updated",
+            current.userId,
+          )
         }
 
         return c.json({ booking })
@@ -126,7 +135,7 @@ export function registerBookingRoutes(
 
         assertCanWriteBooking(user, current)
         await deleteBooking(db, c.req.param("id"), user.id, c.req.query("reason"))
-        notifyBookingChange(db, mailer, current.id, "booking_deleted")
+        notifyBookingChange(db, mailer, publicAppUrl, current.id, "booking_deleted")
         return c.json({ ok: true })
       }),
     ),
@@ -175,11 +184,14 @@ function createSerialQueue() {
 function notifyBookingChange(
   db: Db,
   mailer: Mailer,
+  publicAppUrl: ApiRuntimeConfig["publicAppUrl"],
   bookingId: string,
   kind: "booking_created" | "booking_updated" | "booking_deleted",
   recipientUserId?: string,
 ) {
-  sendBookingNotification(db, mailer, { bookingId, kind, recipientUserId }).catch((error) => {
-    console.error("[lab-api] booking notification failed", error)
-  })
+  sendBookingNotification(db, mailer, { bookingId, kind, recipientUserId }, { publicAppUrl }).catch(
+    (error) => {
+      console.error("[lab-api] booking notification failed", error)
+    },
+  )
 }

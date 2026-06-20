@@ -172,6 +172,7 @@ describe("booking notifications", () => {
     await processBookingReminders(testDb.db, mailer, {
       startReminderMinutes: 15,
       endingReminderMinutes: 15,
+      publicAppUrl: "https://lms.miralab.tr",
       now: new Date("2026-05-10T10:00:00.000Z"),
     })
 
@@ -185,7 +186,7 @@ describe("booking notifications", () => {
     expect(sentEmails[0]).toEqual(
       expect.objectContaining({
         actionLabel: "Open schedule",
-        actionUrl: "https://miralab.tr/schedule",
+        actionUrl: "https://lms.miralab.tr/schedule",
       }),
     )
   })

@@ -29,6 +29,40 @@ describe("api runtime env", () => {
     ).toThrow("DEV_SHOW_OTP must be disabled in production")
   })
 
+  it("normalizes URL origins with trailing slashes", () => {
+    expect(
+      apiRuntimeConfigFromEnv({
+        PUBLIC_APP_URL: "http://localhost:5173/",
+        CORS_ORIGINS: "http://localhost:5173/, http://127.0.0.1:5173/",
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        publicAppUrl: "http://localhost:5173",
+        corsOrigins: ["http://localhost:5173", "http://127.0.0.1:5173"],
+      }),
+    )
+  })
+
+  it("rejects runtime URL origins with paths, queries, hashes, or non-http schemes", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        PUBLIC_APP_URL: "https://lms.miralab.tr/schedule",
+      }),
+    ).toThrow("PUBLIC_APP_URL must be an origin without path, query, or hash")
+
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        PUBLIC_APP_URL: "mailto:admin@miralab.tr",
+      }),
+    ).toThrow("PUBLIC_APP_URL must use http or https")
+
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        CORS_ORIGINS: "https://lms.miralab.tr?preview=1",
+      }),
+    ).toThrow("CORS_ORIGINS must be an origin without path, query, or hash")
+  })
+
   it("requires secure production cookies", () => {
     expect(() =>
       apiRuntimeConfigFromEnv({
@@ -39,12 +73,23 @@ describe("api runtime env", () => {
     ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
   })
 
+  it("requires public app url in production cors origins", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        APP_ENV: "production",
+        PUBLIC_APP_URL: "https://lms.miralab.tr",
+        CORS_ORIGINS: "https://admin.miralab.tr",
+        SESSION_COOKIE_SECURE: "1",
+      }),
+    ).toThrow("CORS_ORIGINS must include PUBLIC_APP_URL in production")
+  })
+
   it("treats NODE_ENV=production as production", () => {
     expect(() =>
       apiRuntimeConfigFromEnv({
         NODE_ENV: "production",
-        PUBLIC_APP_URL: "http://localhost:3001",
-        CORS_ORIGINS: "http://localhost:3001",
+        PUBLIC_APP_URL: "https://lms.miralab.tr",
+        CORS_ORIGINS: "https://lms.miralab.tr",
         SESSION_COOKIE_SECURE: "0",
       }),
     ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
@@ -55,8 +100,8 @@ describe("api runtime env", () => {
       apiRuntimeConfigFromEnv({
         APP_ENV: "development",
         NODE_ENV: "production",
-        PUBLIC_APP_URL: "http://localhost:3001",
-        CORS_ORIGINS: "http://localhost:3001",
+        PUBLIC_APP_URL: "https://lms.miralab.tr",
+        CORS_ORIGINS: "https://lms.miralab.tr",
         SESSION_COOKIE_SECURE: "0",
       }),
     ).toThrow("SESSION_COOKIE_SECURE=1 is required in production")
