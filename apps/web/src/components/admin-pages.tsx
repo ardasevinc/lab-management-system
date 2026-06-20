@@ -82,10 +82,24 @@ export function AdminOverviewPage() {
             <Clock3 data-icon="inline-start" aria-hidden="true" />
             New booking
           </Button>
-          <Button type="button" variant="outline" onClick={workspace.openMaintenanceBooking}>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="sm:hidden"
+            aria-label="Maintenance"
+            onClick={workspace.openMaintenanceBooking}
+          >
+            <Wrench aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="hidden sm:inline-flex"
+            onClick={workspace.openMaintenanceBooking}
+          >
             <Wrench data-icon="inline-start" aria-hidden="true" />
-            <span className="hidden sm:inline">Maintenance</span>
-            <span className="sm:hidden">Maint.</span>
+            Maintenance
           </Button>
         </div>
       }

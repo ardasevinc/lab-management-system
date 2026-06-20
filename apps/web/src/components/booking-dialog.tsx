@@ -42,6 +42,7 @@ type BookingDialogProps = {
   machine: Machine | null
   isAdmin: boolean
   initialRange?: { startsAt: string; endsAt: string } | null
+  initialType?: Booking["type"]
   pending: boolean
   error: string | null
   auditEvents?: AuditEvent[]
@@ -57,6 +58,7 @@ export function BookingDialog({
   machine,
   isAdmin,
   initialRange,
+  initialType,
   pending,
   error,
   auditEvents,
@@ -64,7 +66,16 @@ export function BookingDialog({
   onSubmit,
   onDelete,
 }: BookingDialogProps) {
-  const defaults = dialogDefaults(booking, initialRange)
+  const defaults = dialogDefaults(booking, initialRange, initialType)
+  const isMaintenance = defaults.type === "maintenance"
+  const sheetTitle =
+    mode === "create"
+      ? isMaintenance
+        ? "New maintenance block"
+        : "New booking"
+      : isMaintenance
+        ? "Edit maintenance block"
+        : "Edit booking"
   const [startsDate, setStartsDate] = useState(defaults.startsDate)
   const [startsTime, setStartsTime] = useState(defaults.startsTime)
   const [endsDate, setEndsDate] = useState(defaults.endsDate)
@@ -100,9 +111,13 @@ export function BookingDialog({
           }}
         >
           <SheetHeader className="px-0 pt-0">
-            <SheetTitle>{mode === "create" ? "New booking" : "Edit booking"}</SheetTitle>
+            <SheetTitle>{sheetTitle}</SheetTitle>
             <SheetDescription>
-              {machine ? `${machine.name} booking details` : "Booking details"}
+              {machine
+                ? `${machine.name} ${isMaintenance ? "maintenance" : "booking"} details`
+                : isMaintenance
+                  ? "Maintenance details"
+                  : "Booking details"}
             </SheetDescription>
           </SheetHeader>
 
@@ -271,6 +286,7 @@ function DateTimeField({
 function dialogDefaults(
   booking: Booking | null,
   range?: { startsAt: string; endsAt: string } | null,
+  initialType: Booking["type"] = "normal",
 ) {
   const now = new Date()
   now.setMinutes(0, 0, 0)
@@ -279,7 +295,7 @@ function dialogDefaults(
   return {
     title: booking?.title ?? "",
     notes: booking?.notes ?? "",
-    type: booking?.type ?? "normal",
+    type: booking?.type ?? initialType,
     startsDate: toLabDateValue(booking?.startsAt ?? range?.startsAt ?? now),
     startsTime: toLabTimeValue(booking?.startsAt ?? range?.startsAt ?? now),
     endsDate: toLabDateValue(booking?.endsAt ?? range?.endsAt ?? later),

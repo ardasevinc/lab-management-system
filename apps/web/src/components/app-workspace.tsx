@@ -37,6 +37,7 @@ type DialogState = {
   mode: "create" | "edit"
   booking: Booking | null
   range: { startsAt: string; endsAt: string } | null
+  initialType: Booking["type"]
 } | null
 
 type WorkspaceContextValue = {
@@ -366,7 +367,7 @@ export function AppWorkspace() {
     openNewBooking: () => {
       setDialogError(null)
       setWorkspaceError(null)
-      setDialogState({ mode: "create", booking: null, range: null })
+      setDialogState({ mode: "create", booking: null, range: null, initialType: "normal" })
     },
     openMaintenanceBooking: () => {
       setDialogError(null)
@@ -374,6 +375,7 @@ export function AppWorkspace() {
       setDialogState({
         mode: "create",
         booking: null,
+        initialType: "maintenance",
         range: {
           startsAt: new Date().toISOString(),
           endsAt: new Date(Date.now() + 60 * 60_000).toISOString(),
@@ -402,12 +404,12 @@ export function AppWorkspace() {
     createRange: (range) => {
       setDialogError(null)
       setWorkspaceError(null)
-      setDialogState({ mode: "create", booking: null, range })
+      setDialogState({ mode: "create", booking: null, range, initialType: "normal" })
     },
     editBooking: (booking) => {
       setDialogError(null)
       setWorkspaceError(null)
-      setDialogState({ mode: "edit", booking, range: null })
+      setDialogState({ mode: "edit", booking, range: null, initialType: booking.type })
     },
     moveBooking: (booking, range) => {
       setWorkspaceError(null)
@@ -444,6 +446,7 @@ export function AppWorkspace() {
         machine={selectedMachine}
         isAdmin={user.role === "admin"}
         initialRange={dialogState?.range ?? null}
+        initialType={dialogState?.initialType}
         pending={pending}
         error={dialogError}
         auditEvents={auditQuery.data?.events}
