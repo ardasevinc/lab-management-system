@@ -6,6 +6,7 @@ import {
   Home,
   LogOut,
   MonitorCog,
+  MoreHorizontal,
   PanelLeft,
   Plus,
   Settings,
@@ -29,6 +30,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -66,8 +68,8 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
-        <SidebarHeader>
-          <div className="flex items-center gap-2 px-2 py-1.5">
+        <SidebarHeader className="px-3 pt-3 pb-2">
+          <div className="flex items-center gap-2 px-1">
             <div className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
               <Cpu aria-hidden="true" />
             </div>
@@ -78,8 +80,8 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent>
-          <SidebarGroup>
+        <SidebarContent className="gap-1 px-2">
+          <SidebarGroup className="gap-1 px-0 py-2">
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -101,8 +103,8 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
 
           {isAdmin ? (
             <>
-              <SidebarSeparator />
-              <SidebarGroup>
+              <SidebarSeparator className="my-1" />
+              <SidebarGroup className="gap-1 px-0 py-2">
                 <SidebarGroupLabel>Admin</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -137,7 +139,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           ) : null}
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter className="px-2 pb-3">
           <AccountMenu user={user} onLogout={onLogout} />
         </SidebarFooter>
       </Sidebar>
@@ -247,7 +249,12 @@ function NavItem({
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={active} tooltip={label}>
+      <SidebarMenuButton
+        asChild
+        isActive={active}
+        tooltip={label}
+        className="h-9 rounded-lg px-2.5 text-[0.92rem] data-[active=true]:bg-sidebar-accent/75 data-[active=true]:text-sidebar-foreground data-[active=true]:shadow-[inset_3px_0_0_var(--sidebar-primary)] hover:bg-sidebar-accent/55"
+      >
         <Link
           to={to}
           onClick={() => {
@@ -266,42 +273,60 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
-  const { isMobile } = useSidebar()
+  const { isMobile, state } = useSidebar()
+  const menuSide = isMobile || state === "expanded" ? "top" : "right"
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" className="h-auto justify-start gap-2 px-2 py-2">
-          <Avatar size="sm">
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 text-left group-data-[collapsible=icon]:hidden">
-            <div className="truncate font-medium text-sm">{user.name}</div>
-            <div className="truncate text-muted-foreground text-xs">{user.email}</div>
-          </div>
-        </Button>
-      </DropdownMenuTrigger>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="h-12 rounded-lg px-2 data-[state=open]:bg-sidebar-accent/65 data-[state=open]:text-sidebar-accent-foreground hover:bg-sidebar-accent/55"
+            >
+              <Avatar size="default">
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+              </div>
+              <MoreHorizontal
+                className="ml-auto group-data-[collapsible=icon]:hidden"
+                aria-hidden="true"
+              />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+        </SidebarMenuItem>
+      </SidebarMenu>
       <DropdownMenuContent
-        align={isMobile ? "start" : "end"}
-        side={isMobile ? "top" : "right"}
-        className="w-64"
+        align="start"
+        side={menuSide}
+        sideOffset={8}
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-64"
       >
-        <DropdownMenuLabel className="p-2">
-          <div className="grid gap-1">
-            <div className="flex min-w-0 items-center justify-between gap-2">
-              <span className="truncate font-medium">{user.name}</span>
-              <Badge variant="outline" className="capitalize">
+        <DropdownMenuLabel className="p-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <Avatar size="default">
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div className="grid min-w-0 flex-1 gap-0.5">
+              <div className="truncate font-medium leading-none">{user.name}</div>
+              <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+              <Badge variant="secondary" className="mt-1 w-fit capitalize">
                 {user.role}
               </Badge>
             </div>
-            <div className="truncate text-muted-foreground text-xs">{user.email}</div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={onLogout}>
-          <LogOut data-icon="inline-start" aria-hidden="true" />
-          Log out
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem onSelect={onLogout}>
+            <LogOut data-icon="inline-start" aria-hidden="true" />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )
