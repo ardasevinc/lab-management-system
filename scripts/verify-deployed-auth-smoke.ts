@@ -35,6 +35,7 @@ const { token, user } = await verifyOtpLogin(origin, email, otpCode)
 await verifyCurrentUser(origin, token, email)
 const machine = await getBookableMachine(origin, token)
 const booking = await createSmokeBooking(origin, token, machine, user)
+await updateSmokeBooking(origin, token, booking)
 await deleteSmokeBookingWithRetry(origin, token, booking)
 
 console.log(`verified deployed auth booking smoke: ${origin} as ${email}`)
@@ -190,6 +191,28 @@ async function deleteSmokeBooking(origin: string, token: string, booking: Bookin
   if (body.ok !== true) {
     fail("/bookings/:id delete did not confirm cleanup")
   }
+}
+
+async function updateSmokeBooking(origin: string, token: string, booking: Booking) {
+  const body = await requestJson<{ booking?: Booking }>(
+    origin,
+    `/bookings/${encodeURIComponent(booking.id)}`,
+    {
+      method: "PATCH",
+      headers: authHeaders(token, { "content-type": "application/json" }),
+      body: JSON.stringify({
+        title: `${booking.title} updated`,
+        notes: "Disposable deployment smoke booking updated before verifier cleanup.",
+        reason: "Deployed auth smoke update",
+      }),
+    },
+  )
+
+  if (body.booking?.id !== booking.id) {
+    fail("/bookings/:id update did not return the smoke booking")
+  }
+
+  booking.title = body.booking.title
 }
 
 async function deleteSmokeBookingWithRetry(origin: string, token: string, booking: Booking) {

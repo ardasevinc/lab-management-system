@@ -99,6 +99,18 @@ describe("deployed auth smoke verifier", () => {
         })
       }
 
+      if (request.method === "PATCH" && request.url === "/bookings/smoke-booking") {
+        const body = (await readJson(request)) as { title?: string; reason?: string }
+        expect(body.title).toMatch(/^Deployed auth smoke .* updated$/)
+        expect(body.reason).toBe("Deployed auth smoke update")
+        return json(response, {
+          booking: {
+            id: "smoke-booking",
+            title: body.title,
+          },
+        })
+      }
+
       if (
         request.method === "DELETE" &&
         request.url === "/bookings/smoke-booking?reason=Deployed%20auth%20smoke%20cleanup"
@@ -132,6 +144,7 @@ describe("deployed auth smoke verifier", () => {
       "GET /auth/me",
       "GET /machines",
       "POST /bookings",
+      "PATCH /bookings/smoke-booking",
       "DELETE /bookings/smoke-booking?reason=Deployed%20auth%20smoke%20cleanup",
     ])
   })
@@ -222,6 +235,10 @@ describe("deployed auth smoke verifier", () => {
         return json(response, { booking: { id: "smoke-booking", title: "Smoke booking" } })
       }
 
+      if (request.method === "PATCH" && request.url === "/bookings/smoke-booking") {
+        return json(response, { booking: { id: "smoke-booking", title: "Smoke booking updated" } })
+      }
+
       if (
         request.method === "DELETE" &&
         request.url === "/bookings/smoke-booking?reason=Deployed%20auth%20smoke%20cleanup"
@@ -282,6 +299,10 @@ describe("deployed auth smoke verifier", () => {
 
       if (request.method === "POST" && request.url === "/bookings") {
         return json(response, { booking: { id: "smoke-booking", title: "Smoke booking" } })
+      }
+
+      if (request.method === "PATCH" && request.url === "/bookings/smoke-booking") {
+        return json(response, { booking: { id: "smoke-booking", title: "Smoke booking updated" } })
       }
 
       if (
