@@ -194,6 +194,11 @@ export function createApiApp({
     return c.json({ ok: true })
   })
 
+  app.get("/auth/session", async (c) => {
+    const user = await getSessionUser(db, sessionToken(c))
+    return c.json({ user })
+  })
+
   app.use("/auth/me", requireAuth(db))
   app.get("/auth/me", (c) => c.json({ user: c.get("user") }))
 

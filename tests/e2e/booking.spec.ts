@@ -723,11 +723,10 @@ async function createBookingFromPage(
   booking: { title: string; startsAt: string; endsAt: string; userId?: string },
 ) {
   await page.evaluate(async (value) => {
-    const token = window.localStorage.getItem("lab_session_token")
     const response = await window.fetch("/bookings", {
       method: "POST",
+      credentials: "include",
       headers: {
-        authorization: `Bearer ${token}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({
@@ -750,13 +749,10 @@ async function findBookingFromPage(
   title: string,
 ): Promise<{ id: string; type: "normal" | "maintenance"; userId: string }> {
   return page.evaluate(async (bookingTitle) => {
-    const token = window.localStorage.getItem("lab_session_token")
     const response = await window.fetch(
       "/machines/tohum/bookings?start=2026-06-15T00%3A00%3A00.000Z&end=2026-06-22T00%3A00%3A00.000Z",
       {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       },
     )
 
@@ -779,12 +775,9 @@ async function findBookingFromPage(
 
 async function deleteBookingFromPage(page: Page, id: string) {
   await page.evaluate(async (bookingId) => {
-    const token = window.localStorage.getItem("lab_session_token")
     const response = await window.fetch(`/bookings/${bookingId}`, {
       method: "DELETE",
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     })
 
     if (!response.ok) {
@@ -796,11 +789,10 @@ async function deleteBookingFromPage(page: Page, id: string) {
 async function setUserActiveFromPage(page: Page, id: string, active: boolean) {
   await page.evaluate(
     async ({ userId, nextActive }) => {
-      const token = window.localStorage.getItem("lab_session_token")
       const response = await window.fetch(`/admin/users/${userId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
-          authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({ active: nextActive }),
@@ -817,11 +809,10 @@ async function setUserActiveFromPage(page: Page, id: string, active: boolean) {
 async function setUserRoleFromPage(page: Page, id: string, role: "admin" | "member") {
   await page.evaluate(
     async ({ userId, nextRole }) => {
-      const token = window.localStorage.getItem("lab_session_token")
       const response = await window.fetch(`/admin/users/${userId}`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
-          authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({ role: nextRole }),
@@ -843,11 +834,8 @@ async function expectAuditReasonFromPage(
 ) {
   const event = await page.evaluate(
     async ({ id, type }) => {
-      const token = window.localStorage.getItem("lab_session_token")
       const response = await window.fetch(`/bookings/${id}/audit`, {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
+        credentials: "include",
       })
 
       if (!response.ok) {

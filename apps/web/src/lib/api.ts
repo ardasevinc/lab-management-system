@@ -94,15 +94,14 @@ export async function requestOtp(email: string) {
 }
 
 export async function verifyOtp(email: string, code: string) {
-  const session = await apiFetch<{ user: User; token: string; expiresAt: string }>(
-    "/auth/verify-otp",
-    {
-      method: "POST",
-      body: JSON.stringify({ email, code }),
-    },
-  )
-  setStoredToken(session.token)
-  return session
+  return apiFetch<{ user: User; token: string; expiresAt: string }>("/auth/verify-otp", {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+  })
+}
+
+export async function getCurrentSession() {
+  return apiFetch<{ user: User | null }>("/auth/session")
 }
 
 export async function logout() {

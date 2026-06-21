@@ -99,6 +99,27 @@ describe("auth and invites", () => {
     expect(await meResponse.json()).toEqual({ user })
   })
 
+  it("returns an empty session without failing for anonymous browsers", async () => {
+    const response = await app.request("/auth/session")
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ user: null })
+  })
+
+  it("returns the current user from the quiet session endpoint", async () => {
+    const headers = await login("admin@miralab.tr")
+    const response = await app.request("/auth/session", { headers })
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      user: expect.objectContaining({
+        email: "admin@miralab.tr",
+        role: "admin",
+        active: true,
+      }),
+    })
+  })
+
   it("invalidates older login codes when a new code is requested", async () => {
     const firstRequest = await app.request("/auth/request-otp", {
       method: "POST",

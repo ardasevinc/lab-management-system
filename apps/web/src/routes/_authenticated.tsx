@@ -1,10 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { AppWorkspace } from "@/components/app-workspace"
-import { getStoredToken } from "@/lib/api"
+import { getCurrentSession } from "@/lib/api"
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: ({ location }) => {
-    if (!getStoredToken()) {
+  beforeLoad: async ({ location }) => {
+    const session = await getCurrentSession()
+
+    if (!session.user) {
       throw redirect({
         to: "/login",
         search: {

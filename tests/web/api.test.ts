@@ -1,11 +1,60 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { getStoredToken, logout, setStoredToken } from "../../apps/web/src/lib/api"
+import {
+  apiFetch,
+  getStoredToken,
+  logout,
+  setStoredToken,
+  verifyOtp,
+} from "../../apps/web/src/lib/api"
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe("web api auth helpers", () => {
+  it("uses cookie credentials without sending a bearer token by default", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ user: testUser }))
+    installBrowserMocks(fetchMock)
+
+    await apiFetch("/auth/me")
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit
+    const headers = new Headers(init.headers)
+
+    expect(init.credentials).toBe("include")
+    expect(headers.has("authorization")).toBe(false)
+  })
+
+  it("keeps the bearer fallback for explicitly seeded tokens", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ user: testUser }))
+    installBrowserMocks(fetchMock)
+    setStoredToken("manual-session-token")
+
+    await apiFetch("/auth/me")
+
+    const init = fetchMock.mock.calls[0]?.[1] as RequestInit
+    const headers = new Headers(init.headers)
+
+    expect(init.credentials).toBe("include")
+    expect(headers.get("authorization")).toBe("Bearer manual-session-token")
+  })
+
+  it("does not persist the returned session token after otp verification", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({
+        user: testUser,
+        token: "server-session-token",
+        expiresAt: "2026-06-21T12:00:00.000Z",
+      }),
+    )
+    installBrowserMocks(fetchMock)
+
+    const session = await verifyOtp("admin@miralab.tr", "123456")
+
+    expect(session.token).toBe("server-session-token")
+    expect(getStoredToken()).toBeNull()
+  })
+
   it("clears the stored token after a successful logout request", async () => {
     installBrowserMocks(vi.fn(async () => jsonResponse({ ok: true })))
     setStoredToken("session-token")
@@ -35,6 +84,14 @@ function installBrowserMocks(fetchMock: typeof fetch) {
     } as unknown as Storage,
   })
   vi.stubGlobal("fetch", fetchMock)
+}
+
+const testUser = {
+  id: "admin",
+  email: "admin@miralab.tr",
+  name: "MIRALAB Admin",
+  role: "admin",
+  active: true,
 }
 
 function jsonResponse(body: unknown, ok = true) {

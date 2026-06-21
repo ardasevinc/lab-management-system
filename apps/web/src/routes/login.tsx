@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router"
+import { WorkspaceBootstrap } from "@/components/app-shell"
 import { AuthScreen } from "@/components/auth-screen"
-import { getStoredToken } from "@/lib/api"
+import { getCurrentSession, type User } from "@/lib/api"
 
 export const Route = createFileRoute("/login")({
   component: LoginRoute,
@@ -10,9 +12,18 @@ function LoginRoute() {
   const navigate = useNavigate()
   const redirect = getLoginRedirect()
   const initialEmail = getLoginEmail()
+  const meQuery = useQuery({
+    queryKey: ["login-me"],
+    queryFn: getCurrentSession,
+    retry: false,
+  })
 
-  if (getStoredToken()) {
-    return <Navigate to={redirect ?? "/schedule"} replace />
+  if (meQuery.data?.user) {
+    return <Navigate to={redirect ?? routeForUser(meQuery.data.user)} replace />
+  }
+
+  if (!meQuery.data) {
+    return <WorkspaceBootstrap />
   }
 
   return (
@@ -26,6 +37,10 @@ function LoginRoute() {
       }}
     />
   )
+}
+
+function routeForUser(user: User) {
+  return user.role === "admin" ? "/admin" : "/schedule"
 }
 
 function getLoginEmail() {

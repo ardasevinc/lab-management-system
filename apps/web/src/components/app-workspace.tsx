@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Navigate } from "@tanstack/react-router"
+import { Navigate, useLocation } from "@tanstack/react-router"
 import { addWeeks, isSameDay } from "date-fns"
 import { useEffect, useMemo, useState } from "react"
 import { AppShell, WorkspaceBootstrap } from "@/components/app-shell"
@@ -14,7 +14,6 @@ import {
   type AuditEvent,
   apiFetch,
   type Booking,
-  getStoredToken,
   logout,
   type Machine,
   setStoredToken,
@@ -32,6 +31,7 @@ type DialogState = {
 } | null
 
 export function AppWorkspace() {
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [authVersion, setAuthVersion] = useState(0)
   const [selectedMachineSlug, setSelectedMachineSlug] = useState("tohum")
@@ -40,13 +40,11 @@ export function AppWorkspace() {
   const [dialogError, setDialogError] = useState<string | null>(null)
   const [workspaceError, setWorkspaceError] = useState<string | null>(null)
   const [adminSheetError, setAdminSheetError] = useState<string | null>(null)
-  const hasStoredToken = Boolean(getStoredToken())
 
   const meQuery = useQuery({
     queryKey: ["me", authVersion],
     queryFn: () => apiFetch<{ user: User }>("/auth/me"),
     retry: false,
-    enabled: hasStoredToken,
   })
 
   const machinesQuery = useQuery({
@@ -276,13 +274,9 @@ export function AppWorkspace() {
     },
   })
 
-  if (!hasStoredToken) {
-    return <Navigate to="/login" replace />
-  }
-
   if (meQuery.isError) {
     setStoredToken(null)
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" search={{ redirect: location.href }} replace />
   }
 
   if (!meQuery.data) {
