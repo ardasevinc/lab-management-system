@@ -444,6 +444,30 @@ test("admin user role changes require confirmation", async ({ page }, testInfo) 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin users filter keeps member management scannable", async ({ page }) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  await page.goto("/admin/users")
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+
+  const membersPanel = page.locator("section").filter({ hasText: "Members" })
+  await expectVisibleText(membersPanel, "admin@miralab.tr")
+  await expectVisibleText(membersPanel, "member@miralab.tr")
+
+  await page.getByLabel("Filter users").fill("member")
+  await expectVisibleText(membersPanel, "member@miralab.tr")
+  await expectNoVisibleText(membersPanel, "admin@miralab.tr")
+  await expect(membersPanel.getByText("1/2 shown")).toBeVisible()
+
+  await page.getByLabel("Filter users").fill("no-such-user")
+  await expect(membersPanel.getByText("No matching users")).toBeVisible()
+  await page.getByRole("button", { name: "Clear filter" }).click()
+  await expectVisibleText(membersPanel, "admin@miralab.tr")
+  await expectVisibleText(membersPanel, "member@miralab.tr")
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin invites with admin role require confirmation", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop user-admin flow")
 
@@ -1104,6 +1128,34 @@ async function authScreenWasObserved(page: Page) {
     const state = globalThis as typeof globalThis & { __sawAuthScreen?: boolean }
     return state.__sawAuthScreen === true
   })
+}
+
+async function expectVisibleText(scope: Locator, text: string) {
+  await expect
+    .poll(async () => {
+      const matches = await scope.getByText(text).all()
+      for (const match of matches) {
+        if (await match.isVisible()) {
+          return true
+        }
+      }
+      return false
+    })
+    .toBe(true)
+}
+
+async function expectNoVisibleText(scope: Locator, text: string) {
+  await expect
+    .poll(async () => {
+      const matches = await scope.getByText(text).all()
+      for (const match of matches) {
+        if (await match.isVisible()) {
+          return false
+        }
+      }
+      return true
+    })
+    .toBe(true)
 }
 
 async function dragEmptyCalendarRange(

@@ -56,12 +56,15 @@ import type { User } from "@/lib/api"
 export function AdminUsersPage() {
   const workspace = useWorkspace()
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [userFilter, setUserFilter] = useState("")
 
   if (workspace.user.role !== "admin") {
     return <Navigate to="/schedule" replace />
   }
 
   const activeUsers = workspace.users.filter((user) => user.active).length
+  const filteredUsers = filterUsers(workspace.users, userFilter)
+  const hasUserFilter = userFilter.trim().length > 0
 
   return (
     <AdminPageFrame
@@ -75,81 +78,129 @@ export function AdminUsersPage() {
       }
     >
       <section className="rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
-          <h2 className="font-medium text-sm">Members</h2>
-          <Badge variant="outline">
-            {activeUsers}/{workspace.users.length} active
-          </Badge>
+        <div className="border-border border-b px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-medium text-sm">Members</h2>
+            <Badge variant="outline">
+              {activeUsers}/{workspace.users.length} active
+            </Badge>
+          </div>
+          {workspace.users.length ? (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <Field className="max-w-sm gap-1.5">
+                <FieldLabel htmlFor="user-filter" className="sr-only">
+                  Filter users
+                </FieldLabel>
+                <Input
+                  id="user-filter"
+                  value={userFilter}
+                  onChange={(event) => setUserFilter(event.target.value)}
+                  placeholder="Filter by name, email, role, status"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </Field>
+              <div className="flex items-center justify-between gap-2 sm:justify-end">
+                <span className="text-muted-foreground text-xs">
+                  {filteredUsers.length}/{workspace.users.length} shown
+                </span>
+                {hasUserFilter && filteredUsers.length ? (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setUserFilter("")}>
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
         {workspace.users.length ? (
-          <>
-            <div className="divide-y divide-border lg:hidden">
-              {workspace.users.map((user) => (
-                <div key={user.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate font-medium text-sm">{user.name}</div>
-                      <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+          filteredUsers.length ? (
+            <>
+              <div className="divide-y divide-border lg:hidden">
+                {filteredUsers.map((user) => (
+                  <div key={user.id} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-medium text-sm">{user.name}</div>
+                        <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <UserRoleSelect
+                          user={user}
+                          currentUserId={workspace.user.id}
+                          pending={workspace.userAccessPendingId === user.id}
+                          onChange={(role) => workspace.updateUserAccess(user, { role })}
+                        />
+                        <UserStatusBadge active={user.active} />
+                      </div>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      <UserRoleSelect
-                        user={user}
-                        currentUserId={workspace.user.id}
-                        pending={workspace.userAccessPendingId === user.id}
-                        onChange={(role) => workspace.updateUserAccess(user, { role })}
-                      />
-                      <UserStatusBadge active={user.active} />
-                    </div>
+                    <UserAccessButton
+                      className="mt-3 w-full"
+                      user={user}
+                      currentUserId={workspace.user.id}
+                      pending={workspace.userAccessPendingId === user.id}
+                      onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
+                    />
                   </div>
-                  <UserAccessButton
-                    className="mt-3 w-full"
-                    user={user}
-                    currentUserId={workspace.user.id}
-                    pending={workspace.userAccessPendingId === user.id}
-                    onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
-                  />
-                </div>
-              ))}
-            </div>
-            <Table className="hidden lg:table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="w-28">Role</TableHead>
-                  <TableHead className="w-28">Status</TableHead>
-                  <TableHead className="w-36 text-right">Access</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {workspace.users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                    <TableCell>
-                      <UserRoleSelect
-                        user={user}
-                        currentUserId={workspace.user.id}
-                        pending={workspace.userAccessPendingId === user.id}
-                        onChange={(role) => workspace.updateUserAccess(user, { role })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <UserStatusBadge active={user.active} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <UserAccessButton
-                        user={user}
-                        currentUserId={workspace.user.id}
-                        pending={workspace.userAccessPendingId === user.id}
-                        onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
-                      />
-                    </TableCell>
-                  </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </>
+              </div>
+              <Table className="hidden lg:table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="w-28">Role</TableHead>
+                    <TableHead className="w-28">Status</TableHead>
+                    <TableHead className="w-36 text-right">Access</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <UserRoleSelect
+                          user={user}
+                          currentUserId={workspace.user.id}
+                          pending={workspace.userAccessPendingId === user.id}
+                          onChange={(role) => workspace.updateUserAccess(user, { role })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <UserStatusBadge active={user.active} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <UserAccessButton
+                          user={user}
+                          currentUserId={workspace.user.id}
+                          pending={workspace.userAccessPendingId === user.id}
+                          onToggle={() =>
+                            workspace.updateUserAccess(user, { active: !user.active })
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+          ) : (
+            <Empty className="min-h-64">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <UsersRound aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>No matching users</EmptyTitle>
+                <EmptyDescription>Try a name, email, role, or access status.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button type="button" variant="outline" onClick={() => setUserFilter("")}>
+                  Clear filter
+                </Button>
+              </EmptyContent>
+            </Empty>
+          )
         ) : (
           <Empty className="min-h-64">
             <EmptyHeader>
@@ -186,6 +237,21 @@ export function AdminUsersPage() {
       />
     </AdminPageFrame>
   )
+}
+
+function filterUsers(users: User[], filter: string) {
+  const normalizedFilter = filter.trim().toLowerCase()
+  if (!normalizedFilter) {
+    return users
+  }
+
+  return users.filter((user) => {
+    const searchable = [user.name, user.email, user.role, user.active ? "active" : "disabled"].join(
+      " ",
+    )
+
+    return searchable.toLowerCase().includes(normalizedFilter)
+  })
 }
 
 function InviteUserSheet({
