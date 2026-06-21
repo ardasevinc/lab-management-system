@@ -445,16 +445,12 @@ function SummaryPanel({
       className={cn("bg-card px-4 py-3", className)}
       data-admin-summary-panel={label.toLowerCase()}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-muted-foreground text-xs">{label}</div>
-          <div className="truncate font-semibold text-xl tabular-nums">{value}</div>
-          <div className="line-clamp-2 text-muted-foreground text-xs leading-4">{detail}</div>
-        </div>
-        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-          <Icon aria-hidden="true" />
-        </div>
+      <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
+        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{label}</span>
       </div>
+      <div className="mt-1 truncate font-semibold text-xl leading-6 tabular-nums">{value}</div>
+      <div className="mt-0.5 line-clamp-2 text-muted-foreground text-xs leading-4">{detail}</div>
     </section>
   )
 }
