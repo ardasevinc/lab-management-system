@@ -104,6 +104,39 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin can drag an empty desktop range to create a booking", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop drag-create flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E drag create ${Date.now()}`
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByText("Week board")).toBeVisible()
+
+  await dragEmptyCalendarRange(page, page.locator("[data-calendar-day]").first(), {
+    startY: 112,
+    endY: 224,
+  })
+
+  await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
+  await expect(page.getByLabel("Starts time")).toHaveValue("10:00")
+  await expect(page.getByLabel("Ends time")).toHaveValue("12:00")
+  await page.getByLabel("Title").fill(bookingTitle)
+  await page.getByRole("button", { name: "Create" }).click()
+
+  const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+  await expect(booking).toBeVisible()
+  await expect(booking).toContainText("10:00 - 12:00")
+
+  const createdBooking = await findBookingFromPage(page, bookingTitle)
+  await deleteBookingFromPage(page, createdBooking.id)
+  await page.reload()
+  await expect(booking).toBeHidden()
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin can assign a booking to a researcher from the booking sheet", async ({
   page,
 }, testInfo) => {
@@ -1071,6 +1104,24 @@ async function authScreenWasObserved(page: Page) {
     const state = globalThis as typeof globalThis & { __sawAuthScreen?: boolean }
     return state.__sawAuthScreen === true
   })
+}
+
+async function dragEmptyCalendarRange(
+  page: Page,
+  column: Locator,
+  range: { startY: number; endY: number },
+) {
+  await expect(column).toBeVisible()
+  const columnBox = await column.boundingBox()
+  if (!columnBox) {
+    throw new Error("Calendar day column did not produce a bounding box.")
+  }
+
+  const x = columnBox.x + columnBox.width / 2
+  await page.mouse.move(x, columnBox.y + range.startY)
+  await page.mouse.down()
+  await page.mouse.move(x, columnBox.y + range.endY, { steps: 8 })
+  await page.mouse.up()
 }
 
 async function dragBookingBy(page: Page, booking: Locator, delta: { x: number; y: number }) {
