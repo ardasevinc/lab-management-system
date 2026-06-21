@@ -20,6 +20,8 @@ type Booking = {
   title: string
 }
 
+class SmokeError extends Error {}
+
 const target = Bun.argv[2] ?? process.env.DEPLOY_AUTH_SMOKE_URL
 const email = Bun.argv[3] ?? process.env.DEPLOY_AUTH_SMOKE_EMAIL
 
@@ -33,7 +35,7 @@ const { token, user } = await verifyOtpLogin(origin, email, otpCode)
 await verifyCurrentUser(origin, token, email)
 const machine = await getBookableMachine(origin, token)
 const booking = await createSmokeBooking(origin, token, machine, user)
-await deleteSmokeBooking(origin, token, booking)
+await deleteSmokeBookingWithRetry(origin, token, booking)
 
 console.log(`verified deployed auth booking smoke: ${origin} as ${email}`)
 
@@ -163,6 +165,31 @@ async function deleteSmokeBooking(origin: string, token: string, booking: Bookin
   }
 }
 
+async function deleteSmokeBookingWithRetry(origin: string, token: string, booking: Booking) {
+  const maxAttempts = 3
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await deleteSmokeBooking(origin, token, booking)
+      return
+    } catch (error) {
+      lastError = error
+      if (attempt < maxAttempts) {
+        await sleep(750 * attempt)
+      }
+    }
+  }
+
+  fail(
+    `Smoke booking ${booking.id} was created but cleanup could not be confirmed after ${maxAttempts} attempts: ${errorMessage(lastError)}`,
+  )
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function nextSmokeSlotStart() {
   const start = new Date(Date.now() + 400 * 24 * 60 * 60 * 1000)
   start.setUTCHours(3, 0, 0, 0)
@@ -200,6 +227,19 @@ async function requestJson<T>(origin: string, path: string, init?: RequestInit):
 }
 
 function fail(message: string): never {
-  console.error(message)
-  process.exit(1)
+  throw new SmokeError(message)
 }
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+process.on("uncaughtException", (error) => {
+  console.error(errorMessage(error))
+  process.exit(1)
+})
+
+process.on("unhandledRejection", (error) => {
+  console.error(errorMessage(error))
+  process.exit(1)
+})

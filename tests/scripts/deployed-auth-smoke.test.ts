@@ -182,6 +182,75 @@ describe("deployed auth smoke verifier", () => {
       ),
     })
   })
+
+  it("retries cleanup when the first smoke booking delete fails", async () => {
+    let deleteAttempts = 0
+    const origin = await startServer(async (request, response) => {
+      if (request.method === "POST" && request.url === "/auth/request-otp") {
+        return json(response, { ok: true, email: "admin@miralab.tr" })
+      }
+
+      if (request.method === "POST" && request.url === "/auth/verify-otp") {
+        return json(response, {
+          token: "smoke-token",
+          user: { id: "admin-local", email: "admin@miralab.tr" },
+        })
+      }
+
+      if (request.headers.authorization !== "Bearer smoke-token") {
+        response.writeHead(401, { "content-type": "application/json" })
+        response.end(JSON.stringify({ error: "Authentication required" }))
+        return
+      }
+
+      if (request.method === "GET" && request.url === "/auth/me") {
+        return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
+      }
+
+      if (request.method === "GET" && request.url === "/machines") {
+        return json(response, { machines: [{ id: "tohum", slug: "tohum", active: true }] })
+      }
+
+      if (request.method === "POST" && request.url === "/bookings") {
+        return json(response, { booking: { id: "smoke-booking", title: "Smoke booking" } })
+      }
+
+      if (
+        request.method === "DELETE" &&
+        request.url === "/bookings/smoke-booking?reason=Deployed%20auth%20smoke%20cleanup"
+      ) {
+        deleteAttempts += 1
+        if (deleteAttempts === 1) {
+          response.writeHead(500, { "content-type": "application/json" })
+          response.end(JSON.stringify({ error: "Temporary cleanup failure" }))
+          return
+        }
+
+        return json(response, { ok: true })
+      }
+
+      response.writeHead(404)
+      response.end()
+    })
+
+    const { stdout } = await execFileAsync(
+      "bun",
+      ["scripts/verify-deployed-auth-smoke.ts", origin, "admin@miralab.tr"],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          NODE_ENV: "test",
+          DEPLOY_AUTH_SMOKE_OTP_CODE: "123456",
+        },
+      },
+    )
+
+    expect(stdout.trim()).toBe(
+      `verified deployed auth booking smoke: ${origin} as admin@miralab.tr`,
+    )
+    expect(deleteAttempts).toBe(2)
+  })
 })
 
 async function startServer(handler: (request: IncomingMessage, response: ServerResponse) => void) {
