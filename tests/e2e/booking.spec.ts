@@ -854,6 +854,63 @@ test("admin empty states expose primary recovery actions", async ({ page }, test
   expect(consoleProblems).toEqual([])
 })
 
+test("machine inventory filter keeps dense labs scannable", async ({ page }) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await page.route("**/machines", async (route) => {
+    if (route.request().resourceType() !== "fetch") {
+      await route.continue()
+      return
+    }
+
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        machines: [
+          {
+            id: "machine-tohum",
+            slug: "tohum",
+            name: "tohum",
+            description: "MIRALAB GPU workstation for remote AI training and research.",
+            specs: ["NVIDIA GPU workstation"],
+            accessNotes: "Shared over ZeroTier by admins.",
+            active: true,
+          },
+          {
+            id: "machine-vision",
+            slug: "vision-rig",
+            name: "vision-rig",
+            description: "Camera calibration and embedded inference bench.",
+            specs: ["Jetson Orin", "Basler camera"],
+            accessNotes: "Lab-only bench.",
+            active: false,
+          },
+        ],
+      }),
+    })
+  })
+
+  await loginAsAdmin(page)
+  await page.goto("/admin/machines")
+  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+
+  const inventory = page.locator("section").filter({ hasText: "Machine inventory" })
+  await expect(page.getByLabel("Filter machines")).toBeVisible()
+  await expectVisibleText(inventory, "tohum")
+  await expectVisibleText(inventory, "vision-rig")
+
+  await page.getByLabel("Filter machines").fill("jetson")
+  await expectVisibleText(inventory, "vision-rig")
+  await expectNoVisibleText(inventory, "tohum")
+  await expect(inventory.getByText("1/2 shown")).toBeVisible()
+
+  await page.getByLabel("Filter machines").fill("no-such-machine")
+  await expect(inventory.getByText("No matching machines")).toBeVisible()
+  await page.getByRole("button", { name: "Clear filter" }).click()
+  await expectVisibleText(inventory, "tohum")
+  await expectVisibleText(inventory, "vision-rig")
+  expect(consoleProblems).toEqual([])
+})
+
 function isDesktopProject(projectName: string) {
   return projectName === "chromium"
 }

@@ -1,5 +1,6 @@
 import { Check, MonitorCog, Pencil } from "lucide-react"
 import type { ReactNode } from "react"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +11,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -42,147 +45,205 @@ export function MachineInventory({
   selectionLabel = "Use",
   emptyAction,
 }: MachineInventoryProps) {
+  const [machineFilter, setMachineFilter] = useState("")
+  const filteredMachines = filterMachines(machines, machineFilter)
+  const hasMachineFilter = machineFilter.trim().length > 0
+
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
-        <div>
-          <h2 className="font-medium text-sm">{title}</h2>
-          <p className="text-muted-foreground text-xs">{formatMachineCount(machines.length)}</p>
+      <div className="border-border border-b px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-medium text-sm">{title}</h2>
+            <p className="text-muted-foreground text-xs">{formatMachineCount(machines.length)}</p>
+          </div>
+          <MonitorCog className="text-muted-foreground" aria-hidden="true" />
         </div>
-        <MonitorCog className="text-muted-foreground" aria-hidden="true" />
+        {machines.length > 1 ? (
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Field className="max-w-sm gap-1.5">
+              <FieldLabel htmlFor="machine-filter" className="sr-only">
+                Filter machines
+              </FieldLabel>
+              <Input
+                id="machine-filter"
+                value={machineFilter}
+                onChange={(event) => setMachineFilter(event.target.value)}
+                placeholder="Filter by name, specs, status"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </Field>
+            <div className="flex items-center justify-between gap-2 sm:justify-end">
+              <span className="text-muted-foreground text-xs">
+                {filteredMachines.length}/{machines.length} shown
+              </span>
+              {hasMachineFilter && filteredMachines.length ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMachineFilter("")}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {machines.length ? (
-        <>
-          <div className="hidden lg:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Machine</TableHead>
-                  <TableHead className="w-28">State</TableHead>
-                  <TableHead>Specs</TableHead>
-                  {showAccessNotes ? <TableHead>Access</TableHead> : null}
-                  {onSelectMachine || onEditMachine ? (
-                    <TableHead className="w-28 text-right">Actions</TableHead>
-                  ) : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {machines.map((machine) => {
-                  const isSelected = machine.slug === selectedMachineSlug
-
-                  return (
-                    <TableRow key={machine.id} data-state={isSelected ? "selected" : undefined}>
-                      <TableCell className="min-w-56 whitespace-normal">
-                        <div className="font-medium">{machine.name}</div>
-                        <div className="mt-1 max-w-xl text-muted-foreground text-sm">
-                          {machine.description}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <MachineStateBadge active={machine.active} />
-                      </TableCell>
-                      <TableCell className="whitespace-normal">
-                        <SpecList specs={machine.specs} />
-                      </TableCell>
-                      {showAccessNotes ? (
-                        <TableCell className="max-w-md whitespace-normal text-muted-foreground">
-                          {machine.accessNotes || "Not set"}
-                        </TableCell>
-                      ) : null}
-                      {onSelectMachine || onEditMachine ? (
-                        <TableCell className="text-right">
-                          {onSelectMachine ? (
-                            <Button
-                              type="button"
-                              variant={isSelected ? "secondary" : "outline"}
-                              size="sm"
-                              onClick={() => onSelectMachine(machine.slug)}
-                            >
-                              {isSelected ? (
-                                <Check data-icon="inline-start" aria-hidden="true" />
-                              ) : null}
-                              {isSelected ? "Selected" : selectionLabel}
-                            </Button>
-                          ) : null}
-                          {onEditMachine ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onEditMachine(machine)}
-                            >
-                              <Pencil data-icon="inline-start" aria-hidden="true" />
-                              Edit
-                            </Button>
-                          ) : null}
-                        </TableCell>
-                      ) : null}
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="divide-y divide-border lg:hidden">
-            {machines.map((machine) => {
-              const isSelected = machine.slug === selectedMachineSlug
-
-              return (
-                <article key={machine.id} className={cn("px-4 py-3", isSelected && "bg-accent/45")}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate font-medium text-sm">{machine.name}</h3>
-                      <p className="mt-1 text-muted-foreground text-sm">{machine.description}</p>
-                    </div>
-                    <MachineStateBadge active={machine.active} />
-                  </div>
-
-                  <dl className="mt-3 grid gap-2 text-sm">
-                    {showAccessNotes ? (
-                      <div className="grid gap-1">
-                        <dt className="text-muted-foreground text-xs">Access</dt>
-                        <dd>{machine.accessNotes || "Not set"}</dd>
-                      </div>
+        filteredMachines.length ? (
+          <>
+            <div className="hidden lg:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Machine</TableHead>
+                    <TableHead className="w-28">State</TableHead>
+                    <TableHead>Specs</TableHead>
+                    {showAccessNotes ? <TableHead>Access</TableHead> : null}
+                    {onSelectMachine || onEditMachine ? (
+                      <TableHead className="w-28 text-right">Actions</TableHead>
                     ) : null}
-                    {machine.specs.length ? (
-                      <div className="grid gap-1">
-                        <dt className="text-muted-foreground text-xs">Specs</dt>
-                        <dd>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMachines.map((machine) => {
+                    const isSelected = machine.slug === selectedMachineSlug
+
+                    return (
+                      <TableRow key={machine.id} data-state={isSelected ? "selected" : undefined}>
+                        <TableCell className="min-w-56 whitespace-normal">
+                          <div className="font-medium">{machine.name}</div>
+                          <div className="mt-1 max-w-xl text-muted-foreground text-sm">
+                            {machine.description}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <MachineStateBadge active={machine.active} />
+                        </TableCell>
+                        <TableCell className="whitespace-normal">
                           <SpecList specs={machine.specs} />
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
+                        </TableCell>
+                        {showAccessNotes ? (
+                          <TableCell className="max-w-md whitespace-normal text-muted-foreground">
+                            {machine.accessNotes || "Not set"}
+                          </TableCell>
+                        ) : null}
+                        {onSelectMachine || onEditMachine ? (
+                          <TableCell className="text-right">
+                            {onSelectMachine ? (
+                              <Button
+                                type="button"
+                                variant={isSelected ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => onSelectMachine(machine.slug)}
+                              >
+                                {isSelected ? (
+                                  <Check data-icon="inline-start" aria-hidden="true" />
+                                ) : null}
+                                {isSelected ? "Selected" : selectionLabel}
+                              </Button>
+                            ) : null}
+                            {onEditMachine ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onEditMachine(machine)}
+                              >
+                                <Pencil data-icon="inline-start" aria-hidden="true" />
+                                Edit
+                              </Button>
+                            ) : null}
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
 
-                  {onSelectMachine ? (
-                    <Button
-                      type="button"
-                      variant={isSelected ? "secondary" : "outline"}
-                      className="mt-3 w-full"
-                      onClick={() => onSelectMachine(machine.slug)}
-                    >
-                      {isSelected ? <Check data-icon="inline-start" aria-hidden="true" /> : null}
-                      {isSelected ? "Selected machine" : selectionLabel}
-                    </Button>
-                  ) : null}
-                  {onEditMachine ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-3 w-full"
-                      onClick={() => onEditMachine(machine)}
-                    >
-                      <Pencil data-icon="inline-start" aria-hidden="true" />
-                      Edit machine
-                    </Button>
-                  ) : null}
-                </article>
-              )
-            })}
-          </div>
-        </>
+            <div className="divide-y divide-border lg:hidden">
+              {filteredMachines.map((machine) => {
+                const isSelected = machine.slug === selectedMachineSlug
+
+                return (
+                  <article
+                    key={machine.id}
+                    className={cn("px-4 py-3", isSelected && "bg-accent/45")}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-medium text-sm">{machine.name}</h3>
+                        <p className="mt-1 text-muted-foreground text-sm">{machine.description}</p>
+                      </div>
+                      <MachineStateBadge active={machine.active} />
+                    </div>
+
+                    <dl className="mt-3 grid gap-2 text-sm">
+                      {showAccessNotes ? (
+                        <div className="grid gap-1">
+                          <dt className="text-muted-foreground text-xs">Access</dt>
+                          <dd>{machine.accessNotes || "Not set"}</dd>
+                        </div>
+                      ) : null}
+                      {machine.specs.length ? (
+                        <div className="grid gap-1">
+                          <dt className="text-muted-foreground text-xs">Specs</dt>
+                          <dd>
+                            <SpecList specs={machine.specs} />
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+
+                    {onSelectMachine ? (
+                      <Button
+                        type="button"
+                        variant={isSelected ? "secondary" : "outline"}
+                        className="mt-3 w-full"
+                        onClick={() => onSelectMachine(machine.slug)}
+                      >
+                        {isSelected ? <Check data-icon="inline-start" aria-hidden="true" /> : null}
+                        {isSelected ? "Selected machine" : selectionLabel}
+                      </Button>
+                    ) : null}
+                    {onEditMachine ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="mt-3 w-full"
+                        onClick={() => onEditMachine(machine)}
+                      >
+                        <Pencil data-icon="inline-start" aria-hidden="true" />
+                        Edit machine
+                      </Button>
+                    ) : null}
+                  </article>
+                )
+              })}
+            </div>
+          </>
+        ) : (
+          <Empty className="min-h-64">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MonitorCog aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>No matching machines</EmptyTitle>
+              <EmptyDescription>Try a machine name, spec, or status.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" variant="outline" onClick={() => setMachineFilter("")}>
+                Clear filter
+              </Button>
+            </EmptyContent>
+          </Empty>
+        )
       ) : (
         <Empty className="min-h-64">
           <EmptyHeader>
@@ -197,6 +258,26 @@ export function MachineInventory({
       )}
     </section>
   )
+}
+
+function filterMachines(machines: Machine[], filter: string) {
+  const normalizedFilter = filter.trim().toLowerCase()
+  if (!normalizedFilter) {
+    return machines
+  }
+
+  return machines.filter((machine) => {
+    const searchable = [
+      machine.name,
+      machine.slug,
+      machine.description,
+      machine.specs.join(" "),
+      machine.accessNotes,
+      machine.active ? "available active bookable" : "inactive disabled",
+    ].join(" ")
+
+    return searchable.toLowerCase().includes(normalizedFilter)
+  })
 }
 
 function MachineStateBadge({ active }: { active: boolean }) {
