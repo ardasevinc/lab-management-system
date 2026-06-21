@@ -134,7 +134,7 @@ export function MachineInventory({
                         {onSelectMachine || onEditMachine ? (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              {onSelectMachine ? (
+                              {onSelectMachine && machine.active ? (
                                 isSelected ? (
                                   <Badge variant="secondary">
                                     <Check aria-hidden="true" />
@@ -214,7 +214,7 @@ export function MachineInventory({
                       ) : null}
                     </dl>
 
-                    {onSelectMachine && !isSelected ? (
+                    {onSelectMachine && machine.active && !isSelected ? (
                       <Button
                         type="button"
                         variant="outline"

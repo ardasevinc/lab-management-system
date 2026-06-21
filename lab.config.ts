@@ -7,7 +7,7 @@ export default {
   baseUrl: "https://lms.miralab.tr",
   logoPath: "/logo.svg",
   faviconPath: "/favicon.svg",
-  primaryColor: "#2563eb",
+  primaryColor: "#007f67",
   defaultTimezone: "Europe/Istanbul",
   authHero: {
     eyebrow: "GPU workstation access",

@@ -10,6 +10,7 @@ describe("lab config", () => {
       eyebrow: "GPU workstation access",
       headline: "Book tohum for research runs.",
     })
+    expect(labConfig.primaryColor).toBe("#007f67")
     expect(labConfig.email.fromAddress).toBe("no-reply@miralab.tr")
     expect(labConfig.email.supportAddress).toBe("support@miralab.tr")
   })

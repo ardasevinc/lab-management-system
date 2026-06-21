@@ -37,6 +37,20 @@ describe("machine selection", () => {
     expect(resolveSelectedMachineSlug(machines, "missing")).toBe("ada")
   })
 
+  it("falls back to an active machine when the requested machine is inactive", () => {
+    const mixedMachines = [{ ...machines[0], active: false }, machines[1]]
+
+    expect(resolveSelectedMachine(mixedMachines, "ada")?.slug).toBe("tohum")
+    expect(resolveSelectedMachineSlug(mixedMachines, "ada")).toBe("tohum")
+  })
+
+  it("keeps an inactive machine only when no active machine exists", () => {
+    const inactiveMachines = machines.map((machine) => ({ ...machine, active: false }))
+
+    expect(resolveSelectedMachine(inactiveMachines, "tohum")?.slug).toBe("tohum")
+    expect(resolveSelectedMachineSlug(inactiveMachines, "tohum")).toBe("tohum")
+  })
+
   it("preserves the requested slug when no machine exists yet", () => {
     expect(resolveSelectedMachine([], "tohum")).toBeNull()
     expect(resolveSelectedMachineSlug([], "tohum")).toBe("tohum")
