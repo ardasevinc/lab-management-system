@@ -157,7 +157,16 @@ export function AppWorkspace() {
   })
 
   const deleteBookingMutation = useMutation({
-    mutationFn: (id: string) => apiFetch<{ ok: true }>(`/bookings/${id}`, { method: "DELETE" }),
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => {
+      const params = new URLSearchParams()
+
+      if (reason) {
+        params.set("reason", reason)
+      }
+
+      const query = params.size ? `?${params.toString()}` : ""
+      return apiFetch<{ ok: true }>(`/bookings/${id}${query}`, { method: "DELETE" })
+    },
     onSuccess: () => {
       setDialogState(null)
       setDialogError(null)
@@ -435,9 +444,9 @@ export function AppWorkspace() {
 
           createBookingMutation.mutate(formValue)
         }}
-        onDelete={() => {
+        onDelete={(reason) => {
           if (dialogState?.booking) {
-            deleteBookingMutation.mutate(dialogState.booking.id)
+            deleteBookingMutation.mutate({ id: dialogState.booking.id, reason })
           }
         }}
       />

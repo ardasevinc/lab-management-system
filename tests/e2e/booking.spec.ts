@@ -55,6 +55,7 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
 
   const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
   await expect(booking).toBeVisible()
+  const createdBooking = await findBookingFromPage(page, bookingTitle)
 
   await booking.click()
   await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
@@ -62,9 +63,23 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   await expect(auditHistory).toBeVisible()
   await expect(auditHistory.getByText("Created")).toBeVisible()
   await expect(auditHistory.getByText(/MIRALAB Admin/)).toBeVisible()
+
+  const updateReason = "E2E reason: adjusted by admin"
+  await page.getByLabel("Admin reason").fill(updateReason)
+  await page.getByRole("button", { name: "Save" }).click()
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+
+  await booking.click()
+  await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+  await expect(auditHistory.getByText("Updated")).toBeVisible()
+  await expect(auditHistory.getByText(`Reason: ${updateReason}`)).toBeVisible()
+
+  const deleteReason = "E2E reason: cleanup delete"
+  await page.getByLabel("Admin reason").fill(deleteReason)
   await page.getByRole("button", { name: "Delete" }).click()
   await expect(booking).toBeHidden()
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expectAuditReasonFromPage(page, createdBooking.id, "deleted", deleteReason)
 
   expect(consoleProblems).toEqual([])
 })
@@ -389,6 +404,36 @@ async function deleteBookingFromPage(page: Page, id: string) {
       throw new Error(`Failed to delete booking: ${response.status} ${await response.text()}`)
     }
   }, id)
+}
+
+async function expectAuditReasonFromPage(
+  page: Page,
+  bookingId: string,
+  eventType: "created" | "updated" | "deleted" | "admin_override",
+  reason: string,
+) {
+  const event = await page.evaluate(
+    async ({ id, type }) => {
+      const token = window.localStorage.getItem("lab_session_token")
+      const response = await window.fetch(`/bookings/${id}/audit`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to list audit events: ${response.status} ${await response.text()}`)
+      }
+
+      const body = (await response.json()) as {
+        events: Array<{ eventType: string; reason: string | null }>
+      }
+      return body.events.find((candidate) => candidate.eventType === type) ?? null
+    },
+    { id: bookingId, type: eventType },
+  )
+
+  expect(event).toEqual(expect.objectContaining({ reason }))
 }
 
 async function expectElementWithinViewport(page: Page, locator: Locator) {

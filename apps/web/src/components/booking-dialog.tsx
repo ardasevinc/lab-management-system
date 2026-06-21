@@ -56,7 +56,7 @@ type BookingDialogProps = {
   auditLoading?: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (value: BookingDialogValue) => void
-  onDelete: () => void
+  onDelete: (reason: string) => void
 }
 
 export function BookingDialog({
@@ -94,6 +94,7 @@ export function BookingDialog({
   const [startsTime, setStartsTime] = useState(defaults.startsTime)
   const [endsDate, setEndsDate] = useState(defaults.endsDate)
   const [endsTime, setEndsTime] = useState(defaults.endsTime)
+  const [adminReason, setAdminReason] = useState("")
 
   useEffect(() => {
     if (!open) {
@@ -106,6 +107,7 @@ export function BookingDialog({
     setEndsTime(defaults.endsTime)
     setBookingType(defaults.type)
     setOwnerUserId(booking?.userId ?? currentUser.id)
+    setAdminReason("")
   }, [
     open,
     defaults.startsDate,
@@ -136,7 +138,7 @@ export function BookingDialog({
               userId: isAdmin && bookingType === "normal" ? ownerUserId : undefined,
               startsAt: fromLabDateTimeParts(startsDate, startsTime),
               endsAt: fromLabDateTimeParts(endsDate, endsTime),
-              reason: String(form.get("reason") ?? ""),
+              reason: adminReason,
             })
           }}
         >
@@ -223,7 +225,12 @@ export function BookingDialog({
               {isAdmin ? (
                 <Field>
                   <FieldLabel htmlFor="reason">Admin reason</FieldLabel>
-                  <Input id="reason" name="reason" defaultValue="" />
+                  <Input
+                    id="reason"
+                    name="reason"
+                    value={adminReason}
+                    onChange={(event) => setAdminReason(event.target.value)}
+                  />
                 </Field>
               ) : null}
 
@@ -237,7 +244,12 @@ export function BookingDialog({
 
           <SheetFooter className="-mx-4 mt-0 shrink-0 border-border border-t bg-background px-4 pt-3 sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             {mode === "edit" ? (
-              <Button type="button" variant="destructive" disabled={pending} onClick={onDelete}>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={pending}
+                onClick={() => onDelete(adminReason)}
+              >
                 Delete
               </Button>
             ) : (
