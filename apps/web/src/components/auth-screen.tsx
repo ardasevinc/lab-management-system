@@ -63,10 +63,10 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
 
           <div className="max-w-xl">
             <p className="font-medium text-white/52 text-sm uppercase tracking-[0.18em]">
-              GPU booking
+              GPU workstation access
             </p>
             <h2 className="mt-3 max-w-lg font-semibold text-4xl leading-tight tracking-tight">
-              Reserve tohum without calendar drift.
+              Book tohum for research runs.
             </h2>
           </div>
 
@@ -78,8 +78,8 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
                 <BrandMark className="mb-4 size-10 shadow-sm lg:hidden" />
-                <p className="font-medium text-muted-foreground text-sm">Sign in to</p>
-                <h2 className="font-semibold text-2xl tracking-tight">{labConfig.shortName}</h2>
+                <p className="font-medium text-muted-foreground text-sm">Sign in</p>
+                <h2 className="font-semibold text-2xl tracking-tight">Lab access</h2>
               </div>
               <div className="rounded-full border bg-muted px-2.5 py-1 text-muted-foreground text-xs">
                 OTP

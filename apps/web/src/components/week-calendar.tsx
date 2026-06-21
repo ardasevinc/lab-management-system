@@ -303,6 +303,7 @@ function DayColumn({
                 originStartMinutes: minutesSinceDayStart(start),
               })
             }}
+            title={`${booking.title}, ${formatTime(booking.startsAt)} - ${formatTime(booking.endsAt)}`}
           >
             <span
               className="absolute top-0 right-1 left-1 flex h-3 cursor-ns-resize items-start justify-center pt-1"
@@ -322,7 +323,7 @@ function DayColumn({
             >
               <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
             </span>
-            <div className="truncate font-medium leading-tight">{booking.title}</div>
+            <div className="line-clamp-2 font-medium leading-tight">{booking.title}</div>
             <div className="truncate text-muted-foreground tabular-nums">
               {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
             </div>
