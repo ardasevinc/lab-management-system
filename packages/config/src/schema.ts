@@ -7,6 +7,10 @@ export type LabConfig = {
   faviconPath: string
   primaryColor: string
   defaultTimezone: string
+  authHero: {
+    eyebrow: string
+    headline: string
+  }
   email: {
     fromName: string
     fromAddress: string

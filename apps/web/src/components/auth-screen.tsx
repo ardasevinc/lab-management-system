@@ -63,10 +63,10 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
 
           <div className="max-w-xl">
             <p className="font-medium text-white/52 text-sm uppercase tracking-[0.18em]">
-              GPU workstation access
+              {labConfig.authHero.eyebrow}
             </p>
             <h2 className="mt-3 max-w-lg font-semibold text-4xl leading-tight tracking-tight">
-              Book tohum for research runs.
+              {labConfig.authHero.headline}
             </h2>
           </div>
 

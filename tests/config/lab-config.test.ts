@@ -6,6 +6,10 @@ import { describe, expect, it } from "vitest"
 describe("lab config", () => {
   it("uses deployable MIRALAB app origins and sender defaults", () => {
     expect(labConfig.baseUrl).toBe("https://lms.miralab.tr")
+    expect(labConfig.authHero).toEqual({
+      eyebrow: "GPU workstation access",
+      headline: "Book tohum for research runs.",
+    })
     expect(labConfig.email.fromAddress).toBe("no-reply@miralab.tr")
     expect(labConfig.email.supportAddress).toBe("support@miralab.tr")
   })

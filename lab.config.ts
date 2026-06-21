@@ -9,6 +9,10 @@ export default {
   faviconPath: "/favicon.svg",
   primaryColor: "#2563eb",
   defaultTimezone: "Europe/Istanbul",
+  authHero: {
+    eyebrow: "GPU workstation access",
+    headline: "Book tohum for research runs.",
+  },
   email: {
     fromName: "MIRALAB",
     fromAddress: "no-reply@miralab.tr",
