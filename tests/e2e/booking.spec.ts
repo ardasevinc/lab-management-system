@@ -804,6 +804,9 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   await expect(page.getByText("Machine status")).toBeVisible()
   await expect(page.getByText("Access notes")).toBeVisible()
   await expect(page.getByText("Not configured")).toBeVisible()
+  await expect(page.getByText("Reminders", { exact: true })).toBeVisible()
+  await expect(page.getByText("Disabled", { exact: true })).toBeVisible()
+  await expect(page.getByText("Start/end reminders off")).toBeVisible()
   await expect(page.getByText("No notes")).toHaveCount(0)
   await expectRouteContentWithinViewport(page)
 

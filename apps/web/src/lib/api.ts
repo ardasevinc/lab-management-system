@@ -37,6 +37,24 @@ export type AuditEvent = {
   createdAt: string
 }
 
+export type ApiHealth = {
+  ok: boolean
+  service: string
+  lab: string
+  checks: {
+    database: "ok" | "unhealthy"
+    machines?: number
+    reminders: {
+      enabled: boolean
+      intervalSeconds: number
+      startReminderMinutes: number
+      endingReminderMinutes: number
+      retryDelayMinutes: number
+      maxAttempts: number
+    }
+  }
+}
+
 type ApiErrorBody = {
   error?: string
 }
@@ -102,6 +120,10 @@ export async function verifyOtp(email: string, code: string) {
 
 export async function getCurrentSession() {
   return apiFetch<{ user: User | null }>("/auth/session")
+}
+
+export async function getApiHealth() {
+  return apiFetch<ApiHealth>("/health")
 }
 
 export async function logout() {

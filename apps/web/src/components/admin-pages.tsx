@@ -1,6 +1,15 @@
+import { useQuery } from "@tanstack/react-query"
 import { Navigate } from "@tanstack/react-router"
 import { differenceInMinutes, isAfter } from "date-fns"
-import { CalendarDays, Clock3, type LucideIcon, MonitorCog, Pencil, Wrench } from "lucide-react"
+import {
+  BellRing,
+  CalendarDays,
+  Clock3,
+  type LucideIcon,
+  MonitorCog,
+  Pencil,
+  Wrench,
+} from "lucide-react"
 import { AdminPageFrame } from "@/components/admin-page-frame"
 import { useWorkspace } from "@/components/app-workspace-context"
 import { Badge } from "@/components/ui/badge"
@@ -14,11 +23,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { getApiHealth } from "@/lib/api"
+import { getReminderHealthDisplay } from "@/lib/reminder-health"
 import { formatDate, formatTime } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
 export function AdminOverviewPage() {
   const workspace = useWorkspace()
+  const healthQuery = useQuery({
+    queryKey: ["api-health"],
+    queryFn: getApiHealth,
+    enabled: workspace.user.role === "admin",
+    retry: false,
+  })
 
   if (workspace.user.role !== "admin") {
     return <Navigate to="/schedule" replace />
@@ -36,6 +53,10 @@ export function AdminOverviewPage() {
   const accessDetail = selectedMachine?.accessNotes
     ? "Shown only to admins"
     : "Remote access can be shared directly."
+  const reminderHealth = getReminderHealthDisplay({
+    health: healthQuery.data,
+    isError: healthQuery.isError,
+  })
 
   return (
     <AdminPageFrame
@@ -89,7 +110,7 @@ export function AdminOverviewPage() {
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-px bg-border xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-px bg-border xl:grid-cols-5">
           <SummaryPanel
             icon={MonitorCog}
             label="Machines"
@@ -113,6 +134,12 @@ export function AdminOverviewPage() {
             label="Maintenance"
             value={String(workspace.dashboardStats.maintenanceCount)}
             detail="blocks"
+          />
+          <SummaryPanel
+            icon={BellRing}
+            label="Reminders"
+            value={reminderHealth.value}
+            detail={reminderHealth.detail}
           />
         </div>
       </section>
