@@ -24,6 +24,7 @@ const notificationWorkerConfig = notificationWorkerConfigFromEnv(Bun.env)
 const app = createApiApp({
   db,
   config: runtimeConfig,
+  notificationWorker: notificationWorkerConfig,
   mailer,
   assetMiddleware: serveWeb
     ? serveStatic({

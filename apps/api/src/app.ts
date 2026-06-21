@@ -23,7 +23,7 @@ import { cors } from "hono/cors"
 import { z } from "zod"
 import { apiErrorResponse, handleApiResult } from "./api-errors"
 import { registerBookingRoutes } from "./booking-routes"
-import type { ApiRuntimeConfig } from "./env"
+import type { ApiRuntimeConfig, NotificationWorkerConfig } from "./env"
 import { createConsoleMailer, type Mailer } from "./mailer"
 
 const bookingRangeSchema = z.object({
@@ -77,6 +77,7 @@ type CurrentUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>
 export type ApiAppOptions = {
   db: Db
   config?: Partial<ApiRuntimeConfig>
+  notificationWorker?: NotificationWorkerConfig
   mailer?: Mailer
   assetMiddleware?: MiddlewareHandler
   webMiddleware?: MiddlewareHandler
@@ -90,15 +91,26 @@ const defaultRuntimeConfig: ApiRuntimeConfig = {
   devShowOtp: true,
 }
 
+const defaultNotificationWorkerConfig: NotificationWorkerConfig = {
+  enabled: false,
+  intervalSeconds: 60,
+  startReminderMinutes: 15,
+  endingReminderMinutes: 15,
+  retryDelayMinutes: 5,
+  maxAttempts: 3,
+}
+
 export function createApiApp({
   db,
   config,
+  notificationWorker,
   mailer,
   assetMiddleware,
   webMiddleware,
 }: ApiAppOptions) {
   const app = new Hono<{ Variables: { user: CurrentUser } }>()
   const runtimeConfig = { ...defaultRuntimeConfig, ...config }
+  const notificationWorkerConfig = notificationWorker ?? defaultNotificationWorkerConfig
   const emailSender = mailer ?? createConsoleMailer()
 
   app.onError((error, c) => apiErrorResponse(c, error))
@@ -111,7 +123,7 @@ export function createApiApp({
     }),
   )
 
-  app.get("/health", (c) => healthResponse(c, db))
+  app.get("/health", (c) => healthResponse(c, db, notificationWorkerConfig))
 
   app.get("/config/public", (c) => c.json(labConfig))
 
@@ -344,7 +356,7 @@ function requireAuth(db: Db): MiddlewareHandler<{ Variables: { user: CurrentUser
   }
 }
 
-async function healthResponse(c: Context, db: Db) {
+async function healthResponse(c: Context, db: Db, notificationWorker: NotificationWorkerConfig) {
   try {
     const machines = await listMachines(db)
     if (!machines.length) {
@@ -356,6 +368,7 @@ async function healthResponse(c: Context, db: Db) {
           checks: {
             database: "ok",
             machines: 0,
+            reminders: reminderHealth(notificationWorker),
           },
         },
         503,
@@ -369,6 +382,7 @@ async function healthResponse(c: Context, db: Db) {
       checks: {
         database: "ok",
         machines: machines.length,
+        reminders: reminderHealth(notificationWorker),
       },
     })
   } catch {
@@ -379,10 +393,22 @@ async function healthResponse(c: Context, db: Db) {
         lab: labConfig.shortName,
         checks: {
           database: "unhealthy",
+          reminders: reminderHealth(notificationWorker),
         },
       },
       503,
     )
+  }
+}
+
+function reminderHealth(config: NotificationWorkerConfig) {
+  return {
+    enabled: config.enabled,
+    intervalSeconds: config.intervalSeconds,
+    startReminderMinutes: config.startReminderMinutes,
+    endingReminderMinutes: config.endingReminderMinutes,
+    retryDelayMinutes: config.retryDelayMinutes,
+    maxAttempts: config.maxAttempts,
   }
 }
 

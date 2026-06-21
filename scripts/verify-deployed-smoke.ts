@@ -43,11 +43,19 @@ function isLocalHttp(url: URL) {
   )
 }
 
+function isLocalOrigin(origin: string) {
+  return isLocalHttp(new URL(origin))
+}
+
 async function verifyHealth(origin: string) {
-  const body = await fetchJson<{ ok?: boolean; checks?: { database?: string; machines?: number } }>(
-    origin,
-    "/health",
-  )
+  const body = await fetchJson<{
+    ok?: boolean
+    checks?: {
+      database?: string
+      machines?: number
+      reminders?: { enabled?: boolean; intervalSeconds?: number }
+    }
+  }>(origin, "/health")
 
   if (body.ok !== true) {
     fail("/health did not report ok: true")
@@ -59,6 +67,22 @@ async function verifyHealth(origin: string) {
 
   if (typeof body.checks?.machines !== "number" || body.checks.machines < 1) {
     fail("/health did not report at least one seeded machine")
+  }
+
+  if (typeof body.checks?.reminders?.enabled !== "boolean") {
+    fail("/health did not expose reminder worker status")
+  }
+
+  if (!isLocalOrigin(origin) && body.checks.reminders.enabled !== true) {
+    fail("/health did not report reminders enabled for deployed origin")
+  }
+
+  if (
+    body.checks.reminders.enabled &&
+    (typeof body.checks.reminders.intervalSeconds !== "number" ||
+      body.checks.reminders.intervalSeconds < 1)
+  ) {
+    fail("/health did not expose a valid reminder worker interval")
   }
 }
 

@@ -35,7 +35,11 @@ describe("deployed smoke verifier", () => {
       if (request.url === "/health") {
         return json(response, {
           ok: true,
-          checks: { database: "ok", machines: 1 },
+          checks: {
+            database: "ok",
+            machines: 1,
+            reminders: { enabled: false, intervalSeconds: 60 },
+          },
         })
       }
 
@@ -83,7 +87,11 @@ describe("deployed smoke verifier", () => {
       if (request.url === "/health") {
         return json(response, {
           ok: false,
-          checks: { database: "ok", machines: 0 },
+          checks: {
+            database: "ok",
+            machines: 0,
+            reminders: { enabled: true, intervalSeconds: 60 },
+          },
         })
       }
 
