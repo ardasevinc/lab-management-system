@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router"
-import { WorkspaceBootstrap } from "@/components/app-shell"
-import { AuthScreen } from "@/components/auth-screen"
+import { AuthBootstrap, AuthScreen } from "@/components/auth-screen"
 import { getCurrentSession, type User } from "@/lib/api"
 
 export const Route = createFileRoute("/login")({
@@ -23,7 +22,7 @@ function LoginRoute() {
   }
 
   if (!meQuery.data) {
-    return <WorkspaceBootstrap />
+    return <AuthBootstrap />
   }
 
   return (

@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { requestOtp, type User, verifyOtp } from "@/lib/api"
 
 type AuthScreenProps = {
@@ -196,6 +197,55 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                     : "Sign in"}
               </Button>
             </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+export function AuthBootstrap() {
+  return (
+    <main className="relative min-h-[100dvh] overflow-hidden bg-[#07100f] text-white">
+      <div className="auth-background" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.72),rgba(3,7,9,0.42)_48%,rgba(3,7,9,0.62))]" />
+
+      <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
+        <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
+          <div className="flex items-center gap-3">
+            <BrandMark className="size-9 shadow-sm" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16 bg-white/15" />
+              <Skeleton className="h-4 w-24 bg-white/18" />
+            </div>
+          </div>
+
+          <div className="max-w-xl space-y-3">
+            <Skeleton className="h-3 w-16 bg-white/15" />
+            <Skeleton className="h-9 max-w-lg bg-white/18" />
+          </div>
+
+          <div className="h-px max-w-xl bg-white/12" />
+        </div>
+
+        <div className="grid min-h-[calc(100dvh-2rem)] place-items-center lg:min-h-full">
+          <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
+            <div className="mb-7 flex items-start justify-between gap-4">
+              <div className="space-y-3">
+                <BrandMark className="size-10 shadow-sm lg:hidden" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-7 w-32" />
+              </div>
+              <Skeleton className="h-7 w-12 rounded-full" />
+            </div>
+
+            <div className="flex flex-col gap-5">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-10 w-full rounded-lg" />
+              </div>
+              <Skeleton className="h-11 w-full rounded-lg" />
+            </div>
           </div>
         </div>
       </section>
