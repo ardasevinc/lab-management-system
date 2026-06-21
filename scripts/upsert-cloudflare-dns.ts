@@ -1,8 +1,10 @@
 type CloudflareDnsOptions = {
   content: string
   name: string
+  paBin: string
   proxied: boolean
   token?: string
+  tokenItem: string
   ttl: number
   zone: string
 }
@@ -36,7 +38,9 @@ type CloudflareDnsRecord = {
 const DEFAULT_OPTIONS: CloudflareDnsOptions = {
   content: "130.61.34.1",
   name: "lms",
+  paBin: "pa",
   proxied: true,
+  tokenItem: "cloudflare/miralab/dns-edit-token",
   ttl: 1,
   zone: "miralab.tr",
 }
@@ -47,10 +51,7 @@ if (import.meta.main) {
 
 async function main(args: string[]) {
   const options = parseArgs(args)
-  const token = options.token ?? Bun.env.CLOUDFLARE_API_TOKEN
-  if (!token) {
-    throw new Error("CLOUDFLARE_API_TOKEN is required")
-  }
+  const token = resolveCloudflareToken(options)
 
   const result = await upsertCloudflareDnsRecord(options, token)
   console.log(result.message)
@@ -75,8 +76,16 @@ export function parseArgs(args: string[]): CloudflareDnsOptions {
       case "--no-proxy":
         options.proxied = false
         break
+      case "--pa-bin":
+        options.paBin = requireValue(arg, value)
+        index += 1
+        break
       case "--token":
         options.token = requireValue(arg, value)
+        index += 1
+        break
+      case "--token-item":
+        options.tokenItem = requireValue(arg, value)
         index += 1
         break
       case "--ttl":
@@ -97,6 +106,8 @@ export function parseArgs(args: string[]): CloudflareDnsOptions {
   }
 
   assertDnsLabel(options.name)
+  assertSafeCommandName(options.paBin)
+  assertSafePaItem(options.tokenItem)
   assertZoneName(options.zone)
   assertIpv4(options.content)
   if (!Number.isInteger(options.ttl) || options.ttl < 1) {
@@ -104,6 +115,30 @@ export function parseArgs(args: string[]): CloudflareDnsOptions {
   }
 
   return options
+}
+
+export function resolveCloudflareToken(
+  options: Pick<CloudflareDnsOptions, "paBin" | "token" | "tokenItem">,
+  env: Record<string, string | undefined> = Bun.env,
+  readPaSecret = readPaSecretFromCli,
+) {
+  if (options.token) {
+    return options.token
+  }
+
+  const envToken = env.CLOUDFLARE_API_TOKEN?.trim()
+  if (envToken) {
+    return envToken
+  }
+
+  const paToken = readPaSecret(options.paBin, options.tokenItem)?.trim()
+  if (paToken) {
+    return paToken
+  }
+
+  throw new Error(
+    `Cloudflare DNS token is required. Set CLOUDFLARE_API_TOKEN or add pa item ${options.tokenItem}.`,
+  )
 }
 
 export async function upsertCloudflareDnsRecord(
@@ -232,6 +267,18 @@ function assertDnsLabel(value: string) {
   }
 }
 
+function assertSafeCommandName(value: string) {
+  if (!/^[a-zA-Z0-9._/-]+$/.test(value)) {
+    throw new Error("--pa-bin contains unsafe characters")
+  }
+}
+
+function assertSafePaItem(value: string) {
+  if (!/^[a-zA-Z0-9._/-]+$/.test(value)) {
+    throw new Error("--token-item contains unsafe characters")
+  }
+}
+
 function assertZoneName(value: string) {
   if (!/^[a-zA-Z0-9.-]+$/.test(value)) {
     throw new Error("--zone must be a DNS zone name")
@@ -248,8 +295,23 @@ function assertIpv4(value: string) {
   }
 }
 
-function printUsage() {
-  console.log(`Usage: CLOUDFLARE_API_TOKEN=... bun scripts/upsert-cloudflare-dns.ts [--zone miralab.tr] [--name lms] [--content 130.61.34.1] [--no-proxy]
+function readPaSecretFromCli(paBin: string, item: string) {
+  const result = Bun.spawnSync({
+    cmd: [paBin, "show", item],
+    stderr: "pipe",
+    stdout: "pipe",
+  })
 
-Creates or updates the Cloudflare A record needed for the MIRALAB LMS CapRover deployment.`)
+  if (!result.success) {
+    return null
+  }
+
+  return result.stdout.toString()
+}
+
+function printUsage() {
+  console.log(`Usage: bun scripts/upsert-cloudflare-dns.ts [--zone miralab.tr] [--name lms] [--content 130.61.34.1] [--no-proxy]
+
+Creates or updates the Cloudflare A record needed for the MIRALAB LMS CapRover deployment.
+Reads the token from --token, CLOUDFLARE_API_TOKEN, or pa item cloudflare/miralab/dns-edit-token.`)
 }

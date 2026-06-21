@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest"
-import { parseArgs, upsertCloudflareDnsRecord } from "../../scripts/upsert-cloudflare-dns"
+import {
+  parseArgs,
+  resolveCloudflareToken,
+  upsertCloudflareDnsRecord,
+} from "../../scripts/upsert-cloudflare-dns"
 
 describe("Cloudflare DNS upsert helper", () => {
   it("defaults to the MIRALAB LMS DNS record", () => {
     expect(parseArgs([])).toEqual({
       content: "130.61.34.1",
       name: "lms",
+      paBin: "pa",
       proxied: true,
+      tokenItem: "cloudflare/miralab/dns-edit-token",
       ttl: 1,
       zone: "miralab.tr",
     })
@@ -28,7 +34,9 @@ describe("Cloudflare DNS upsert helper", () => {
     ).toEqual({
       content: "203.0.113.10",
       name: "app",
+      paBin: "pa",
       proxied: false,
+      tokenItem: "cloudflare/miralab/dns-edit-token",
       ttl: 120,
       zone: "example.com",
     })
@@ -39,6 +47,48 @@ describe("Cloudflare DNS upsert helper", () => {
     expect(() => parseArgs(["--zone", "miralab.tr;rm"])).toThrow("--zone must be a DNS zone name")
     expect(() => parseArgs(["--content", "999.61.34.1"])).toThrow("Invalid IPv4 address")
     expect(() => parseArgs(["--ttl", "0"])).toThrow("--ttl must be a positive integer")
+    expect(() => parseArgs(["--pa-bin", "pa;rm"])).toThrow("--pa-bin contains unsafe characters")
+    expect(() => parseArgs(["--token-item", "cloudflare/miralab/dns edit token"])).toThrow(
+      "--token-item contains unsafe characters",
+    )
+  })
+
+  it("resolves tokens from explicit args, env, then pa", () => {
+    expect(
+      resolveCloudflareToken(
+        { paBin: "pa", token: "explicit-token", tokenItem: "cloudflare/miralab/dns-edit-token" },
+        { CLOUDFLARE_API_TOKEN: "env-token" },
+        () => "pa-token",
+      ),
+    ).toBe("explicit-token")
+
+    expect(
+      resolveCloudflareToken(
+        { paBin: "pa", tokenItem: "cloudflare/miralab/dns-edit-token" },
+        { CLOUDFLARE_API_TOKEN: "env-token" },
+        () => "pa-token",
+      ),
+    ).toBe("env-token")
+
+    expect(
+      resolveCloudflareToken(
+        { paBin: "pa", tokenItem: "cloudflare/miralab/dns-edit-token" },
+        {},
+        () => "pa-token\n",
+      ),
+    ).toBe("pa-token")
+  })
+
+  it("fails with the expected pa item when no token is available", () => {
+    expect(() =>
+      resolveCloudflareToken(
+        { paBin: "pa", tokenItem: "cloudflare/miralab/dns-edit-token" },
+        {},
+        () => null,
+      ),
+    ).toThrow(
+      "Cloudflare DNS token is required. Set CLOUDFLARE_API_TOKEN or add pa item cloudflare/miralab/dns-edit-token.",
+    )
   })
 
   it("creates the A record when it does not exist", async () => {
