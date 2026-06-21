@@ -1,19 +1,12 @@
 import { labConfig } from "@lab/config"
 import {
-  createInvite,
-  createMachine,
   type Db,
-  deleteMachine,
   deleteSession,
-  ForbiddenError,
   getMachineBySlug,
   getSessionUser,
   listBookingsForMachine,
   listMachines,
-  listUsers,
   requestLoginOtp,
-  updateMachine,
-  updateUserAccess,
   verifyLoginOtp,
 } from "@lab/db"
 import type { Context, MiddlewareHandler } from "hono"
@@ -21,6 +14,7 @@ import { Hono } from "hono"
 import { deleteCookie, getCookie, setCookie } from "hono/cookie"
 import { cors } from "hono/cors"
 import { z } from "zod"
+import { registerAdminRoutes } from "./admin-routes"
 import { apiErrorResponse, handleApiResult } from "./api-errors"
 import { registerBookingRoutes } from "./booking-routes"
 import type { ApiRuntimeConfig, NotificationWorkerConfig } from "./env"
@@ -38,38 +32,6 @@ const loginRequestSchema = z.object({
 const loginVerifySchema = z.object({
   email: z.string().email(),
   code: z.string().min(6).max(12),
-})
-
-const inviteSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1),
-  role: z.enum(["admin", "member"]).default("member"),
-})
-
-const userAccessPatchSchema = z
-  .object({
-    role: z.enum(["admin", "member"]).optional(),
-    active: z.boolean().optional(),
-  })
-  .refine((value) => Object.keys(value).length > 0, "At least one field is required")
-
-const machinePatchSchema = z
-  .object({
-    name: z.string().min(1).optional(),
-    description: z.string().optional(),
-    specs: z.array(z.string()).optional(),
-    accessNotes: z.string().optional(),
-    active: z.boolean().optional(),
-  })
-  .refine((value) => Object.keys(value).length > 0, "At least one field is required")
-
-const machineCreateSchema = z.object({
-  name: z.string().min(1),
-  slug: z.string().optional(),
-  description: z.string().optional(),
-  specs: z.array(z.string()).optional(),
-  accessNotes: z.string().optional(),
-  active: z.boolean().optional(),
 })
 
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>
@@ -246,93 +208,11 @@ export function createApiApp({
   app.use("/bookings/*", requireAuth(db))
   registerBookingRoutes(app, { db, mailer: emailSender, publicAppUrl: runtimeConfig.publicAppUrl })
 
-  for (const path of [
-    "/admin/users",
-    "/admin/users/*",
-    "/admin/machines",
-    "/admin/machines/*",
-    "/admin/invites",
-  ]) {
-    app.use(path, requireAuth(db))
-    app.use(path, async (c, next) => {
-      assertAdmin(c.get("user"))
-      await next()
-    })
-  }
-
-  app.get("/admin/users", async (c) => c.json({ users: await listUsers(db) }))
-
-  app.post("/admin/machines", async (c) => {
-    const body = machineCreateSchema.safeParse(await c.req.json())
-
-    if (!body.success) {
-      return c.json({ error: "Invalid machine", issues: body.error.issues }, 400)
-    }
-
-    return handleApiResult(c, async () => {
-      const machine = await createMachine(db, sanitizeMachineInput(body.data))
-      return c.json({ machine }, 201)
-    })
-  })
-
-  app.patch("/admin/machines/:id", async (c) => {
-    const body = machinePatchSchema.safeParse(await c.req.json())
-
-    if (!body.success) {
-      return c.json({ error: "Invalid machine update", issues: body.error.issues }, 400)
-    }
-
-    return handleApiResult(c, async () => {
-      const machine = await updateMachine(db, c.req.param("id"), sanitizeMachineInput(body.data))
-      return c.json({ machine })
-    })
-  })
-
-  app.delete("/admin/machines/:id", async (c) =>
-    handleApiResult(c, async () => {
-      const machine = await deleteMachine(db, c.req.param("id"))
-      return c.json({ machine })
-    }),
-  )
-
-  app.patch("/admin/users/:id", async (c) => {
-    const body = userAccessPatchSchema.safeParse(await c.req.json())
-
-    if (!body.success) {
-      return c.json({ error: "Invalid user update", issues: body.error.issues }, 400)
-    }
-
-    const currentUser = c.get("user")
-
-    if (c.req.param("id") === currentUser.id) {
-      throw new ForbiddenError("Admins cannot change their own access")
-    }
-
-    return handleApiResult(c, async () => {
-      const user = await updateUserAccess(db, c.req.param("id"), body.data)
-      return c.json({ user })
-    })
-  })
-
-  app.post("/admin/invites", async (c) => {
-    const body = inviteSchema.safeParse(await c.req.json())
-
-    if (!body.success) {
-      return c.json({ error: "Invalid invite", issues: body.error.issues }, 400)
-    }
-
-    const invite = await createInvite(db, {
-      ...body.data,
-      invitedByUserId: c.get("user").id,
-    })
-    await emailSender.sendInviteEmail({
-      to: invite.email,
-      name: invite.name,
-      role: invite.role,
-      loginUrl: loginUrlForInvite(runtimeConfig.publicAppUrl, invite.email),
-    })
-
-    return c.json({ invite }, 201)
+  registerAdminRoutes(app, {
+    db,
+    mailer: emailSender,
+    publicAppUrl: runtimeConfig.publicAppUrl,
+    requireAuth: requireAuth(db),
   })
 
   if (assetMiddleware) {
@@ -489,27 +369,4 @@ function clearSessionCookie(c: Context, config: ApiRuntimeConfig) {
     secure: config.sessionCookieSecure,
     domain: config.sessionCookieDomain,
   })
-}
-
-function loginUrlForInvite(publicAppUrl: string, email: string) {
-  const url = new URL("/login", publicAppUrl)
-  url.searchParams.set("email", email)
-  return url.toString()
-}
-
-function assertAdmin(user: CurrentUser) {
-  if (user.role !== "admin") {
-    throw new ForbiddenError("Admin role required")
-  }
-}
-
-function sanitizeMachineInput<T extends { specs?: string[]; name?: string; slug?: string }>(
-  input: T,
-) {
-  return {
-    ...input,
-    name: input.name?.trim(),
-    slug: input.slug?.trim(),
-    specs: input.specs?.map((spec) => spec.trim()).filter(Boolean),
-  }
 }
