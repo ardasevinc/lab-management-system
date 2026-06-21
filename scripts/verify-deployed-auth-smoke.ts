@@ -126,7 +126,34 @@ async function getBookableMachine(origin: string, token: string) {
 }
 
 async function createSmokeBooking(origin: string, token: string, machine: Machine, user?: User) {
-  const startsAt = nextSmokeSlotStart()
+  const maxAttempts = 7
+  let lastConflict: unknown
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      return await createSmokeBookingForSlot(origin, token, machine, attempt, user)
+    } catch (error) {
+      if (!isBookingConflict(error)) {
+        throw error
+      }
+
+      lastConflict = error
+    }
+  }
+
+  fail(
+    `Could not create a disposable smoke booking after ${maxAttempts} future slots: ${errorMessage(lastConflict)}`,
+  )
+}
+
+async function createSmokeBookingForSlot(
+  origin: string,
+  token: string,
+  machine: Machine,
+  slotOffsetDays: number,
+  user?: User,
+) {
+  const startsAt = nextSmokeSlotStart(slotOffsetDays)
   const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000)
   const body = await requestJson<{ booking?: Booking }>(origin, "/bookings", {
     method: "POST",
@@ -190,8 +217,8 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function nextSmokeSlotStart() {
-  const start = new Date(Date.now() + 400 * 24 * 60 * 60 * 1000)
+function nextSmokeSlotStart(offsetDays: number) {
+  const start = new Date(Date.now() + (400 + offsetDays) * 24 * 60 * 60 * 1000)
   start.setUTCHours(3, 0, 0, 0)
   return start
 }
@@ -232,6 +259,10 @@ function fail(message: string): never {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
+}
+
+function isBookingConflict(error: unknown) {
+  return error instanceof SmokeError && error.message.startsWith("/bookings returned 409")
 }
 
 process.on("uncaughtException", (error) => {
