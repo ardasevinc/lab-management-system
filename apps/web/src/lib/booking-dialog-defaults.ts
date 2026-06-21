@@ -11,6 +11,17 @@ export type BookingDialogDefaults = {
   endsTime: string
 }
 
+export function getRoundedOneHourRange(now = new Date()) {
+  const startsAt = new Date(now)
+  startsAt.setMinutes(0, 0, 0)
+  const endsAt = new Date(startsAt.getTime() + 60 * 60_000)
+
+  return {
+    startsAt: startsAt.toISOString(),
+    endsAt: endsAt.toISOString(),
+  }
+}
+
 export function getBookingDialogDefaults({
   booking,
   initialRange,
@@ -22,17 +33,19 @@ export function getBookingDialogDefaults({
   initialType?: Booking["type"]
   now?: Date
 }): BookingDialogDefaults {
-  const startsFallback = new Date(now)
-  startsFallback.setMinutes(0, 0, 0)
-  const endsFallback = new Date(startsFallback.getTime() + 60 * 60_000)
+  const fallbackRange = getRoundedOneHourRange(now)
 
   return {
     title: booking?.title ?? "",
     notes: booking?.notes ?? "",
     type: booking?.type ?? initialType,
-    startsDate: toLabDateValue(booking?.startsAt ?? initialRange?.startsAt ?? startsFallback),
-    startsTime: toLabTimeValue(booking?.startsAt ?? initialRange?.startsAt ?? startsFallback),
-    endsDate: toLabDateValue(booking?.endsAt ?? initialRange?.endsAt ?? endsFallback),
-    endsTime: toLabTimeValue(booking?.endsAt ?? initialRange?.endsAt ?? endsFallback),
+    startsDate: toLabDateValue(
+      booking?.startsAt ?? initialRange?.startsAt ?? fallbackRange.startsAt,
+    ),
+    startsTime: toLabTimeValue(
+      booking?.startsAt ?? initialRange?.startsAt ?? fallbackRange.startsAt,
+    ),
+    endsDate: toLabDateValue(booking?.endsAt ?? initialRange?.endsAt ?? fallbackRange.endsAt),
+    endsTime: toLabTimeValue(booking?.endsAt ?? initialRange?.endsAt ?? fallbackRange.endsAt),
   }
 }

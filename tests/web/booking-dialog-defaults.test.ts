@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import type { Booking } from "../../apps/web/src/lib/api"
-import { getBookingDialogDefaults } from "../../apps/web/src/lib/booking-dialog-defaults"
+import {
+  getBookingDialogDefaults,
+  getRoundedOneHourRange,
+} from "../../apps/web/src/lib/booking-dialog-defaults"
 
 describe("booking dialog defaults", () => {
   it("uses the requested create type for maintenance actions", () => {
@@ -47,6 +50,13 @@ describe("booking dialog defaults", () => {
       startsTime: "13:00",
       endsDate: "2026-06-20",
       endsTime: "14:00",
+    })
+  })
+
+  it("rounds explicit action ranges to the current hour", () => {
+    expect(getRoundedOneHourRange(new Date("2026-06-20T10:34:12.000Z"))).toEqual({
+      startsAt: "2026-06-20T10:00:00.000Z",
+      endsAt: "2026-06-20T11:00:00.000Z",
     })
   })
 })

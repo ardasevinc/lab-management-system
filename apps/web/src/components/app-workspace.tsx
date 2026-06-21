@@ -14,6 +14,7 @@ import {
   setStoredToken,
   type User,
 } from "@/lib/api"
+import { getRoundedOneHourRange } from "@/lib/booking-dialog-defaults"
 import type { CalendarRange } from "@/lib/calendar-geometry"
 import { resolveSelectedMachine, resolveSelectedMachineSlug } from "@/lib/machine-selection"
 import { getWeekRange } from "@/lib/week-range"
@@ -402,10 +403,7 @@ export function AppWorkspace() {
         mode: "create",
         booking: null,
         initialType: "maintenance",
-        range: {
-          startsAt: new Date().toISOString(),
-          endsAt: new Date(Date.now() + 60 * 60_000).toISOString(),
-        },
+        range: getRoundedOneHourRange(),
       })
     },
     inviteUser: (form, options) => {
