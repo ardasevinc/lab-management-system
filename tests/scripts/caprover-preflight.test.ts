@@ -10,6 +10,7 @@ describe("CapRover preflight orchestrator", () => {
         label: "verify:caprover-package",
         command: ["bun", "run", "verify:caprover-package"],
       },
+      { label: "verify:email-dns", command: ["bun", "run", "verify:email-dns"] },
       { label: "verify:caprover-dns", command: ["bun", "run", "verify:caprover-dns"] },
       {
         label: "verify:caprover-host",
@@ -21,8 +22,8 @@ describe("CapRover preflight orchestrator", () => {
   it("reports every failed preflight step instead of only the first one", () => {
     const results = PREFLIGHT_STEPS.map((step, index) => ({
       step,
-      ok: index !== 1 && index !== 3,
-      status: index !== 1 && index !== 3 ? 0 : 1,
+      ok: index !== 1 && index !== 4,
+      status: index !== 1 && index !== 4 ? 0 : 1,
     }))
 
     expect(summarizePreflight(results)).toEqual({

@@ -13,6 +13,7 @@ export const PREFLIGHT_STEPS: PreflightStep[] = [
   { label: "pack:caprover", command: ["bun", "run", "pack:caprover"] },
   { label: "verify:caprover-env", command: ["bun", "run", "verify:caprover-env"] },
   { label: "verify:caprover-package", command: ["bun", "run", "verify:caprover-package"] },
+  { label: "verify:email-dns", command: ["bun", "run", "verify:email-dns"] },
   { label: "verify:caprover-dns", command: ["bun", "run", "verify:caprover-dns"] },
   {
     label: "verify:caprover-host",
