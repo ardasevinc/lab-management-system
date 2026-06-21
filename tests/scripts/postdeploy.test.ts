@@ -52,6 +52,24 @@ describe("postdeploy verifier", () => {
     })
   })
 
+  it("normalizes deployed origins and rejects non-origin URLs", () => {
+    expect(parseArgs(["https://lms.miralab.tr/", "admin@miralab.tr"]).origin).toBe(
+      "https://lms.miralab.tr",
+    )
+    expect(() => parseArgs(["http://lms.miralab.tr", "admin@miralab.tr"])).toThrow(
+      "Postdeploy URL must use HTTPS",
+    )
+    expect(() => parseArgs(["https://lms.miralab.tr/login", "admin@miralab.tr"])).toThrow(
+      "Postdeploy URL must be an origin without path, query, or hash",
+    )
+  })
+
+  it("rejects malformed smoke email addresses", () => {
+    expect(() => parseArgs(["https://lms.miralab.tr", "admin"])).toThrow(
+      "Invalid smoke email: admin",
+    )
+  })
+
   it("rejects unsafe host and app identifiers", () => {
     expect(() =>
       parseArgs(["https://lms.miralab.tr", "admin@miralab.tr", "--host", "meruem;rm"]),

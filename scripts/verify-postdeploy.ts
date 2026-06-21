@@ -81,6 +81,8 @@ export function parseArgs(args: string[], env: Record<string, string | undefined
 
   assertSafeIdentifier("app", options.appName)
   assertSafeIdentifier("host", options.host)
+  options.origin = httpsOrigin(options.origin)
+  assertEmail(options.email)
 
   return options as PostdeployOptions
 }
@@ -114,6 +116,31 @@ function requireValue(option: string, value: string | undefined) {
 function assertSafeIdentifier(label: string, value: string) {
   if (!/^[a-zA-Z0-9._-]+$/.test(value)) {
     throw new Error(`${label} contains unsafe characters`)
+  }
+}
+
+function httpsOrigin(value: string) {
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    throw new Error(`Invalid deployed URL: ${value}`)
+  }
+
+  if (url.protocol !== "https:") {
+    throw new Error("Postdeploy URL must use HTTPS")
+  }
+
+  if (url.pathname !== "/" || url.search || url.hash) {
+    throw new Error("Postdeploy URL must be an origin without path, query, or hash")
+  }
+
+  return url.origin
+}
+
+function assertEmail(value: string) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    throw new Error(`Invalid smoke email: ${value}`)
   }
 }
 
