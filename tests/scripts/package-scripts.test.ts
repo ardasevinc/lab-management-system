@@ -22,6 +22,7 @@ describe("package scripts", () => {
       [
         "bun run verify:caprover-env",
         "bun run verify:caprover-package",
+        "bun run verify:email-dns",
         "bun run verify:docker-build",
         "bun run verify:docker-runtime",
         "bun run check",
