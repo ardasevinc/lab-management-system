@@ -220,8 +220,8 @@ function WeekNavigation({
             onSelect={(date) => {
               if (date) {
                 onSelectDate(date)
-                setPickerOpen(false)
               }
+              setPickerOpen(false)
             }}
             autoFocus
           />

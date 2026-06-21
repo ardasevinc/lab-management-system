@@ -446,8 +446,8 @@ function DateTimeField({
               onSelect={(date) => {
                 if (date) {
                   onDateChange(toLabDateValue(date))
-                  setPickerOpen(false)
                 }
+                setPickerOpen(false)
               }}
               autoFocus
             />

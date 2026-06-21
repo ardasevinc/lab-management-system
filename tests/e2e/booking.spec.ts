@@ -147,6 +147,28 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
   expect(consoleProblems).toEqual([])
 })
 
+test("booking date picker closes when reselecting the selected day", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop booking date-picker regression")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await page.getByRole("button", { name: "New booking" }).click()
+  await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
+
+  await page.getByRole("button", { name: /^Starts date/ }).click()
+  const selectedDay = page.getByRole("gridcell", { selected: true }).getByRole("button")
+  await expect(selectedDay).toBeVisible()
+  await selectedDay.click()
+  await expect(page.getByRole("grid")).toBeHidden()
+
+  await page.getByRole("combobox", { name: "Type" }).click()
+  await expect(page.getByRole("option", { name: "Maintenance" })).toBeVisible()
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin can edit and delete a researcher booking from the booking sheet", async ({
   page,
 }, testInfo) => {
