@@ -34,15 +34,7 @@ describe("package scripts", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
     const preflight = packageJson.scripts?.["verify:caprover-preflight"]
 
-    expect(preflight).toBe(
-      [
-        "bun run pack:caprover",
-        "bun run verify:caprover-env",
-        "bun run verify:caprover-package",
-        "bun run verify:caprover-dns",
-        "bun run verify:caprover-host --expect absent",
-      ].join(" && "),
-    )
+    expect(preflight).toBe("bun scripts/verify-caprover-preflight.ts")
   })
 
   it("keeps the postdeploy gate on the checked-in smoke orchestrator", () => {
