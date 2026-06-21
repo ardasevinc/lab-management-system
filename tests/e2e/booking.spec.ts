@@ -147,6 +147,57 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin can edit and delete a researcher booking from the booking sheet", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop admin override flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E member owned ${Date.now()}`
+  const updatedTitle = `${bookingTitle} updated`
+  await loginAsAdmin(page)
+
+  await createBookingFromPage(page, {
+    title: bookingTitle,
+    startsAt: "2026-06-19T07:00:00.000Z",
+    endsAt: "2026-06-19T08:00:00.000Z",
+    userId: "member-local",
+  })
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+
+  const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+  await expect(booking).toBeVisible()
+  const createdBooking = await findBookingFromPage(page, bookingTitle)
+  expect(createdBooking).toEqual(expect.objectContaining({ userId: "member-local" }))
+
+  await booking.click()
+  await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+  await expect(page.getByRole("combobox", { name: "Owner" })).toContainText("MIRALAB Member")
+
+  const updateReason = "E2E reason: admin corrected member booking"
+  await page.getByLabel("Title").fill(updatedTitle)
+  await page.getByLabel("Admin reason").fill(updateReason)
+  await page.getByRole("button", { name: "Save" }).click()
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByRole("button", { name: new RegExp(updatedTitle) })).toBeVisible()
+  await expectAuditReasonFromPage(page, createdBooking.id, "updated", updateReason)
+
+  const updatedBooking = page.getByRole("button", { name: new RegExp(updatedTitle) })
+  await updatedBooking.click()
+  await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+
+  const deleteReason = "E2E reason: admin cleanup member booking"
+  await page.getByLabel("Admin reason").fill(deleteReason)
+  await page.getByRole("button", { name: "Delete" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Delete booking?" })).toBeVisible()
+  await page.getByRole("button", { name: "Delete booking" }).click()
+  await expect(updatedBooking).toBeHidden()
+  await expectAuditReasonFromPage(page, createdBooking.id, "deleted", deleteReason)
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin can create a maintenance block from the maintenance route", async ({
   page,
 }, testInfo) => {
@@ -502,7 +553,7 @@ async function loginAs(page: Page, email: string, expectedUrl: RegExp) {
 
 async function createBookingFromPage(
   page: Page,
-  booking: { title: string; startsAt: string; endsAt: string },
+  booking: { title: string; startsAt: string; endsAt: string; userId?: string },
 ) {
   await page.evaluate(async (value) => {
     const token = window.localStorage.getItem("lab_session_token")
@@ -517,6 +568,7 @@ async function createBookingFromPage(
         title: value.title,
         startsAt: value.startsAt,
         endsAt: value.endsAt,
+        userId: value.userId,
       }),
     })
 
