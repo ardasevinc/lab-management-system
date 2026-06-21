@@ -101,7 +101,7 @@ export function AdminOverviewPage() {
                 {selectedMachine?.active ? "available" : "inactive"}
               </Badge>
             </div>
-            <p className="mt-1 line-clamp-1 text-muted-foreground text-sm">
+            <p className="mt-1 line-clamp-2 text-muted-foreground text-sm leading-5 sm:line-clamp-1">
               {selectedMachine?.description ?? "Select a machine before bookings open."}
             </p>
           </div>
@@ -446,12 +446,12 @@ function SummaryPanel({
       data-admin-summary-panel={label.toLowerCase()}
     >
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="text-muted-foreground text-xs">{label}</div>
-          <div className="font-semibold text-xl tabular-nums">{value}</div>
-          <div className="text-muted-foreground text-xs">{detail}</div>
+          <div className="truncate font-semibold text-xl tabular-nums">{value}</div>
+          <div className="line-clamp-2 text-muted-foreground text-xs leading-4">{detail}</div>
         </div>
-        <div className="grid size-8 place-items-center rounded-md bg-muted text-muted-foreground">
+        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
           <Icon aria-hidden="true" />
         </div>
       </div>
