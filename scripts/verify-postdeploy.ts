@@ -89,9 +89,6 @@ export function parseArgs(args: string[], env: Record<string, string | undefined
 
 export function postdeployCommands(options: PostdeployOptions) {
   return [
-    ["bun", "scripts/verify-deployed-smoke.ts", options.origin],
-    ["bun", "scripts/verify-deployed-auth-smoke.ts", options.origin, options.email],
-    ["bun", "scripts/verify-deployed-reminder-smoke.ts", options.origin, options.email],
     [
       "bun",
       "scripts/verify-caprover-host.ts",
@@ -102,6 +99,9 @@ export function postdeployCommands(options: PostdeployOptions) {
       "--expect",
       "running",
     ],
+    ["bun", "scripts/verify-deployed-smoke.ts", options.origin],
+    ["bun", "scripts/verify-deployed-auth-smoke.ts", options.origin, options.email],
+    ["bun", "scripts/verify-deployed-reminder-smoke.ts", options.origin, options.email],
   ]
 }
 
@@ -162,10 +162,10 @@ function printUsage() {
   console.log(`Usage: bun scripts/verify-postdeploy.ts <https://app.example.com> <invited-email> [--host meruem] [--app miralab-lms]
 
 Runs the full postdeploy smoke sequence:
+- CapRover host running/container-cardinality check
 - unauthenticated deployed-origin smoke
 - authenticated booking CRUD smoke
-- start and ending-soon reminder smoke
-- CapRover host running/container-cardinality check`)
+- start and ending-soon reminder smoke`)
 }
 
 function errorMessage(error: unknown) {

@@ -12,6 +12,16 @@ describe("postdeploy verifier", () => {
       origin: "https://lms.miralab.tr",
     })
     expect(postdeployCommands(options)).toEqual([
+      [
+        "bun",
+        "scripts/verify-caprover-host.ts",
+        "--host",
+        "meruem",
+        "--app",
+        "miralab-lms",
+        "--expect",
+        "running",
+      ],
       ["bun", "scripts/verify-deployed-smoke.ts", "https://lms.miralab.tr"],
       [
         "bun",
@@ -24,16 +34,6 @@ describe("postdeploy verifier", () => {
         "scripts/verify-deployed-reminder-smoke.ts",
         "https://lms.miralab.tr",
         "admin@miralab.tr",
-      ],
-      [
-        "bun",
-        "scripts/verify-caprover-host.ts",
-        "--host",
-        "meruem",
-        "--app",
-        "miralab-lms",
-        "--expect",
-        "running",
       ],
     ])
   })
