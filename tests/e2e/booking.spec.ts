@@ -169,6 +169,36 @@ test("booking date picker closes when reselecting the selected day", async ({ pa
   expect(consoleProblems).toEqual([])
 })
 
+test("booking sheet overlays stay inside responsive viewports", async ({ page }, testInfo) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await openNewBookingSheet(page, testInfo.project.name)
+
+  const bookingSheet = page.getByRole("dialog", { name: "New booking" })
+  await expect(bookingSheet).toBeVisible()
+  await expectElementFullyWithinViewport(page, bookingSheet)
+
+  await bookingSheet.getByRole("combobox", { name: "Type" }).click()
+  await expect(page.getByRole("option", { name: "Maintenance" })).toBeVisible()
+  await expectElementFullyWithinViewport(page, page.getByRole("listbox"))
+  await page.keyboard.press("Escape")
+
+  await bookingSheet.getByRole("combobox", { name: "Owner" }).click()
+  await expect(page.getByRole("option", { name: /MIRALAB Member/ })).toBeVisible()
+  await expectElementFullyWithinViewport(page, page.getByRole("listbox"))
+  await page.keyboard.press("Escape")
+
+  await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
+  const dateGrid = page.getByRole("grid")
+  await expect(dateGrid).toBeVisible()
+  await expectElementFullyWithinViewport(page, dateGrid)
+
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin can edit and delete a researcher booking from the booking sheet", async ({
   page,
 }, testInfo) => {
@@ -915,8 +945,38 @@ async function expectElementWithinViewport(page: Page, locator: Locator) {
     .toBe(true)
 }
 
+async function expectElementFullyWithinViewport(page: Page, locator: Locator) {
+  await expect(locator).toBeVisible()
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox()
+      const viewport = page.viewportSize()
+
+      if (!box || !viewport) {
+        return false
+      }
+
+      return (
+        box.x >= 0 &&
+        box.y >= 0 &&
+        box.x + box.width <= viewport.width &&
+        box.y + box.height <= viewport.height
+      )
+    })
+    .toBe(true)
+}
+
 async function expectRouteContentWithinViewport(page: Page) {
   await expectElementWithinViewport(page, page.locator("main").last())
+}
+
+async function openNewBookingSheet(page: Page, projectName: string) {
+  if (isDesktopProject(projectName)) {
+    await page.getByRole("button", { name: "New booking" }).click()
+    return
+  }
+
+  await page.getByRole("button", { name: "Book" }).click()
 }
 
 async function expectMemberNavigation(scope: Page | Locator) {
