@@ -51,7 +51,37 @@ describe("CapRover env verifier", () => {
         env: { ...process.env, NODE_ENV: "test" },
         stdio: "pipe",
       }),
-    ).toThrow("BACKUP_DATABASE_PATH must match DATABASE_URL")
+    ).toThrow("BACKUP_DATABASE_PATH must be /app/data/lab.sqlite")
+  })
+
+  it("pins the web dist path to the Docker runtime layout", () => {
+    const envPath = copyTemplate("bad-web-dist.env")
+    replaceInFile(envPath, "WEB_DIST_DIR=/app/apps/web/dist", "WEB_DIST_DIR=/app/web/dist")
+
+    expect(() =>
+      execFileSync("bun", ["scripts/verify-caprover-env.ts", envPath], {
+        encoding: "utf8",
+        env: { ...process.env, NODE_ENV: "test" },
+        stdio: "pipe",
+      }),
+    ).toThrow("WEB_DIST_DIR must be /app/apps/web/dist")
+  })
+
+  it("pins reminder worker timing to the production smoke baseline", () => {
+    const envPath = copyTemplate("bad-reminder.env")
+    replaceInFile(
+      envPath,
+      "NOTIFICATION_WORKER_INTERVAL_SECONDS=60",
+      "NOTIFICATION_WORKER_INTERVAL_SECONDS=600",
+    )
+
+    expect(() =>
+      execFileSync("bun", ["scripts/verify-caprover-env.ts", envPath], {
+        encoding: "utf8",
+        env: { ...process.env, NODE_ENV: "test" },
+        stdio: "pipe",
+      }),
+    ).toThrow("NOTIFICATION_WORKER_INTERVAL_SECONDS must be 60")
   })
 })
 
