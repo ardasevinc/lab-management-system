@@ -420,6 +420,7 @@ export function AppWorkspace() {
         pending={pending}
         error={dialogError}
         auditEvents={auditQuery.data?.events}
+        auditLoading={auditQuery.isFetching}
         onOpenChange={(open) => {
           if (!open) {
             setDialogState(null)

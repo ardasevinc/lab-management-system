@@ -1,6 +1,7 @@
 import { format } from "date-fns"
 import { CalendarDays } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -22,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { AuditEvent, Booking, Machine, User } from "@/lib/api"
@@ -51,6 +53,7 @@ type BookingDialogProps = {
   pending: boolean
   error: string | null
   auditEvents?: AuditEvent[]
+  auditLoading?: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (value: BookingDialogValue) => void
   onDelete: () => void
@@ -69,6 +72,7 @@ export function BookingDialog({
   pending,
   error,
   auditEvents,
+  auditLoading = false,
   onOpenChange,
   onSubmit,
   onDelete,
@@ -118,10 +122,10 @@ export function BookingDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-5"
+        className="flex flex-col overflow-hidden p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-5"
       >
         <form
-          className="flex flex-col gap-5"
+          className="flex min-h-0 flex-1 flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -143,104 +147,95 @@ export function BookingDialog({
             </SheetDescription>
           </SheetHeader>
 
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="title">Title</FieldLabel>
-              <Input id="title" name="title" defaultValue={defaults.title} required />
-            </Field>
-
-            <FieldGroup className="grid gap-4">
-              <DateTimeField
-                label="Starts"
-                dateId="startsDate"
-                timeId="startsTime"
-                dateValue={startsDate}
-                timeValue={startsTime}
-                onDateChange={setStartsDate}
-                onTimeChange={setStartsTime}
-              />
-              <DateTimeField
-                label="Ends"
-                dateId="endsDate"
-                timeId="endsTime"
-                dateValue={endsDate}
-                timeValue={endsTime}
-                onDateChange={setEndsDate}
-                onTimeChange={setEndsTime}
-              />
-            </FieldGroup>
-
-            <Field>
-              <FieldLabel htmlFor="type">Type</FieldLabel>
-              <Select
-                name="type"
-                value={bookingType}
-                disabled={!isAdmin}
-                onValueChange={(type) => setBookingType(type as Booking["type"])}
-              >
-                <SelectTrigger id="type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-
-            {isAdmin && !isMaintenance ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-1 pr-1">
+            <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="userId">Owner</FieldLabel>
-                <Select value={ownerUserId} onValueChange={setOwnerUserId}>
-                  <SelectTrigger id="userId" className="w-full">
+                <FieldLabel htmlFor="title">Title</FieldLabel>
+                <Input id="title" name="title" defaultValue={defaults.title} required />
+              </Field>
+
+              <FieldGroup className="grid gap-4">
+                <DateTimeField
+                  label="Starts"
+                  dateId="startsDate"
+                  timeId="startsTime"
+                  dateValue={startsDate}
+                  timeValue={startsTime}
+                  onDateChange={setStartsDate}
+                  onTimeChange={setStartsTime}
+                />
+                <DateTimeField
+                  label="Ends"
+                  dateId="endsDate"
+                  timeId="endsTime"
+                  dateValue={endsDate}
+                  timeValue={endsTime}
+                  onDateChange={setEndsDate}
+                  onTimeChange={setEndsTime}
+                />
+              </FieldGroup>
+
+              <Field>
+                <FieldLabel htmlFor="type">Type</FieldLabel>
+                <Select
+                  name="type"
+                  value={bookingType}
+                  disabled={!isAdmin}
+                  onValueChange={(type) => setBookingType(type as Booking["type"])}
+                >
+                  <SelectTrigger id="type" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {ownerOptions.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {formatUserOption(user)}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               </Field>
-            ) : null}
 
-            <Field>
-              <FieldLabel htmlFor="notes">Notes</FieldLabel>
-              <Textarea id="notes" name="notes" defaultValue={defaults.notes} />
-            </Field>
+              {isAdmin && !isMaintenance ? (
+                <Field>
+                  <FieldLabel htmlFor="userId">Owner</FieldLabel>
+                  <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+                    <SelectTrigger id="userId" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {ownerOptions.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {formatUserOption(user)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              ) : null}
 
-            {isAdmin ? (
               <Field>
-                <FieldLabel htmlFor="reason">Admin reason</FieldLabel>
-                <Input id="reason" name="reason" defaultValue="" />
+                <FieldLabel htmlFor="notes">Notes</FieldLabel>
+                <Textarea id="notes" name="notes" defaultValue={defaults.notes} />
               </Field>
+
+              {isAdmin ? (
+                <Field>
+                  <FieldLabel htmlFor="reason">Admin reason</FieldLabel>
+                  <Input id="reason" name="reason" defaultValue="" />
+                </Field>
+              ) : null}
+
+              {error ? <FieldError>{error}</FieldError> : null}
+            </FieldGroup>
+
+            {isAdmin && mode === "edit" ? (
+              <AuditHistory events={auditEvents} loading={auditLoading} users={ownerOptions} />
             ) : null}
+          </div>
 
-            {error ? <FieldError>{error}</FieldError> : null}
-          </FieldGroup>
-
-          {auditEvents?.length ? (
-            <div className="rounded-md border border-border bg-muted/30 p-3">
-              <div className="mb-2 font-medium text-sm">Audit history</div>
-              <div className="grid gap-2">
-                {auditEvents.map((event) => (
-                  <div key={event.id} className="text-muted-foreground text-xs">
-                    <span className="font-medium text-foreground">{event.eventType}</span> by{" "}
-                    {event.actorUserId} at {formatDateTime(event.createdAt)}
-                    {event.reason ? <span> ({event.reason})</span> : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <SheetFooter className="mt-0 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
+          <SheetFooter className="-mx-4 mt-0 shrink-0 border-border border-t bg-background px-4 pt-3 sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             {mode === "edit" ? (
               <Button type="button" variant="destructive" disabled={pending} onClick={onDelete}>
                 Delete
@@ -261,6 +256,83 @@ export function BookingDialog({
       </SheetContent>
     </Sheet>
   )
+}
+
+function AuditHistory({
+  events,
+  loading,
+  users,
+}: {
+  events?: AuditEvent[]
+  loading: boolean
+  users: User[]
+}) {
+  return (
+    <section
+      aria-labelledby="booking-audit-history-title"
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted/30 p-3"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h3 id="booking-audit-history-title" className="font-medium text-sm">
+          Audit history
+        </h3>
+        {loading ? (
+          <Badge variant="secondary">Loading</Badge>
+        ) : (
+          <Badge variant="outline">{events?.length ?? 0}</Badge>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+      ) : events?.length ? (
+        <ol className="flex flex-col gap-2">
+          {events.map((event) => (
+            <li key={event.id} className="flex flex-col gap-1 rounded-md bg-background px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{formatAuditAction(event.eventType)}</Badge>
+                <span className="font-medium text-sm">
+                  {formatAuditActor(event.actorUserId, users)}
+                </span>
+              </div>
+              <div className="text-muted-foreground text-xs">{formatDateTime(event.createdAt)}</div>
+              {event.reason ? (
+                <div className="text-muted-foreground text-xs">Reason: {event.reason}</div>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-muted-foreground text-sm">No audit events yet.</p>
+      )}
+    </section>
+  )
+}
+
+function formatAuditAction(eventType: AuditEvent["eventType"]) {
+  switch (eventType) {
+    case "created":
+      return "Created"
+    case "updated":
+      return "Updated"
+    case "deleted":
+      return "Deleted"
+    case "admin_override":
+      return "Admin override"
+  }
+}
+
+function formatAuditActor(actorUserId: string, users: User[]) {
+  const user = users.find((candidate) => candidate.id === actorUserId)
+
+  if (user) {
+    return `${user.name} · ${user.email}`
+  }
+
+  return `Unknown user · ${actorUserId}`
 }
 
 function getOwnerOptions(users: User[], currentUser: User, selectedUserId?: string) {
