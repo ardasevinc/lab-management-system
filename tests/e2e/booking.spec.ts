@@ -212,6 +212,41 @@ test("admin user disable requires confirmation", async ({ page }, testInfo) => {
   expect(consoleProblems).toEqual([])
 })
 
+test("admin user role changes require confirmation", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop user-admin flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+  await setUserRoleFromPage(page, "member-local", "member")
+
+  await page.goto("/admin/users")
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+
+  const memberRow = page.locator("tbody tr").filter({ hasText: "member@miralab.tr" })
+  const roleSelect = memberRow.getByRole("combobox")
+  await expect(memberRow).toBeVisible()
+  await expect(roleSelect).toHaveText("Member")
+
+  await roleSelect.click()
+  await page.getByRole("option", { name: "Admin" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Change role?" })).toBeVisible()
+  await page.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Change role?" })).toBeHidden()
+  await expect(roleSelect).toHaveText("Member")
+
+  await roleSelect.click()
+  await page.getByRole("option", { name: "Admin" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Change role?" })).toBeVisible()
+  await page.getByRole("button", { name: "Change role" }).click()
+  await expect(roleSelect).toHaveText("Admin")
+
+  await roleSelect.click()
+  await page.getByRole("option", { name: "Member" }).click()
+  await page.getByRole("button", { name: "Change role" }).click()
+  await expect(roleSelect).toHaveText("Member")
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin machine deletion requires confirmation", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop machine-admin flow")
 
@@ -522,6 +557,27 @@ async function setUserActiveFromPage(page: Page, id: string, active: boolean) {
       }
     },
     { userId: id, nextActive: active },
+  )
+}
+
+async function setUserRoleFromPage(page: Page, id: string, role: "admin" | "member") {
+  await page.evaluate(
+    async ({ userId, nextRole }) => {
+      const token = window.localStorage.getItem("lab_session_token")
+      const response = await window.fetch(`/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ role: nextRole }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update user role: ${response.status} ${await response.text()}`)
+      }
+    },
+    { userId: id, nextRole: role },
   )
 }
 

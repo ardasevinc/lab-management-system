@@ -446,23 +446,60 @@ function UserRoleSelect({
   onChange: (role: User["role"]) => void
 }) {
   const isSelf = user.id === currentUserId
+  const [pendingRole, setPendingRole] = useState<User["role"] | null>(null)
+  const nextRoleLabel = pendingRole === "admin" ? "Admin" : "Member"
+  const nextRoleArticle = pendingRole === "admin" ? "an" : "a"
 
   return (
-    <Select
-      value={user.role}
-      disabled={isSelf || pending}
-      onValueChange={(role) => onChange(role as User["role"])}
-    >
-      <SelectTrigger className="h-8 w-[116px] capitalize">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectItem value="member">Member</SelectItem>
-          <SelectItem value="admin">Admin</SelectItem>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+    <>
+      <Select
+        value={user.role}
+        disabled={isSelf || pending}
+        onValueChange={(role) => {
+          const nextRole = role as User["role"]
+          if (nextRole !== user.role) {
+            setPendingRole(nextRole)
+          }
+        }}
+      >
+        <SelectTrigger className="h-8 w-[116px] capitalize">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent position="popper">
+          <SelectGroup>
+            <SelectItem value="member">Member</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+      <AlertDialog
+        open={pendingRole !== null}
+        onOpenChange={(open) => !open && setPendingRole(null)}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change role?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will make {user.name} {nextRoleArticle} {nextRoleLabel.toLowerCase()}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={pending || pendingRole === null}
+              onClick={() => {
+                if (pendingRole) {
+                  onChange(pendingRole)
+                  setPendingRole(null)
+                }
+              }}
+            >
+              Change role
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
