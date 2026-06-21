@@ -32,8 +32,10 @@ export function AdminOverviewPage() {
   )
   const secondarySpecs = selectedMachine?.specs.slice(1).join(", ")
   const machineAvailability = selectedMachine?.active ? "Accepting bookings" : "Inactive"
-  const accessValue = selectedMachine?.accessNotes ? "Notes set" : "No notes"
-  const accessDetail = selectedMachine?.accessNotes || "Add access notes from Machines."
+  const accessValue = selectedMachine?.accessNotes || "Not configured"
+  const accessDetail = selectedMachine?.accessNotes
+    ? "Shown only to admins"
+    : "Remote access can be shared directly."
 
   return (
     <AdminPageFrame
@@ -176,7 +178,7 @@ export function AdminOverviewPage() {
               value={selectedMachine?.specs[0] ?? "No primary spec"}
               detail={secondarySpecs || machineAvailability}
             />
-            <OverviewDetailRow label="Access" value={accessValue} detail={accessDetail} />
+            <OverviewDetailRow label="Access notes" value={accessValue} detail={accessDetail} />
           </div>
         </div>
       </section>
