@@ -481,19 +481,42 @@ function UserAccessButton({
 }) {
   const isSelf = user.id === currentUserId
   const Icon = user.active ? Power : RotateCcw
-
-  return (
+  const button = (
     <Button
       type="button"
       variant="outline"
       size="sm"
       className={className}
       disabled={isSelf || pending}
-      onClick={onToggle}
+      onClick={user.active ? undefined : onToggle}
     >
       <Icon data-icon="inline-start" aria-hidden="true" />
       {pending ? "Saving" : user.active ? "Disable" : "Reactivate"}
     </Button>
+  )
+
+  if (!user.active) {
+    return button
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{button}</AlertDialogTrigger>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Disable user?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This signs {user.name} out and blocks future login until an admin reactivates access.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={pending} onClick={onToggle}>
+            Disable user
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 

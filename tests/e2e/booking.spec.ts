@@ -162,6 +162,43 @@ test("admin can create a maintenance block from the maintenance route", async ({
   expect(consoleProblems).toEqual([])
 })
 
+test("admin user disable requires confirmation", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop user-admin flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+  await setUserActiveFromPage(page, "member-local", true)
+
+  await page.goto("/admin/users")
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+
+  const memberRow = page.locator("tbody tr").filter({ hasText: "member@miralab.tr" })
+  const memberStatus = memberRow.locator("td").nth(3)
+  await expect(memberRow).toBeVisible()
+  const reactivateButton = memberRow.getByRole("button", { name: "Reactivate" })
+
+  if (await reactivateButton.isVisible()) {
+    await reactivateButton.click()
+  }
+
+  await expect(memberStatus).toHaveText("active")
+
+  await memberRow.getByRole("button", { name: "Disable" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Disable user?" })).toBeVisible()
+  await page.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Disable user?" })).toBeHidden()
+  await expect(memberStatus).toHaveText("active")
+
+  await memberRow.getByRole("button", { name: "Disable" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Disable user?" })).toBeVisible()
+  await page.getByRole("button", { name: "Disable user" }).click()
+  await expect(memberStatus).toHaveText("disabled")
+
+  await memberRow.getByRole("button", { name: "Reactivate" }).click()
+  await expect(memberStatus).toHaveText("active")
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin machine deletion requires confirmation", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop machine-admin flow")
 
@@ -452,6 +489,27 @@ async function deleteBookingFromPage(page: Page, id: string) {
       throw new Error(`Failed to delete booking: ${response.status} ${await response.text()}`)
     }
   }, id)
+}
+
+async function setUserActiveFromPage(page: Page, id: string, active: boolean) {
+  await page.evaluate(
+    async ({ userId, nextActive }) => {
+      const token = window.localStorage.getItem("lab_session_token")
+      const response = await window.fetch(`/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ active: nextActive }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update user access: ${response.status} ${await response.text()}`)
+      }
+    },
+    { userId: id, nextActive: active },
+  )
 }
 
 async function expectAuditReasonFromPage(
