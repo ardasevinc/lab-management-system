@@ -85,9 +85,9 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-2 px-3 py-1">
-          <SidebarGroup className="gap-1.5 px-0 py-2">
-            <SidebarGroupLabel className="h-5 px-2.5 text-[0.7rem] tracking-normal">
+        <SidebarContent className="gap-2 px-3 py-1.5">
+          <SidebarGroup className="gap-1 px-0 py-1.5">
+            <SidebarGroupLabel className="h-5 px-2 text-[0.68rem] tracking-normal">
               Workspace
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -111,8 +111,8 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           {isAdmin ? (
             <>
               <SidebarSeparator className="my-1.5" />
-              <SidebarGroup className="gap-1.5 px-0 py-2">
-                <SidebarGroupLabel className="h-5 px-2.5 text-[0.7rem] tracking-normal">
+              <SidebarGroup className="gap-1 px-0 py-1.5">
+                <SidebarGroupLabel className="h-5 px-2 text-[0.68rem] tracking-normal">
                   Admin
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -269,7 +269,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-9 rounded-lg px-2.5 font-normal text-[0.875rem] text-sidebar-foreground/78 transition-[background-color,color,box-shadow] hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent/85 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_0_0_0_1px_var(--sidebar-border)] [&_svg]:text-sidebar-foreground/64 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-sidebar-accent-foreground"
+        className="h-8 rounded-md px-2 font-normal text-[0.84rem] text-sidebar-foreground/74 transition-[background-color,color,box-shadow] hover:bg-sidebar-accent/45 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent/62 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_2px_0_0_var(--primary)] [&_svg]:text-sidebar-foreground/58 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-sidebar-accent-foreground"
       >
         <Link
           to={to}
@@ -280,7 +280,7 @@ function NavItem({
           }}
         >
           <Icon aria-hidden="true" />
-          <span>{label}</span>
+          <span className="truncate">{label}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -289,8 +289,8 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
-  const { isMobile } = useSidebar()
-  const menuSide = isMobile ? "top" : "right"
+  const { isMobile, state } = useSidebar()
+  const menuSide = isMobile || state === "expanded" ? "top" : "right"
   const displayName = user.name || user.email
   const roleLabel = user.role === "admin" ? "Admin" : "Member"
 
@@ -301,7 +301,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-10 rounded-lg px-2 text-sidebar-foreground/88 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent/85 data-[state=open]:text-sidebar-accent-foreground"
+              className="h-10 rounded-md px-2 text-sidebar-foreground/86 transition-[background-color,color] hover:bg-sidebar-accent/45 hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent/62 data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar size="sm">
                 <AvatarFallback>{initials}</AvatarFallback>
@@ -309,7 +309,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
               <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-medium text-sm leading-5">{displayName}</span>
                 <span className="truncate text-muted-foreground text-xs leading-4">
-                  {roleLabel}
+                  {user.email}
                 </span>
               </div>
               <ChevronsUpDown
@@ -324,11 +324,11 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={8}
-        className="w-72 max-w-[calc(100vw-1.5rem)] rounded-xl p-1.5"
+        className="w-[--radix-dropdown-menu-trigger-width] min-w-64 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex min-w-0 items-center gap-2.5 rounded-lg px-2 py-2">
+            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
               <Avatar size="default">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
