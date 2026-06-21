@@ -1,4 +1,4 @@
-import { useWorkspace } from "@/components/app-workspace"
+import { useWorkspace } from "@/components/app-workspace-context"
 import { MachineInventory } from "@/components/machine-inventory"
 
 export function MachinesPage() {

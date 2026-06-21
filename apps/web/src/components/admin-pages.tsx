@@ -17,7 +17,7 @@ import {
   type MachineCreateValue,
   type MachineUpdateValue,
   useWorkspace,
-} from "@/components/app-workspace"
+} from "@/components/app-workspace-context"
 import { MachineInventory } from "@/components/machine-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

@@ -13,7 +13,7 @@ import {
   Wrench,
   X,
 } from "lucide-react"
-import { useWorkspace } from "@/components/app-workspace"
+import { useWorkspace } from "@/components/app-workspace-context"
 import { BrandMark } from "@/components/brand-mark"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"

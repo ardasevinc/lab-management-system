@@ -1,7 +1,7 @@
 import { addDays, format, isSameDay, isSameWeek, startOfWeek } from "date-fns"
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MonitorCog } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useWorkspace } from "@/components/app-workspace"
+import { useWorkspace } from "@/components/app-workspace-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
