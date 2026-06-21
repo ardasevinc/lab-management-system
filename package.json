@@ -20,6 +20,7 @@
     "verify:deployed-smoke": "bun scripts/verify-deployed-smoke.ts",
     "verify:docker-build": "sh scripts/verify-docker-build.sh",
     "verify:docker-runtime": "sh scripts/verify-docker-runtime.sh",
+    "verify:predeploy": "bun run verify:caprover-env && bun run verify:docker-runtime && bun run check && bun run build",
     "check": "bun run lint && bun run typecheck && bun run test",
     "full-gate": "bun run check && bun run build",
     "lint": "biome check .",
