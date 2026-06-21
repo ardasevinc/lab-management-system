@@ -324,31 +324,34 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={8}
-        className="w-[--radix-dropdown-menu-trigger-width] min-w-64 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
+        className="w-60 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
-              <Avatar size="default">
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <div className="grid min-w-0 flex-1 gap-0.5 text-left">
-                <div className="flex min-w-0 items-center gap-2">
+            <div className="grid min-w-0 gap-1 rounded-md px-2 py-2">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar size="sm">
+                  <AvatarFallback>{initials}</AvatarFallback>
+                </Avatar>
+                <div className="grid min-w-0 flex-1 gap-0.5 text-left">
                   <span className="truncate font-medium text-sm text-popover-foreground">
                     {displayName}
                   </span>
+                  <span className="truncate text-muted-foreground text-xs">{user.email}</span>
                 </div>
-                <span className="truncate text-muted-foreground text-xs">{user.email}</span>
               </div>
-              <Badge variant="secondary" className="shrink-0 capitalize">
-                {roleLabel}
-              </Badge>
+              <div className="flex items-center justify-between gap-2 pl-8 text-muted-foreground text-xs">
+                <span>Role</span>
+                <Badge variant="secondary" className="h-5 shrink-0 capitalize">
+                  {roleLabel}
+                </Badge>
+              </div>
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onSelect={onLogout} variant="destructive" className="h-9 rounded-lg">
+          <DropdownMenuItem onSelect={onLogout} variant="destructive" className="h-8 rounded-md">
             <LogOut data-icon="inline-start" aria-hidden="true" />
             Log out
           </DropdownMenuItem>

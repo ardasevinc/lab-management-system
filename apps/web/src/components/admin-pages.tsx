@@ -30,15 +30,14 @@ export function AdminOverviewPage() {
     left.startsAt.localeCompare(right.startsAt),
   )
   const secondarySpecs = selectedMachine?.specs.slice(1).join(", ")
-  const machineAvailability = selectedMachine?.active ? "Active for reservations" : "Inactive"
-  const accessDetail = selectedMachine?.accessNotes
-    ? "Visible to admins only"
-    : "No private access notes saved"
+  const machineAvailability = selectedMachine?.active ? "Accepting bookings" : "Inactive"
+  const accessValue = selectedMachine?.accessNotes ? "Configured" : "Not configured"
+  const accessDetail = selectedMachine?.accessNotes ? "Admin-only access notes" : "No access notes"
 
   return (
     <AdminPageFrame
       title="Admin overview"
-      description="Selected machine"
+      description={selectedMachine?.name ?? "Operations"}
       action={
         <div className="flex items-center gap-2">
           <Button type="button" onClick={workspace.openNewBooking}>
@@ -173,11 +172,7 @@ export function AdminOverviewPage() {
               value={selectedMachine?.specs[0] ?? "No primary spec"}
               detail={secondarySpecs || machineAvailability}
             />
-            <OverviewDetailRow
-              label="Access"
-              value={selectedMachine?.accessNotes || "Not set"}
-              detail={accessDetail}
-            />
+            <OverviewDetailRow label="Access" value={accessValue} detail={accessDetail} />
           </div>
         </div>
       </section>
