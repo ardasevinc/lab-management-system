@@ -507,6 +507,56 @@ test("researchers can create and delete a booking from the responsive day agenda
   expect(consoleProblems).toEqual([])
 })
 
+test("admin responsive shell keeps navigation and account menu usable", async ({
+  page,
+}, testInfo) => {
+  test.skip(isDesktopProject(testInfo.project.name), "responsive shell flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+
+  if (testInfo.project.name === "mobile-chromium") {
+    await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    const sidebar = page.getByRole("dialog", { name: "Sidebar" })
+    await expect(sidebar).toBeVisible()
+    await expect(sidebar.getByRole("link", { name: "Schedule" })).toBeVisible()
+    await expect(sidebar.getByRole("link", { name: "Machines" })).toHaveCount(2)
+    await expect(sidebar.getByRole("link", { name: "Users" })).toBeVisible()
+
+    await sidebar.getByRole("link", { name: "Users" }).click()
+    await expect(page).toHaveURL(/\/admin\/users$/)
+    await expect(sidebar).toBeHidden()
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+
+    await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    await expect(sidebar).toBeVisible()
+    await sidebar.getByRole("button").filter({ hasText: "MIRALAB Admin" }).click()
+  } else {
+    await expect(page.getByRole("link", { name: "Schedule" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Machines" })).toHaveCount(2)
+    await expect(page.getByRole("link", { name: "Users" })).toBeVisible()
+
+    await page.getByRole("link", { name: "Users" }).click()
+    await expect(page).toHaveURL(/\/admin\/users$/)
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+
+    await page.getByRole("button").filter({ hasText: "MIRALAB Admin" }).click()
+  }
+
+  const accountMenu = page.getByRole("menu")
+  await expect(accountMenu).toBeVisible()
+  await expect(accountMenu.getByText("MIRALAB Admin")).toBeVisible()
+  await expect(accountMenu.getByText("admin@miralab.tr")).toBeVisible()
+  await expect(accountMenu.getByText("Admin", { exact: true })).toBeVisible()
+  await expect(accountMenu.getByRole("menuitem", { name: "Log out" })).toBeVisible()
+  await expectElementWithinViewport(page, accountMenu)
+
+  expect(consoleProblems).toEqual([])
+})
+
 function isDesktopProject(projectName: string) {
   return projectName === "chromium"
 }
