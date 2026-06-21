@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,34 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { User } from "@/lib/api"
-
-export type UserStats = {
-  total: number
-  active: number
-  admins: number
-  members: number
-  disabled: number
-}
-
-export function getUserStats(users: User[]): UserStats {
-  return users.reduce<UserStats>(
-    (stats, user) => {
-      stats.total += 1
-      if (user.active) {
-        stats.active += 1
-      } else {
-        stats.disabled += 1
-      }
-      if (user.role === "admin") {
-        stats.admins += 1
-      } else {
-        stats.members += 1
-      }
-      return stats
-    },
-    { total: 0, active: 0, admins: 0, members: 0, disabled: 0 },
-  )
-}
+import type { UserStats } from "@/lib/user-stats"
 
 export function UserStatsStrip({ stats }: { stats: UserStats }) {
   const items = [
@@ -74,6 +48,22 @@ export function UserStatsStrip({ stats }: { stats: UserStats }) {
 
 export function UserStatusBadge({ active }: { active: boolean }) {
   return <Badge variant={active ? "secondary" : "outline"}>{active ? "active" : "disabled"}</Badge>
+}
+
+export function UserIdentity({ user, showEmail = true }: { user: User; showEmail?: boolean }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar size="sm">
+        <AvatarFallback>{userInitials(user)}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <div className="truncate font-medium text-sm">{user.name}</div>
+        {showEmail ? (
+          <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 export function UserRoleSelect({
@@ -143,6 +133,20 @@ export function UserRoleSelect({
       </AlertDialog>
     </>
   )
+}
+
+function userInitials(user: User) {
+  const source = user.name.trim() || user.email
+  const words = source
+    .split(/[\s@._-]+/)
+    .map((word) => word.trim())
+    .filter(Boolean)
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
 }
 
 export function UserAccessButton({

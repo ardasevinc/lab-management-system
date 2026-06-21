@@ -4,8 +4,8 @@ import { useState } from "react"
 import { InviteUserSheet } from "@/components/admin-invite-user-sheet"
 import { AdminPageFrame } from "@/components/admin-page-frame"
 import {
-  getUserStats,
   UserAccessButton,
+  UserIdentity,
   UserRoleSelect,
   UserStatsStrip,
   UserStatusBadge,
@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { User } from "@/lib/api"
+import { getUserStats } from "@/lib/user-stats"
 
 export function AdminUsersPage() {
   const workspace = useWorkspace()
@@ -109,27 +110,31 @@ export function AdminUsersPage() {
                 {filteredUsers.map((user) => (
                   <div key={user.id} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate font-medium text-sm">{user.name}</div>
-                        <div className="truncate text-muted-foreground text-xs">{user.email}</div>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1">
+                      <UserIdentity user={user} />
+                      <UserStatusBadge active={user.active} />
+                    </div>
+                    <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                      <div>
+                        <div className="mb-1 text-muted-foreground text-xs">Role</div>
                         <UserRoleSelect
                           user={user}
                           currentUserId={workspace.user.id}
                           pending={workspace.userAccessPendingId === user.id}
                           onChange={(role) => workspace.updateUserAccess(user, { role })}
                         />
-                        <UserStatusBadge active={user.active} />
+                      </div>
+                      <div>
+                        <div className="mb-1 text-muted-foreground text-xs">Access</div>
+                        <UserAccessButton
+                          user={user}
+                          currentUserId={workspace.user.id}
+                          pending={workspace.userAccessPendingId === user.id}
+                          onToggle={() =>
+                            workspace.updateUserAccess(user, { active: !user.active })
+                          }
+                        />
                       </div>
                     </div>
-                    <UserAccessButton
-                      className="mt-3 w-full"
-                      user={user}
-                      currentUserId={workspace.user.id}
-                      pending={workspace.userAccessPendingId === user.id}
-                      onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
-                    />
                   </div>
                 ))}
               </div>
@@ -146,7 +151,9 @@ export function AdminUsersPage() {
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>
+                        <UserIdentity user={user} showEmail={false} />
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
                         <UserRoleSelect
