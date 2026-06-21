@@ -50,6 +50,12 @@ export function SchedulePage() {
     [bookings, selectedDay],
   )
   const weekDisplayEnd = mobileDays.at(-1) ?? new Date(weekRange.end)
+  const scheduleStats = [
+    { label: "Week", value: String(dashboardStats.weekBookings) },
+    { label: "Today", value: String(dashboardStats.todayBookings) },
+    { label: "Booked", value: `${dashboardStats.weekHours}h` },
+    { label: "Service", value: String(dashboardStats.maintenanceCount) },
+  ]
 
   useEffect(() => {
     const firstVisibleDay = mobileDays[0]
@@ -68,7 +74,7 @@ export function SchedulePage() {
 
   return (
     <main className="min-w-0 p-3 sm:p-4">
-      <div className="mb-3 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+      <div className="mb-3 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="truncate font-semibold text-2xl tracking-tight">
@@ -100,11 +106,10 @@ export function SchedulePage() {
           />
         </div>
 
-        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 xl:w-[520px]">
-          <Metric label="Week" value={String(dashboardStats.weekBookings)} />
-          <Metric label="Today" value={String(dashboardStats.todayBookings)} />
-          <Metric label="Booked" value={`${dashboardStats.weekHours}h`} />
-          <Metric label="Service" value={String(dashboardStats.maintenanceCount)} />
+        <div className="flex flex-wrap items-center gap-1.5 xl:max-w-[520px] xl:justify-end">
+          {scheduleStats.map((stat) => (
+            <ScheduleStat key={stat.label} label={stat.label} value={stat.value} />
+          ))}
         </div>
       </div>
 
@@ -425,11 +430,11 @@ function safelySetPointerCapture(element: HTMLElement, pointerId: number) {
   }
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function ScheduleStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border border-border bg-card px-2 py-1.5 shadow-sm sm:px-3 sm:py-2">
-      <div className="text-muted-foreground text-xs">{label}</div>
-      <div className="font-semibold text-base tabular-nums leading-tight sm:text-lg">{value}</div>
+    <div className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 text-sm shadow-xs">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="font-medium tabular-nums">{value}</span>
     </div>
   )
 }
