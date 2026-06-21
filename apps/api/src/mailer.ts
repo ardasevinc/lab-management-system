@@ -50,10 +50,10 @@ export function createMailerFromEnv(env: Record<string, string | undefined>): Ma
   if (provider === "ses") {
     return createSesMailer({
       region: requiredEnv(env.AWS_REGION, "AWS_REGION"),
-      fromName: env.SES_FROM_NAME ?? "MIRALAB",
-      fromEmail: requiredEnv(env.SES_FROM_EMAIL, "SES_FROM_EMAIL"),
-      replyTo: emptyToUndefined(env.SES_REPLY_TO),
-      configurationSet: emptyToUndefined(env.SES_CONFIGURATION_SET),
+      fromName: mailHeaderValue(env.SES_FROM_NAME ?? "MIRALAB", "SES_FROM_NAME"),
+      fromEmail: requiredEmailEnv(env.SES_FROM_EMAIL, "SES_FROM_EMAIL"),
+      replyTo: optionalEmailEnv(env.SES_REPLY_TO, "SES_REPLY_TO"),
+      configurationSet: optionalMailHeaderValue(env.SES_CONFIGURATION_SET, "SES_CONFIGURATION_SET"),
     })
   }
 
@@ -308,13 +308,42 @@ function escapeHtml(value: string) {
 }
 
 function requiredEnv(value: string | undefined, name: string) {
-  if (!value) {
+  const normalized = value?.trim()
+  if (!normalized) {
     throw new Error(`${name} is required`)
+  }
+
+  return normalized
+}
+
+function requiredEmailEnv(value: string | undefined, name: string) {
+  return emailAddress(requiredEnv(value, name), name)
+}
+
+function optionalEmailEnv(value: string | undefined, name: string) {
+  const normalized = optionalMailHeaderValue(value, name)
+  return normalized ? emailAddress(normalized, name) : undefined
+}
+
+function optionalMailHeaderValue(value: string | undefined, name: string) {
+  const normalized = value?.trim()
+  return normalized ? mailHeaderValue(normalized, name) : undefined
+}
+
+function mailHeaderValue(value: string, name: string) {
+  if (/[\r\n]/.test(value)) {
+    throw new Error(`${name} must not contain line breaks`)
   }
 
   return value
 }
 
-function emptyToUndefined(value: string | undefined) {
-  return value?.trim() || undefined
+function emailAddress(value: string, name: string) {
+  mailHeaderValue(value, name)
+
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value)) {
+    throw new Error(`${name} must be a valid email address`)
+  }
+
+  return value
 }

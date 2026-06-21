@@ -45,6 +45,47 @@ describe("mailer env", () => {
       }),
     ).toThrow("EMAIL_PROVIDER must be one of: console, ses")
   })
+
+  it("rejects invalid SES sender addresses before startup can send mail", () => {
+    expect(() =>
+      createMailerFromEnv({
+        EMAIL_PROVIDER: "ses",
+        AWS_REGION: "eu-central-1",
+        SES_FROM_EMAIL: "no-reply",
+      }),
+    ).toThrow("SES_FROM_EMAIL must be a valid email address")
+  })
+
+  it("rejects invalid SES reply-to addresses before startup can send mail", () => {
+    expect(() =>
+      createMailerFromEnv({
+        EMAIL_PROVIDER: "ses",
+        AWS_REGION: "eu-central-1",
+        SES_FROM_EMAIL: "no-reply@miralab.tr",
+        SES_REPLY_TO: "support",
+      }),
+    ).toThrow("SES_REPLY_TO must be a valid email address")
+  })
+
+  it("rejects SES header values with line breaks", () => {
+    expect(() =>
+      createMailerFromEnv({
+        EMAIL_PROVIDER: "ses",
+        AWS_REGION: "eu-central-1",
+        SES_FROM_NAME: "MIRALAB\nBcc: someone@example.com",
+        SES_FROM_EMAIL: "no-reply@miralab.tr",
+      }),
+    ).toThrow("SES_FROM_NAME must not contain line breaks")
+
+    expect(() =>
+      createMailerFromEnv({
+        EMAIL_PROVIDER: "ses",
+        AWS_REGION: "eu-central-1",
+        SES_FROM_EMAIL: "no-reply@miralab.tr",
+        SES_CONFIGURATION_SET: "miralab-lms\r\nX-Test: nope",
+      }),
+    ).toThrow("SES_CONFIGURATION_SET must not contain line breaks")
+  })
 })
 
 describe("mailer templates", () => {
