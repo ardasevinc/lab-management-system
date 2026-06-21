@@ -85,13 +85,13 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-2 px-3 py-1.5">
-          <SidebarGroup className="gap-1 px-0 py-1.5">
-            <SidebarGroupLabel className="h-5 px-2 text-[0.68rem] tracking-normal">
+        <SidebarContent className="gap-2 px-3 py-2">
+          <SidebarGroup className="gap-1 px-0 py-1">
+            <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
               Workspace
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-1">
+              <SidebarMenu className="gap-0.5">
                 <NavItem
                   to="/schedule"
                   label="Schedule"
@@ -110,13 +110,13 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
 
           {isAdmin ? (
             <>
-              <SidebarSeparator className="my-1.5" />
-              <SidebarGroup className="gap-1 px-0 py-1.5">
-                <SidebarGroupLabel className="h-5 px-2 text-[0.68rem] tracking-normal">
+              <SidebarSeparator className="my-2" />
+              <SidebarGroup className="gap-1 px-0 py-1">
+                <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
                   Admin
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu className="gap-1">
+                  <SidebarMenu className="gap-0.5">
                     <NavItem
                       to="/admin"
                       label="Overview"
@@ -269,7 +269,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-8 rounded-md px-2 font-normal text-[0.84rem] text-sidebar-foreground/74 transition-[background-color,color,box-shadow] hover:bg-sidebar-accent/45 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent/62 data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_2px_0_0_var(--primary)] [&_svg]:text-sidebar-foreground/58 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-sidebar-accent-foreground"
+        className="h-9 rounded-lg px-2.5 font-normal text-[0.86rem] text-sidebar-foreground/72 transition-[background-color,color,box-shadow] hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground data-[active=true]:bg-background data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_2px_0_0_var(--primary),0_1px_2px_color-mix(in_oklch,var(--foreground)_10%,transparent)] [&_svg]:size-4 [&_svg]:text-sidebar-foreground/56 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
       >
         <Link
           to={to}
@@ -301,7 +301,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-10 rounded-md px-2 text-sidebar-foreground/86 transition-[background-color,color] hover:bg-sidebar-accent/45 hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent/62 data-[state=open]:text-sidebar-accent-foreground"
+              className="h-11 rounded-lg px-2 text-sidebar-foreground/86 transition-[background-color,color,box-shadow] hover:bg-background hover:text-sidebar-accent-foreground hover:shadow-sm data-[state=open]:bg-background data-[state=open]:text-sidebar-accent-foreground data-[state=open]:shadow-sm"
             >
               <Avatar size="sm">
                 <AvatarFallback>{initials}</AvatarFallback>
@@ -313,7 +313,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
                 </span>
               </div>
               <ChevronsUpDown
-                className="ml-auto group-data-[collapsible=icon]:hidden"
+                className="ml-auto size-4 group-data-[collapsible=icon]:hidden"
                 aria-hidden="true"
               />
             </SidebarMenuButton>
@@ -324,27 +324,26 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={8}
-        className="w-60 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
+        className="w-64 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="grid min-w-0 gap-1 rounded-md px-2 py-2">
+            <div className="grid min-w-0 gap-2 rounded-md px-2.5 py-2.5">
               <div className="flex min-w-0 items-center gap-2.5">
                 <Avatar size="sm">
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid min-w-0 flex-1 gap-0.5 text-left">
-                  <span className="truncate font-medium text-sm text-popover-foreground">
-                    {displayName}
-                  </span>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-medium text-sm text-popover-foreground">
+                      {displayName}
+                    </span>
+                    <Badge variant="secondary" className="h-5 shrink-0 capitalize">
+                      {roleLabel}
+                    </Badge>
+                  </div>
                   <span className="truncate text-muted-foreground text-xs">{user.email}</span>
                 </div>
-              </div>
-              <div className="flex items-center justify-between gap-2 pl-8 text-muted-foreground text-xs">
-                <span>Role</span>
-                <Badge variant="secondary" className="h-5 shrink-0 capitalize">
-                  {roleLabel}
-                </Badge>
               </div>
             </div>
           </DropdownMenuLabel>

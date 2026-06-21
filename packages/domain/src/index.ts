@@ -42,7 +42,7 @@ export const machines: Machine[] = [
     name: "tohum",
     description: "MIRALAB GPU workstation for remote AI training and research sessions.",
     specs: ["NVIDIA GPU workstation"],
-    accessNotes: "Ask an admin for access details.",
+    accessNotes: "",
     active: true,
   },
 ]
