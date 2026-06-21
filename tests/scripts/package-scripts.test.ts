@@ -6,6 +6,14 @@ type PackageJson = {
 }
 
 describe("package scripts", () => {
+  it("starts only the API and web dev servers from the root dev script", () => {
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
+    const dev = packageJson.scripts?.dev
+
+    expect(dev).toBe("bun run dev:web & bun run dev:api & wait")
+    expect(dev).not.toContain("--filter '*'")
+  })
+
   it("keeps the predeploy gate aligned with the deployment runbook", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
     const predeploy = packageJson.scripts?.["verify:predeploy"]
