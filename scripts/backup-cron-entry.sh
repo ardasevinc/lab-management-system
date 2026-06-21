@@ -36,7 +36,7 @@ database_url_q="$(quote_for_sh "$database_url")"
 backup_dir_q="$(quote_for_sh "$backup_dir")"
 retention_days_q="$(quote_for_sh "$retention_days")"
 log_path_q="$(quote_for_sh "$log_path")"
-container_lookup="container=\$(docker ps --filter $container_filter_q --format '{{.Names}}' | head -n 1) && test -n \"\$container\""
+container_lookup="containers=\$(docker ps --filter $container_filter_q --format '{{.Names}}') && test -n \"\$containers\" && test \"\$(printf '%s\\n' \"\$containers\" | wc -l | tr -d ' ')\" = 1 && container=\"\$containers\""
 backup_command="cd /app && DATABASE_URL=$database_url_q BACKUP_DIR=$backup_dir_q BACKUP_RETENTION_DAYS=$retention_days_q bun run verify:sqlite-backup"
 
 printf "%s %s && docker exec \"\$container\" sh -lc %s >> %s 2>&1\n" \
