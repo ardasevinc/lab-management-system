@@ -44,4 +44,10 @@ describe("package scripts", () => {
       ].join(" && "),
     )
   })
+
+  it("keeps the postdeploy gate on the checked-in smoke orchestrator", () => {
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
+
+    expect(packageJson.scripts?.["verify:postdeploy"]).toBe("bun scripts/verify-postdeploy.ts")
+  })
 })
