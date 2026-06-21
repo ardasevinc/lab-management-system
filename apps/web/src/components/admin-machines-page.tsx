@@ -66,6 +66,12 @@ export function AdminMachinesPage() {
         machines={workspace.machines}
         showAccessNotes
         onEditMachine={setEditingMachine}
+        emptyAction={
+          <Button type="button" onClick={() => setCreatingMachine(true)}>
+            <Plus data-icon="inline-start" aria-hidden="true" />
+            New machine
+          </Button>
+        }
       />
       <MachineEditorSheet
         mode="edit"

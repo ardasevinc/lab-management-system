@@ -1,5 +1,5 @@
 import { Navigate } from "@tanstack/react-router"
-import { MailPlus, Power, RotateCcw } from "lucide-react"
+import { MailPlus, Power, RotateCcw, UsersRound } from "lucide-react"
 import { useState } from "react"
 import { AdminPageFrame } from "@/components/admin-page-frame"
 import { useWorkspace } from "@/components/app-workspace-context"
@@ -16,6 +16,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -73,72 +81,94 @@ export function AdminUsersPage() {
             {activeUsers}/{workspace.users.length} active
           </Badge>
         </div>
-        <div className="divide-y divide-border lg:hidden">
-          {workspace.users.map((user) => (
-            <div key={user.id} className="px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="truncate font-medium text-sm">{user.name}</div>
-                  <div className="truncate text-muted-foreground text-xs">{user.email}</div>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <UserRoleSelect
-                    user={user}
-                    currentUserId={workspace.user.id}
-                    pending={workspace.userAccessPendingId === user.id}
-                    onChange={(role) => workspace.updateUserAccess(user, { role })}
-                  />
-                  <UserStatusBadge active={user.active} />
-                </div>
-              </div>
-              <UserAccessButton
-                className="mt-3 w-full"
-                user={user}
-                currentUserId={workspace.user.id}
-                pending={workspace.userAccessPendingId === user.id}
-                onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
-              />
-            </div>
-          ))}
-        </div>
-        <Table className="hidden lg:table">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="w-28">Role</TableHead>
-              <TableHead className="w-28">Status</TableHead>
-              <TableHead className="w-36 text-right">Access</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {workspace.users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell>
-                  <UserRoleSelect
-                    user={user}
-                    currentUserId={workspace.user.id}
-                    pending={workspace.userAccessPendingId === user.id}
-                    onChange={(role) => workspace.updateUserAccess(user, { role })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <UserStatusBadge active={user.active} />
-                </TableCell>
-                <TableCell className="text-right">
+        {workspace.users.length ? (
+          <>
+            <div className="divide-y divide-border lg:hidden">
+              {workspace.users.map((user) => (
+                <div key={user.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-sm">{user.name}</div>
+                      <div className="truncate text-muted-foreground text-xs">{user.email}</div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <UserRoleSelect
+                        user={user}
+                        currentUserId={workspace.user.id}
+                        pending={workspace.userAccessPendingId === user.id}
+                        onChange={(role) => workspace.updateUserAccess(user, { role })}
+                      />
+                      <UserStatusBadge active={user.active} />
+                    </div>
+                  </div>
                   <UserAccessButton
+                    className="mt-3 w-full"
                     user={user}
                     currentUserId={workspace.user.id}
                     pending={workspace.userAccessPendingId === user.id}
                     onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
                   />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+              ))}
+            </div>
+            <Table className="hidden lg:table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="w-28">Role</TableHead>
+                  <TableHead className="w-28">Status</TableHead>
+                  <TableHead className="w-36 text-right">Access</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workspace.users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableCell>
+                      <UserRoleSelect
+                        user={user}
+                        currentUserId={workspace.user.id}
+                        pending={workspace.userAccessPendingId === user.id}
+                        onChange={(role) => workspace.updateUserAccess(user, { role })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <UserStatusBadge active={user.active} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <UserAccessButton
+                        user={user}
+                        currentUserId={workspace.user.id}
+                        pending={workspace.userAccessPendingId === user.id}
+                        onToggle={() => workspace.updateUserAccess(user, { active: !user.active })}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        ) : (
+          <Empty className="min-h-64">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <UsersRound aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>No members yet</EmptyTitle>
+              <EmptyDescription>
+                Invite the first researcher before opening bookings.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" onClick={() => setInviteOpen(true)}>
+                <MailPlus data-icon="inline-start" aria-hidden="true" />
+                Invite user
+              </Button>
+            </EmptyContent>
+          </Empty>
+        )}
       </section>
       <InviteUserSheet
         open={inviteOpen}

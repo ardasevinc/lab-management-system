@@ -750,6 +750,53 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   expect(consoleProblems).toEqual([])
 })
 
+test("admin empty states expose primary recovery actions", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop admin empty-state flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await page.route("**/admin/users", async (route) => {
+    if (route.request().resourceType() !== "fetch") {
+      await route.continue()
+      return
+    }
+
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ users: [] }),
+    })
+  })
+
+  await loginAsAdmin(page)
+  await page.goto("/admin/users")
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+  await expect(page.getByText("No members yet")).toBeVisible()
+  await page.getByRole("button", { name: "Invite user" }).last().click()
+  await expect(page.getByRole("dialog", { name: "Invite user" })).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(page.getByRole("dialog", { name: "Invite user" })).toBeHidden()
+
+  await page.unroute("**/admin/users")
+  await page.route("**/machines", async (route) => {
+    if (route.request().resourceType() !== "fetch") {
+      await route.continue()
+      return
+    }
+
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ machines: [] }),
+    })
+  })
+  await page.reload()
+  await page.goto("/admin/machines")
+  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+  await expect(page.getByText("No machines configured")).toBeVisible()
+  await page.getByRole("button", { name: "New machine" }).last().click()
+  await expect(page.getByRole("dialog", { name: "New machine" })).toBeVisible()
+
+  expect(consoleProblems).toEqual([])
+})
+
 function isDesktopProject(projectName: string) {
   return projectName === "chromium"
 }

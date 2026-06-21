@@ -4,7 +4,14 @@ import { AdminPageFrame } from "@/components/admin-page-frame"
 import { useWorkspace } from "@/components/app-workspace-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import {
   Table,
   TableBody,
@@ -146,6 +153,9 @@ export function AdminOverviewPage() {
             <Empty className="items-start justify-start p-4 text-left">
               <EmptyHeader className="items-start text-left">
                 <EmptyTitle>No reservations this week</EmptyTitle>
+                <EmptyDescription>
+                  {selectedMachine?.name ?? "The selected machine"} is open for new bookings.
+                </EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
@@ -246,10 +256,22 @@ export function AdminMaintenancePage() {
             </Table>
           </>
         ) : (
-          <Empty className="items-start justify-start p-4 text-left">
-            <EmptyHeader className="items-start text-left">
+          <Empty className="min-h-64">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Wrench aria-hidden="true" />
+              </EmptyMedia>
               <EmptyTitle>No maintenance blocks</EmptyTitle>
+              <EmptyDescription>
+                Schedule service windows before taking a machine offline.
+              </EmptyDescription>
             </EmptyHeader>
+            <EmptyContent>
+              <Button type="button" variant="outline" onClick={workspace.openMaintenanceBooking}>
+                <Wrench data-icon="inline-start" aria-hidden="true" />
+                Add maintenance
+              </Button>
+            </EmptyContent>
           </Empty>
         )}
       </section>
