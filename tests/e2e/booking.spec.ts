@@ -162,6 +162,45 @@ test("admin can create a maintenance block from the maintenance route", async ({
   expect(consoleProblems).toEqual([])
 })
 
+test("admin machine deletion requires confirmation", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop machine-admin flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const suffix = Date.now()
+  const machineName = `E2E GPU ${suffix}`
+  const machineSlug = `e2e-gpu-${suffix}`
+
+  await loginAsAdmin(page)
+  await page.goto("/admin/machines")
+  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+
+  await page.getByRole("button", { name: "New machine" }).click()
+  await expect(page.getByRole("heading", { name: "New machine" })).toBeVisible()
+  await page.getByLabel("Name").fill(machineName)
+  await page.getByLabel("Slug").fill(machineSlug)
+  await page.getByLabel("Description").fill("Temporary e2e machine")
+  await page.getByLabel("Specs").fill("Test GPU")
+  await page.getByLabel("Access notes").fill("Temporary access notes")
+  await page.getByRole("button", { name: "Create machine" }).click()
+
+  const machineRow = page.getByRole("row").filter({ hasText: machineName })
+  await expect(machineRow).toBeVisible()
+  await machineRow.getByRole("button", { name: "Edit" }).click()
+  await expect(page.getByRole("heading", { name: "Edit machine" })).toBeVisible()
+
+  await page.getByRole("button", { name: "Delete" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Delete machine?" })).toBeVisible()
+  await page.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Delete machine?" })).toBeHidden()
+  await expect(page.getByRole("heading", { name: "Edit machine" })).toBeVisible()
+
+  await page.getByRole("button", { name: "Delete" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Delete machine?" })).toBeVisible()
+  await page.getByRole("button", { name: "Delete machine" }).click()
+  await expect(machineRow).toBeHidden()
+  expect(consoleProblems).toEqual([])
+})
+
 test("moving a booking into an occupied slot surfaces a conflict", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop drag flow")
 

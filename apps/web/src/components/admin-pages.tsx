@@ -19,6 +19,17 @@ import {
   useWorkspace,
 } from "@/components/app-workspace-context"
 import { MachineInventory } from "@/components/machine-inventory"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
@@ -704,10 +715,28 @@ function MachineEditorSheet({
 
           <SheetFooter className="mt-0 gap-2 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
             {mode === "edit" && onDelete ? (
-              <Button type="button" variant="outline" disabled={pending} onClick={onDelete}>
-                <Trash2 data-icon="inline-start" aria-hidden="true" />
-                Delete
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="outline" disabled={pending}>
+                    <Trash2 data-icon="inline-start" aria-hidden="true" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete machine?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This removes the machine only if it has no booking history.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" disabled={pending} onClick={onDelete}>
+                      Delete machine
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             ) : (
               <span />
             )}
