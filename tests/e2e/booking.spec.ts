@@ -198,6 +198,67 @@ test("admin can edit and delete a researcher booking from the booking sheet", as
   expect(consoleProblems).toEqual([])
 })
 
+test("researchers can edit move resize and delete their own desktop bookings", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop member lifecycle flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E member lifecycle ${Date.now()}`
+  const updatedTitle = `${bookingTitle} updated`
+  await loginAsMember(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByText("Week board")).toBeVisible()
+
+  const firstDayColumn = page.locator("[data-calendar-day]").first()
+  await expect(firstDayColumn).toBeVisible()
+  const dayBox = await firstDayColumn.boundingBox()
+  if (!dayBox) {
+    throw new Error("Calendar day column did not produce a bounding box.")
+  }
+
+  await firstDayColumn.click({
+    position: {
+      x: dayBox.width / 2,
+      y: 120,
+    },
+  })
+
+  await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
+  await page.getByLabel("Title").fill(bookingTitle)
+  await page.getByRole("button", { name: "Create" }).click()
+
+  const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+  await expect(booking).toBeVisible()
+  const createdBooking = await findBookingFromPage(page, bookingTitle)
+  expect(createdBooking).toEqual(expect.objectContaining({ userId: "member-local" }))
+
+  await booking.click()
+  await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+  await page.getByLabel("Title").fill(updatedTitle)
+  await page.getByRole("button", { name: "Save" }).click()
+
+  const updatedBooking = page.getByRole("button", { name: new RegExp(updatedTitle) })
+  await expect(updatedBooking).toBeVisible()
+
+  const movedBooking = await dragBookingBy(page, updatedBooking, { x: 0, y: 56 })
+  await expect(movedBooking).toContainText("11:00 - 12:00")
+
+  const resizedBooking = await resizeBookingEndBy(page, movedBooking, 28)
+  await expect(resizedBooking).toContainText("11:00 - 12:30")
+
+  await resizedBooking.click()
+  await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+  await page.getByRole("button", { name: "Delete" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Delete booking?" })).toBeVisible()
+  await page.getByRole("button", { name: "Delete booking" }).click()
+  await expect(resizedBooking).toBeHidden()
+
+  expect(unexpectedConsoleProblems(consoleProblems)).toEqual([])
+})
+
 test("admin can create a maintenance block from the maintenance route", async ({
   page,
 }, testInfo) => {
@@ -761,4 +822,36 @@ async function expectElementWithinViewport(page: Page, locator: Locator) {
 
   expect(box.x).toBeGreaterThanOrEqual(0)
   expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+}
+
+async function dragBookingBy(page: Page, booking: Locator, delta: { x: number; y: number }) {
+  const bookingBox = await booking.boundingBox()
+  if (!bookingBox) {
+    throw new Error("Booking did not produce a bounding box.")
+  }
+
+  const startX = bookingBox.x + bookingBox.width / 2
+  const startY = bookingBox.y + bookingBox.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX + delta.x, startY + delta.y, { steps: 8 })
+  await page.mouse.up()
+
+  return booking
+}
+
+async function resizeBookingEndBy(page: Page, booking: Locator, deltaY: number) {
+  const bookingBox = await booking.boundingBox()
+  if (!bookingBox) {
+    throw new Error("Booking did not produce a bounding box.")
+  }
+
+  const startX = bookingBox.x + bookingBox.width / 2
+  const startY = bookingBox.y + bookingBox.height - 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX, startY + deltaY, { steps: 8 })
+  await page.mouse.up()
+
+  return booking
 }
