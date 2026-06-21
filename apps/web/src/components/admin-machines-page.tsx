@@ -54,7 +54,7 @@ export function AdminMachinesPage() {
   return (
     <AdminPageFrame
       title="Machines"
-      description="Inventory"
+      description="Machine inventory"
       action={
         <Button type="button" onClick={() => setCreatingMachine(true)}>
           <Plus data-icon="inline-start" aria-hidden="true" />

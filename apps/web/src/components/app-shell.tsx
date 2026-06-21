@@ -350,7 +350,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
                 </div>
                 <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs leading-4">
                   <ShieldCheck aria-hidden="true" />
-                  <span>{user.active ? "Active account" : "Access disabled"}</span>
+                  <span>{user.active ? "Active" : "Disabled"}</span>
                 </div>
               </div>
             </div>

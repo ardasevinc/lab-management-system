@@ -32,8 +32,8 @@ export function AdminOverviewPage() {
   )
   const secondarySpecs = selectedMachine?.specs.slice(1).join(", ")
   const machineAvailability = selectedMachine?.active ? "Accepting bookings" : "Inactive"
-  const accessValue = selectedMachine?.accessNotes ? "Configured" : "Not configured"
-  const accessDetail = selectedMachine?.accessNotes ? "Admin-only access notes" : "No access notes"
+  const accessValue = selectedMachine?.accessNotes ? "Notes set" : "No notes"
+  const accessDetail = selectedMachine?.accessNotes || "Add access notes from Machines."
 
   return (
     <AdminPageFrame
@@ -79,7 +79,7 @@ export function AdminOverviewPage() {
               </Badge>
             </div>
             <p className="mt-1 line-clamp-1 text-muted-foreground text-sm">
-              {selectedMachine?.description ?? "Select a machine before accepting bookings."}
+              {selectedMachine?.description ?? "Select a machine before bookings open."}
             </p>
           </div>
           <Badge variant="outline" className="w-fit">

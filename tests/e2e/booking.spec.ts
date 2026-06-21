@@ -18,7 +18,7 @@ test("login returns users to the requested workspace route", async ({ page }, te
   await page.getByRole("button", { name: "Sign in" }).click()
 
   await expect(page).toHaveURL(/\/machines$/)
-  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Machines", exact: true })).toBeVisible()
   expect(consoleProblems).toEqual([])
 })
 
@@ -32,6 +32,30 @@ test("invite login links prefill the invited email", async ({ page }, testInfo) 
   await page.getByRole("button", { name: "Continue" }).click()
   await expect(page.getByLabel("Login code")).toBeVisible()
   await expect(page.getByText("member@miralab.tr")).toBeVisible()
+  expect(consoleProblems).toEqual([])
+})
+
+test("machines route presents the selected machine cleanly", async ({ page }, testInfo) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsMember(page)
+
+  await page.goto("/machines")
+  await expect(page.getByRole("heading", { name: "Machines", exact: true })).toBeVisible()
+
+  const selectedMachine = page.locator("main > section").filter({
+    has: page.getByRole("heading", { name: "tohum", exact: true }),
+  })
+  await expect(selectedMachine.getByText("available").first()).toBeVisible()
+  await expect(selectedMachine.getByText("Primary spec")).toBeVisible()
+  await expect(selectedMachine.getByText("Timezone")).toBeVisible()
+
+  const inventory = page.locator("section").filter({ hasText: "All machines" })
+  const selectedBadge = isDesktopProject(testInfo.project.name)
+    ? inventory.getByRole("table").getByText("Selected")
+    : inventory.getByRole("article").getByText("Selected")
+  await expect(inventory.getByText("1 machine")).toBeVisible()
+  await expect(selectedBadge).toBeVisible()
+  await expect(inventory.getByRole("button", { name: "Selected machine" })).toHaveCount(0)
   expect(consoleProblems).toEqual([])
 })
 

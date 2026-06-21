@@ -55,9 +55,8 @@ export function MachineInventory({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="font-medium text-sm">{title}</h2>
-            <p className="text-muted-foreground text-xs">{formatMachineCount(machines.length)}</p>
           </div>
-          <MonitorCog className="text-muted-foreground" aria-hidden="true" />
+          <Badge variant="outline">{formatMachineCount(machines.length)}</Badge>
         </div>
         {machines.length > 1 ? (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -134,30 +133,36 @@ export function MachineInventory({
                         ) : null}
                         {onSelectMachine || onEditMachine ? (
                           <TableCell className="text-right">
-                            {onSelectMachine ? (
-                              <Button
-                                type="button"
-                                variant={isSelected ? "secondary" : "outline"}
-                                size="sm"
-                                onClick={() => onSelectMachine(machine.slug)}
-                              >
-                                {isSelected ? (
-                                  <Check data-icon="inline-start" aria-hidden="true" />
-                                ) : null}
-                                {isSelected ? "Selected" : selectionLabel}
-                              </Button>
-                            ) : null}
-                            {onEditMachine ? (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onEditMachine(machine)}
-                              >
-                                <Pencil data-icon="inline-start" aria-hidden="true" />
-                                Edit
-                              </Button>
-                            ) : null}
+                            <div className="flex justify-end gap-2">
+                              {onSelectMachine ? (
+                                isSelected ? (
+                                  <Badge variant="secondary">
+                                    <Check aria-hidden="true" />
+                                    Selected
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onSelectMachine(machine.slug)}
+                                  >
+                                    {selectionLabel}
+                                  </Button>
+                                )
+                              ) : null}
+                              {onEditMachine ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => onEditMachine(machine)}
+                                >
+                                  <Pencil data-icon="inline-start" aria-hidden="true" />
+                                  Edit
+                                </Button>
+                              ) : null}
+                            </div>
                           </TableCell>
                         ) : null}
                       </TableRow>
@@ -181,7 +186,15 @@ export function MachineInventory({
                         <h3 className="truncate font-medium text-sm">{machine.name}</h3>
                         <p className="mt-1 text-muted-foreground text-sm">{machine.description}</p>
                       </div>
-                      <MachineStateBadge active={machine.active} />
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <MachineStateBadge active={machine.active} />
+                        {isSelected ? (
+                          <Badge variant="secondary">
+                            <Check aria-hidden="true" />
+                            Selected
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
 
                     <dl className="mt-3 grid gap-2 text-sm">
@@ -201,15 +214,14 @@ export function MachineInventory({
                       ) : null}
                     </dl>
 
-                    {onSelectMachine ? (
+                    {onSelectMachine && !isSelected ? (
                       <Button
                         type="button"
-                        variant={isSelected ? "secondary" : "outline"}
+                        variant="outline"
                         className="mt-3 w-full"
                         onClick={() => onSelectMachine(machine.slug)}
                       >
-                        {isSelected ? <Check data-icon="inline-start" aria-hidden="true" /> : null}
-                        {isSelected ? "Selected machine" : selectionLabel}
+                        {selectionLabel}
                       </Button>
                     ) : null}
                     {onEditMachine ? (

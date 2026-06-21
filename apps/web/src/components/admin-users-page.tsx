@@ -69,7 +69,7 @@ export function AdminUsersPage() {
   return (
     <AdminPageFrame
       title="Users"
-      description="Roles and access"
+      description="Members"
       action={
         <Button type="button" onClick={() => setInviteOpen(true)}>
           <MailPlus data-icon="inline-start" aria-hidden="true" />
