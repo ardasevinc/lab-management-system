@@ -29,4 +29,19 @@ describe("package scripts", () => {
       ].join(" && "),
     )
   })
+
+  it("keeps the CapRover preflight gate aligned with the deployment runbook", () => {
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
+    const preflight = packageJson.scripts?.["verify:caprover-preflight"]
+
+    expect(preflight).toBe(
+      [
+        "bun run pack:caprover",
+        "bun run verify:caprover-env",
+        "bun run verify:caprover-package",
+        "bun run verify:caprover-dns",
+        "bun run verify:caprover-host --expect absent",
+      ].join(" && "),
+    )
+  })
 })
