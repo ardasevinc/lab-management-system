@@ -97,7 +97,7 @@ export function SchedulePage() {
             ) : null}
           </div>
           <WeekNavigation
-            className="mt-3 lg:hidden"
+            className="mt-3 xl:hidden"
             selectedDate={new Date(weekRange.start)}
             onPrevious={goToPreviousWeek}
             onToday={goToCurrentWeek}
@@ -113,7 +113,7 @@ export function SchedulePage() {
         </div>
       </div>
 
-      <section className="mb-3 rounded-lg border border-border bg-card p-3 lg:hidden">
+      <section className="mb-3 rounded-lg border border-border bg-card p-3 xl:hidden">
         <div className="mb-2 flex items-center justify-between gap-2">
           <div>
             <h2 className="font-medium text-sm">Day agenda</h2>
@@ -152,7 +152,7 @@ export function SchedulePage() {
         />
       </section>
 
-      <section className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-sm lg:block">
+      <section className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-sm xl:block">
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-border border-b bg-muted/40 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <CalendarDays className="text-primary" aria-hidden="true" />

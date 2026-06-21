@@ -236,7 +236,7 @@ function QuickBookingButton() {
     <Button
       type="button"
       size="sm"
-      className="hidden lg:inline-flex"
+      className="hidden xl:inline-flex"
       onClick={openNewBooking}
       aria-label="New booking"
     >

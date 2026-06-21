@@ -793,6 +793,11 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   const consoleProblems = collectConsoleProblems(page)
   await loginAsAdmin(page)
 
+  await page.goto("/schedule")
+  await expect(page.getByText("Day agenda")).toBeVisible()
+  await expect(page.getByText("Week board")).toBeHidden()
+  await expectRouteContentWithinViewport(page)
+
   await page.goto("/admin")
   await expect(page.getByRole("heading", { name: "Admin overview" })).toBeVisible()
   await expect(page.getByText("Week queue")).toBeVisible()
@@ -833,7 +838,7 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
 
   await page.getByRole("link", { name: "Maintenance" }).click()
   await expect(page).toHaveURL(/\/admin\/maintenance$/)
-  await expect(page.getByRole("heading", { name: "Maintenance" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Maintenance", exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Add maintenance" }).click()
   const maintenanceSheet = page.getByRole("dialog", { name: "New maintenance block" })
   await expect(maintenanceSheet).toBeVisible()
