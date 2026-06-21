@@ -640,6 +640,30 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
   expect(consoleProblems).toEqual([])
 })
 
+test("member workspace refresh keeps admin navigation hidden", async ({ page }, testInfo) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsMember(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await installAuthScreenObserver(page)
+  await page.reload()
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByLabel("Email")).toBeHidden()
+  expect(await authScreenWasObserved(page)).toBe(false)
+
+  if (testInfo.project.name === "mobile-chromium") {
+    await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    const sidebar = page.getByRole("dialog", { name: "Sidebar" })
+    await expectMemberNavigation(sidebar)
+    await expectElementWithinViewport(page, sidebar)
+  } else {
+    await expectMemberNavigation(page)
+  }
+
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin tablet routes keep seeded data and admin sheets usable", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "tablet-chromium", "tablet admin route flow")
 
@@ -893,6 +917,53 @@ async function expectElementWithinViewport(page: Page, locator: Locator) {
 
 async function expectRouteContentWithinViewport(page: Page) {
   await expectElementWithinViewport(page, page.locator("main").last())
+}
+
+async function expectMemberNavigation(scope: Page | Locator) {
+  await expect(scope.getByRole("link", { name: "Schedule" })).toBeVisible()
+  await expect(scope.getByRole("link", { name: "Machines" })).toHaveCount(1)
+  await expect(scope.getByRole("link", { name: "Overview" })).toHaveCount(0)
+  await expect(scope.getByRole("link", { name: "Users" })).toHaveCount(0)
+  await expect(scope.getByRole("link", { name: "Maintenance" })).toHaveCount(0)
+}
+
+async function installAuthScreenObserver(page: Page) {
+  await page.addInitScript(() => {
+    const state = globalThis as typeof globalThis & { __sawAuthScreen?: boolean }
+    state.__sawAuthScreen = false
+
+    const markIfAuthScreenIsVisible = () => {
+      const text = document.body?.innerText ?? ""
+      if (text.includes("Sign in to") || text.includes("Login code")) {
+        state.__sawAuthScreen = true
+      }
+    }
+
+    const attachObserver = () => {
+      const root = document.documentElement
+      if (!root) {
+        setTimeout(attachObserver, 0)
+        return
+      }
+
+      new MutationObserver(markIfAuthScreenIsVisible).observe(root, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      })
+    }
+
+    attachObserver()
+    window.addEventListener("DOMContentLoaded", markIfAuthScreenIsVisible)
+    setTimeout(markIfAuthScreenIsVisible, 0)
+  })
+}
+
+async function authScreenWasObserved(page: Page) {
+  return page.evaluate(() => {
+    const state = globalThis as typeof globalThis & { __sawAuthScreen?: boolean }
+    return state.__sawAuthScreen === true
+  })
 }
 
 async function dragBookingBy(page: Page, booking: Locator, delta: { x: number; y: number }) {
