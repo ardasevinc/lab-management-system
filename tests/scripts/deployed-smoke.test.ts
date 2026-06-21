@@ -38,7 +38,7 @@ describe("deployed smoke verifier", () => {
           checks: {
             database: "ok",
             machines: 1,
-            reminders: { enabled: false, intervalSeconds: 60 },
+            reminders: reminderHealth(false),
           },
         })
       }
@@ -90,7 +90,7 @@ describe("deployed smoke verifier", () => {
           checks: {
             database: "ok",
             machines: 0,
-            reminders: { enabled: true, intervalSeconds: 60 },
+            reminders: reminderHealth(true),
           },
         })
       }
@@ -106,6 +106,33 @@ describe("deployed smoke verifier", () => {
       }),
     ).rejects.toMatchObject({
       stderr: expect.stringContaining("/health did not report ok: true"),
+    })
+  })
+
+  it("rejects incomplete reminder worker health", async () => {
+    const origin = await startServer((request, response) => {
+      if (request.url === "/health") {
+        return json(response, {
+          ok: true,
+          checks: {
+            database: "ok",
+            machines: 1,
+            reminders: { enabled: false, intervalSeconds: 60 },
+          },
+        })
+      }
+
+      response.writeHead(404)
+      response.end()
+    })
+
+    await expect(
+      execFileAsync("bun", ["scripts/verify-deployed-smoke.ts", origin], {
+        encoding: "utf8",
+        env: { ...process.env, NODE_ENV: "test" },
+      }),
+    ).rejects.toMatchObject({
+      stderr: expect.stringContaining("/health did not expose a valid start reminder window"),
     })
   })
 })
@@ -129,4 +156,15 @@ function json(response: ServerResponse, body: unknown) {
 function html(response: ServerResponse) {
   response.writeHead(200, { "content-type": "text/html" })
   response.end('<!doctype html><html><body><div id="root"></div></body></html>')
+}
+
+function reminderHealth(enabled: boolean) {
+  return {
+    enabled,
+    intervalSeconds: 60,
+    startReminderMinutes: 15,
+    endingReminderMinutes: 15,
+    retryDelayMinutes: 5,
+    maxAttempts: 3,
+  }
 }

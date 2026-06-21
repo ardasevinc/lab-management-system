@@ -53,7 +53,14 @@ async function verifyHealth(origin: string) {
     checks?: {
       database?: string
       machines?: number
-      reminders?: { enabled?: boolean; intervalSeconds?: number }
+      reminders?: {
+        enabled?: boolean
+        intervalSeconds?: number
+        startReminderMinutes?: number
+        endingReminderMinutes?: number
+        retryDelayMinutes?: number
+        maxAttempts?: number
+      }
     }
   }>(origin, "/health")
 
@@ -77,12 +84,16 @@ async function verifyHealth(origin: string) {
     fail("/health did not report reminders enabled for deployed origin")
   }
 
-  if (
-    body.checks.reminders.enabled &&
-    (typeof body.checks.reminders.intervalSeconds !== "number" ||
-      body.checks.reminders.intervalSeconds < 1)
-  ) {
-    fail("/health did not expose a valid reminder worker interval")
+  assertPositiveNumber(body.checks.reminders.intervalSeconds, "reminder worker interval")
+  assertPositiveNumber(body.checks.reminders.startReminderMinutes, "start reminder window")
+  assertPositiveNumber(body.checks.reminders.endingReminderMinutes, "ending reminder window")
+  assertPositiveNumber(body.checks.reminders.retryDelayMinutes, "reminder retry delay")
+  assertPositiveNumber(body.checks.reminders.maxAttempts, "reminder max attempts")
+}
+
+function assertPositiveNumber(value: unknown, label: string) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 1) {
+    fail(`/health did not expose a valid ${label}`)
   }
 }
 
