@@ -47,6 +47,7 @@
     "test:scripts:deployed-auth-smoke": "vitest run tests/scripts/deployed-auth-smoke.test.ts",
     "test:scripts:deployed-reminder-smoke": "vitest run tests/scripts/deployed-reminder-smoke.test.ts",
     "test:scripts:deployed-smoke": "vitest run tests/scripts/deployed-smoke.test.ts",
+    "test:scripts:docker-runtime": "vitest run tests/scripts/docker-runtime.test.ts",
     "test:scripts:install-backup-cron": "vitest run tests/scripts/install-backup-cron.test.ts",
     "test:scripts:materialize-caprover-env": "vitest run tests/scripts/materialize-caprover-env.test.ts",
     "test:scripts:sqlite-backup": "vitest run tests/scripts/sqlite-backup.test.ts",

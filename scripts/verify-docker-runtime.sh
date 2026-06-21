@@ -108,7 +108,9 @@ assert_contains "$(cat "$api_body")" "Authentication required" "Docker runtime /
 favicon="$(curl -fsS "http://127.0.0.1:$host_port/favicon.svg")"
 assert_contains "$favicon" "<svg" "Docker runtime did not serve root public assets before SPA fallback"
 
-docker exec "$container_name" bun run verify:sqlite-backup >/dev/null
+backup_file="$(docker exec "$container_name" sh -lc 'sh scripts/backup-sqlite.sh')"
+docker exec "$container_name" sh scripts/verify-sqlite-backup.sh "$backup_file" >/dev/null
+docker exec "$container_name" bun scripts/restore-sqlite-backup.ts "$backup_file" >/dev/null
 
 if ! find "$data_dir/backups" -type f -name 'lab-*.sqlite' -print -quit | grep -q .; then
   fail_with_logs "Docker runtime backup verifier did not write a SQLite backup to the mounted data directory"
