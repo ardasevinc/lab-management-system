@@ -224,10 +224,11 @@ export function BookingDialog({
 
               {isAdmin ? (
                 <Field>
-                  <FieldLabel htmlFor="reason">Admin reason</FieldLabel>
+                  <FieldLabel htmlFor="reason">Audit reason</FieldLabel>
                   <Input
                     id="reason"
                     name="reason"
+                    placeholder="Optional note for the booking history"
                     value={adminReason}
                     onChange={(event) => setAdminReason(event.target.value)}
                   />

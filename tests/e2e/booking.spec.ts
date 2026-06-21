@@ -102,7 +102,7 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   await expect(auditHistory.getByText(/MIRALAB Admin/)).toBeVisible()
 
   const updateReason = "E2E reason: adjusted by admin"
-  await page.getByLabel("Admin reason").fill(updateReason)
+  await page.getByLabel("Audit reason").fill(updateReason)
   await page.getByRole("button", { name: "Save" }).click()
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
 
@@ -112,7 +112,7 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   await expect(auditHistory.getByText(`Reason: ${updateReason}`)).toBeVisible()
 
   const deleteReason = "E2E reason: cleanup delete"
-  await page.getByLabel("Admin reason").fill(deleteReason)
+  await page.getByLabel("Audit reason").fill(deleteReason)
   await page.getByRole("button", { name: "Delete" }).click()
   await expect(page.getByRole("alertdialog", { name: "Delete booking?" })).toBeVisible()
   await page.getByRole("button", { name: "Cancel" }).click()
@@ -287,7 +287,7 @@ test("admin can edit and delete a researcher booking from the booking sheet", as
 
   const updateReason = "E2E reason: admin corrected member booking"
   await page.getByLabel("Title").fill(updatedTitle)
-  await page.getByLabel("Admin reason").fill(updateReason)
+  await page.getByLabel("Audit reason").fill(updateReason)
   await page.getByRole("button", { name: "Save" }).click()
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
   await expect(page.getByRole("button", { name: new RegExp(updatedTitle) })).toBeVisible()
@@ -298,7 +298,7 @@ test("admin can edit and delete a researcher booking from the booking sheet", as
   await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
 
   const deleteReason = "E2E reason: admin cleanup member booking"
-  await page.getByLabel("Admin reason").fill(deleteReason)
+  await page.getByLabel("Audit reason").fill(deleteReason)
   await page.getByRole("button", { name: "Delete" }).click()
   await expect(page.getByRole("alertdialog", { name: "Delete booking?" })).toBeVisible()
   await page.getByRole("button", { name: "Delete booking" }).click()
