@@ -49,7 +49,7 @@ function SelectedMachinePanel({ machine }: { machine: Machine }) {
         <MachineFact
           icon={CalendarDays}
           label="Other specs"
-          value={secondarySpecs.length ? secondarySpecs.join(", ") : "None"}
+          value={secondarySpecs.length ? secondarySpecs.join(", ") : "No secondary specs"}
         />
         <MachineFact icon={Clock3} label="Timezone" value={labConfig.defaultTimezone} />
       </div>
@@ -68,15 +68,11 @@ function MachineFact({
 }) {
   return (
     <div className="bg-card px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-muted-foreground text-xs">{label}</div>
-          <div className="mt-1 truncate font-medium text-sm">{value}</div>
-        </div>
-        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-          <Icon aria-hidden="true" />
-        </div>
+      <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs">
+        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{label}</span>
       </div>
+      <div className="mt-1 truncate font-medium text-sm">{value}</div>
     </div>
   )
 }
