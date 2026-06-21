@@ -8,11 +8,11 @@ describe("backup cron entry generator", () => {
     }).trim()
 
     expect(output).toBe(
-      "17 2 * * * containers=$(docker ps --filter 'name=^/srv-captain--miralab-lms\\.' --format '{{.Names}}') && test -n \"$containers\" && test \"$(printf '%s\\n' \"$containers\" | wc -l | tr -d ' ')\" = 1 && container=\"$containers\" && docker exec \"$container\" sh -lc 'cd /app && DATABASE_URL='\\''file:/app/data/lab.sqlite'\\'' BACKUP_DIR='\\''/app/data/backups'\\'' BACKUP_RETENTION_DAYS='\\''30'\\'' bun run verify:sqlite-backup' >> '/var/log/miralab-lms-backup.log' 2>&1",
+      "17 2 * * * flock -n '/tmp/miralab-lms-backup.lock' sh -lc 'containers=$(docker ps --filter '\\''name=^/srv-captain--miralab-lms\\.'\\'' --format '\\''{{.Names}}'\\'') && test -n \"$containers\" && test \"$(printf '\\''%s\\n'\\'' \"$containers\" | wc -l | tr -d '\\'' '\\'')\" = 1 && container=\"$containers\" && docker exec \"$container\" sh -lc '\\''cd /app && DATABASE_URL='\\''\\'\\'''\\''file:/app/data/lab.sqlite'\\''\\'\\'''\\'' BACKUP_DIR='\\''\\'\\'''\\''/app/data/backups'\\''\\'\\'''\\'' BACKUP_RETENTION_DAYS='\\''\\'\\'''\\''30'\\''\\'\\'''\\'' bun run verify:sqlite-backup'\\''' >> '/var/log/miralab-lms-backup.log' 2>&1",
     )
   })
 
-  it("shell-quotes configured container, backup, retention, and log values", () => {
+  it("shell-quotes configured container, backup, retention, lock, and log values", () => {
     const output = execFileSync("sh", ["scripts/backup-cron-entry.sh"], {
       encoding: "utf8",
       env: {
@@ -23,11 +23,12 @@ describe("backup cron entry generator", () => {
         BACKUP_DIR: "/app/data/backups daily",
         BACKUP_RETENTION_DAYS: "45",
         BACKUP_CRON_LOG: "/tmp/miralab backup's.log",
+        BACKUP_LOCK_PATH: "/tmp/miralab backup's.lock",
       },
     }).trim()
 
     expect(output).toBe(
-      "9 4 * * 1-5 containers=$(docker ps --filter 'name=^/srv-captain--miralab-lms-prod\\.' --format '{{.Names}}') && test -n \"$containers\" && test \"$(printf '%s\\n' \"$containers\" | wc -l | tr -d ' ')\" = 1 && container=\"$containers\" && docker exec \"$container\" sh -lc 'cd /app && DATABASE_URL='\\''file:/app/data/lab prod.sqlite'\\'' BACKUP_DIR='\\''/app/data/backups daily'\\'' BACKUP_RETENTION_DAYS='\\''45'\\'' bun run verify:sqlite-backup' >> '/tmp/miralab backup'\\''s.log' 2>&1",
+      "9 4 * * 1-5 flock -n '/tmp/miralab backup'\\''s.lock' sh -lc 'containers=$(docker ps --filter '\\''name=^/srv-captain--miralab-lms-prod\\.'\\'' --format '\\''{{.Names}}'\\'') && test -n \"$containers\" && test \"$(printf '\\''%s\\n'\\'' \"$containers\" | wc -l | tr -d '\\'' '\\'')\" = 1 && container=\"$containers\" && docker exec \"$container\" sh -lc '\\''cd /app && DATABASE_URL='\\''\\'\\'''\\''file:/app/data/lab prod.sqlite'\\''\\'\\'''\\'' BACKUP_DIR='\\''\\'\\'''\\''/app/data/backups daily'\\''\\'\\'''\\'' BACKUP_RETENTION_DAYS='\\''\\'\\'''\\''45'\\''\\'\\'''\\'' bun run verify:sqlite-backup'\\''' >> '/tmp/miralab backup'\\''s.log' 2>&1",
     )
   })
 })

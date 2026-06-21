@@ -16,6 +16,7 @@ Environment:
   BACKUP_DIR             Container backup directory. Default: /app/data/backups
   BACKUP_RETENTION_DAYS  Retention window. Default: 30
   BACKUP_CRON_LOG        Host log file. Default: /var/log/miralab-lms-backup.log
+  BACKUP_LOCK_PATH       Host flock path. Default: /tmp/miralab-lms-backup.lock
 EOF
   exit 0
 fi
@@ -26,6 +27,7 @@ database_url="${BACKUP_DATABASE_URL:-file:/app/data/lab.sqlite}"
 backup_dir="${BACKUP_DIR:-/app/data/backups}"
 retention_days="${BACKUP_RETENTION_DAYS:-30}"
 log_path="${BACKUP_CRON_LOG:-/var/log/miralab-lms-backup.log}"
+lock_path="${BACKUP_LOCK_PATH:-/tmp/miralab-lms-backup.lock}"
 
 quote_for_sh() {
   printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
@@ -36,11 +38,13 @@ database_url_q="$(quote_for_sh "$database_url")"
 backup_dir_q="$(quote_for_sh "$backup_dir")"
 retention_days_q="$(quote_for_sh "$retention_days")"
 log_path_q="$(quote_for_sh "$log_path")"
+lock_path_q="$(quote_for_sh "$lock_path")"
 container_lookup="containers=\$(docker ps --filter $container_filter_q --format '{{.Names}}') && test -n \"\$containers\" && test \"\$(printf '%s\\n' \"\$containers\" | wc -l | tr -d ' ')\" = 1 && container=\"\$containers\""
 backup_command="cd /app && DATABASE_URL=$database_url_q BACKUP_DIR=$backup_dir_q BACKUP_RETENTION_DAYS=$retention_days_q bun run verify:sqlite-backup"
+locked_command="$container_lookup && docker exec \"\$container\" sh -lc $(quote_for_sh "$backup_command")"
 
-printf "%s %s && docker exec \"\$container\" sh -lc %s >> %s 2>&1\n" \
+printf "%s flock -n %s sh -lc %s >> %s 2>&1\n" \
   "$schedule" \
-  "$container_lookup" \
-  "$(quote_for_sh "$backup_command")" \
+  "$lock_path_q" \
+  "$(quote_for_sh "$locked_command")" \
   "$log_path_q"
