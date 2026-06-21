@@ -38,6 +38,14 @@ describe("package scripts", () => {
     expect(preflight).toBe("bun scripts/verify-caprover-preflight.ts")
   })
 
+  it("keeps the GitHub deploy readiness gate available", () => {
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
+
+    expect(packageJson.scripts?.["verify:github-deploy"]).toBe(
+      "bun scripts/verify-github-deploy.ts",
+    )
+  })
+
   it("keeps the postdeploy gate on the checked-in smoke orchestrator", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
 

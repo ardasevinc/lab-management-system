@@ -29,6 +29,7 @@
     "verify:deployed-reminder-smoke": "bun scripts/verify-deployed-reminder-smoke.ts",
     "verify:deployed-smoke": "bun scripts/verify-deployed-smoke.ts",
     "verify:email-dns": "bun scripts/verify-email-dns.ts",
+    "verify:github-deploy": "bun scripts/verify-github-deploy.ts",
     "verify:postdeploy": "bun scripts/verify-postdeploy.ts",
     "verify:docker-build": "sh scripts/verify-docker-build.sh",
     "verify:docker-runtime": "sh scripts/verify-docker-runtime.sh",
