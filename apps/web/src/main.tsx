@@ -4,10 +4,12 @@ import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { applyLabTheme } from "@/lib/theme"
 import { routeTree } from "./routeTree.gen"
 import "./styles.css"
 
 document.title = labConfig.appTitle
+applyLabTheme(labConfig)
 
 const queryClient = new QueryClient()
 const router = createRouter({ routeTree })
