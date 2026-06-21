@@ -41,7 +41,7 @@ export function MachineInventory({
         <MonitorCog className="text-muted-foreground" aria-hidden="true" />
       </div>
 
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -112,7 +112,7 @@ export function MachineInventory({
         </Table>
       </div>
 
-      <div className="divide-y divide-border md:hidden">
+      <div className="divide-y divide-border lg:hidden">
         {machines.map((machine) => {
           const isSelected = machine.slug === selectedMachineSlug
 

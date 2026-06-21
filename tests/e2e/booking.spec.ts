@@ -618,6 +618,62 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
   expect(consoleProblems).toEqual([])
 })
 
+test("admin tablet routes keep seeded data and admin sheets usable", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "tablet-chromium", "tablet admin route flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  await page.goto("/admin")
+  await expect(page.getByRole("heading", { name: "Admin overview" })).toBeVisible()
+  await expect(page.getByText("Week queue")).toBeVisible()
+  await expect(page.getByText("Machine status")).toBeVisible()
+  await expectRouteContentWithinViewport(page)
+
+  await page.getByRole("link", { name: "Users" }).click()
+  await expect(page).toHaveURL(/\/admin\/users$/)
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+  const membersPanel = page.locator("section").filter({ hasText: "Members" })
+  await expect(membersPanel.getByText("admin@miralab.tr").first()).toBeVisible()
+  await expect(membersPanel.getByText("member@miralab.tr").first()).toBeVisible()
+  await expectRouteContentWithinViewport(page)
+
+  await page.getByRole("button", { name: "Invite user" }).click()
+  const inviteSheet = page.getByRole("dialog", { name: "Invite user" })
+  await expect(inviteSheet).toBeVisible()
+  await expect(inviteSheet.getByLabel("Email")).toBeVisible()
+  await expect(inviteSheet.getByRole("combobox", { name: "Role" })).toHaveText("Member")
+  await expectElementWithinViewport(page, inviteSheet)
+  await page.keyboard.press("Escape")
+  await expect(inviteSheet).toBeHidden()
+
+  await page.getByRole("link", { name: "Machines" }).nth(1).click()
+  await expect(page).toHaveURL(/\/admin\/machines$/)
+  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "tohum" })).toBeVisible()
+  await expectRouteContentWithinViewport(page)
+
+  await page.getByRole("button", { name: "Edit machine" }).first().click()
+  const machineSheet = page.getByRole("dialog", { name: "Edit machine" })
+  await expect(machineSheet).toBeVisible()
+  await expect(machineSheet.getByLabel("Booking state")).toHaveText("Available")
+  await expect(machineSheet.getByLabel("Access notes")).toBeVisible()
+  await expectElementWithinViewport(page, machineSheet)
+  await page.keyboard.press("Escape")
+  await expect(machineSheet).toBeHidden()
+
+  await page.getByRole("link", { name: "Maintenance" }).click()
+  await expect(page).toHaveURL(/\/admin\/maintenance$/)
+  await expect(page.getByRole("heading", { name: "Maintenance" })).toBeVisible()
+  await page.getByRole("button", { name: "Add maintenance" }).click()
+  const maintenanceSheet = page.getByRole("dialog", { name: "New maintenance block" })
+  await expect(maintenanceSheet).toBeVisible()
+  await expect(maintenanceSheet.getByRole("combobox", { name: "Type" })).toHaveText("Maintenance")
+  await expectElementWithinViewport(page, maintenanceSheet)
+
+  expect(consoleProblems).toEqual([])
+})
+
 function isDesktopProject(projectName: string) {
   return projectName === "chromium"
 }
@@ -810,18 +866,23 @@ async function expectAuditReasonFromPage(
 }
 
 async function expectElementWithinViewport(page: Page, locator: Locator) {
-  const box = await locator.boundingBox()
-  const viewport = page.viewportSize()
+  await expect(locator).toBeVisible()
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox()
+      const viewport = page.viewportSize()
 
-  expect(box).not.toBeNull()
-  expect(viewport).not.toBeNull()
+      if (!box || !viewport) {
+        return false
+      }
 
-  if (!box || !viewport) {
-    return
-  }
+      return box.x >= 0 && box.x + box.width <= viewport.width
+    })
+    .toBe(true)
+}
 
-  expect(box.x).toBeGreaterThanOrEqual(0)
-  expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+async function expectRouteContentWithinViewport(page: Page) {
+  await expectElementWithinViewport(page, page.locator("main").last())
 }
 
 async function dragBookingBy(page: Page, booking: Locator, delta: { x: number; y: number }) {

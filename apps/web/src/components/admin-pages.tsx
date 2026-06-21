@@ -262,7 +262,7 @@ export function AdminUsersPage() {
             {activeUsers}/{workspace.users.length} active
           </Badge>
         </div>
-        <div className="divide-y divide-border md:hidden">
+        <div className="divide-y divide-border lg:hidden">
           {workspace.users.map((user) => (
             <div key={user.id} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
@@ -290,7 +290,7 @@ export function AdminUsersPage() {
             </div>
           ))}
         </div>
-        <Table className="hidden md:table">
+        <Table className="hidden lg:table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -894,7 +894,7 @@ export function AdminMaintenancePage() {
         </div>
         {maintenanceBookings.length ? (
           <>
-            <div className="divide-y divide-border md:hidden">
+            <div className="divide-y divide-border lg:hidden">
               {maintenanceBookings.map((booking) => (
                 <button
                   key={booking.id}
@@ -910,7 +910,7 @@ export function AdminMaintenancePage() {
                 </button>
               ))}
             </div>
-            <Table className="hidden md:table">
+            <Table className="hidden lg:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
