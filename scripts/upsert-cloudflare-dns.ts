@@ -39,7 +39,7 @@ const DEFAULT_OPTIONS: CloudflareDnsOptions = {
   content: "130.61.34.1",
   name: "lms",
   paBin: "pa",
-  proxied: true,
+  proxied: false,
   tokenItem: "cloudflare/miralab/dns-edit-token",
   ttl: 1,
   zone: "miralab.tr",
@@ -75,6 +75,9 @@ export function parseArgs(args: string[]): CloudflareDnsOptions {
         break
       case "--no-proxy":
         options.proxied = false
+        break
+      case "--proxy":
+        options.proxied = true
         break
       case "--pa-bin":
         options.paBin = requireValue(arg, value)
@@ -310,8 +313,9 @@ function readPaSecretFromCli(paBin: string, item: string) {
 }
 
 function printUsage() {
-  console.log(`Usage: bun scripts/upsert-cloudflare-dns.ts [--zone miralab.tr] [--name lms] [--content 130.61.34.1] [--no-proxy]
+  console.log(`Usage: bun scripts/upsert-cloudflare-dns.ts [--zone miralab.tr] [--name lms] [--content 130.61.34.1] [--proxy]
 
 Creates or updates the Cloudflare A record needed for the MIRALAB LMS CapRover deployment.
+Defaults to DNS-only so CapRover DNS verification and certificate handling see the origin A record.
 Reads the token from --token, CLOUDFLARE_API_TOKEN, or pa item cloudflare/miralab/dns-edit-token.`)
 }

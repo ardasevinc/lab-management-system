@@ -11,7 +11,7 @@ describe("Cloudflare DNS upsert helper", () => {
       content: "130.61.34.1",
       name: "lms",
       paBin: "pa",
-      proxied: true,
+      proxied: false,
       tokenItem: "cloudflare/miralab/dns-edit-token",
       ttl: 1,
       zone: "miralab.tr",
@@ -29,17 +29,21 @@ describe("Cloudflare DNS upsert helper", () => {
         "203.0.113.10",
         "--ttl",
         "120",
-        "--no-proxy",
+        "--proxy",
       ]),
     ).toEqual({
       content: "203.0.113.10",
       name: "app",
       paBin: "pa",
-      proxied: false,
+      proxied: true,
       tokenItem: "cloudflare/miralab/dns-edit-token",
       ttl: 120,
       zone: "example.com",
     })
+  })
+
+  it("keeps DNS-only mode explicit", () => {
+    expect(parseArgs(["--proxy", "--no-proxy"]).proxied).toBe(false)
   })
 
   it("rejects unsafe record values", () => {
@@ -109,7 +113,7 @@ describe("Cloudflare DNS upsert helper", () => {
         body: {
           content: "130.61.34.1",
           name: "lms.miralab.tr",
-          proxied: true,
+          proxied: false,
           ttl: 1,
           type: "A",
         },
@@ -125,6 +129,39 @@ describe("Cloudflare DNS upsert helper", () => {
       records: [
         {
           content: "203.0.113.10",
+          id: "record-1",
+          name: "lms.miralab.tr",
+          proxied: false,
+          ttl: 1,
+          type: "A",
+        },
+      ],
+      zones: [{ id: "zone-1", name: "miralab.tr" }],
+    })
+
+    await expect(upsertCloudflareDnsRecord(parseArgs([]), "token", fetcher)).resolves.toEqual({
+      action: "updated",
+      message: "updated Cloudflare DNS: lms.miralab.tr -> 130.61.34.1",
+    })
+    expect(requests.at(-1)).toEqual({
+      body: {
+        content: "130.61.34.1",
+        name: "lms.miralab.tr",
+        proxied: false,
+        ttl: 1,
+        type: "A",
+      },
+      method: "PUT",
+      path: "/client/v4/zones/zone-1/dns_records/record-1",
+    })
+  })
+
+  it("updates the A record when proxy mode differs", async () => {
+    const requests: Array<{ body?: unknown; method: string; path: string }> = []
+    const fetcher = mockCloudflareFetch(requests, {
+      records: [
+        {
+          content: "130.61.34.1",
           id: "record-1",
           name: "lms.miralab.tr",
           proxied: true,
@@ -143,7 +180,7 @@ describe("Cloudflare DNS upsert helper", () => {
       body: {
         content: "130.61.34.1",
         name: "lms.miralab.tr",
-        proxied: true,
+        proxied: false,
         ttl: 1,
         type: "A",
       },
@@ -160,7 +197,7 @@ describe("Cloudflare DNS upsert helper", () => {
           content: "130.61.34.1",
           id: "record-1",
           name: "lms.miralab.tr",
-          proxied: true,
+          proxied: false,
           ttl: 1,
           type: "A",
         },
