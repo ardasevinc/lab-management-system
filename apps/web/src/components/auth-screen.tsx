@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input"
 import { requestOtp, type User, verifyOtp } from "@/lib/api"
 
 type AuthScreenProps = {
+  initialEmail?: string
   onLoggedIn: (user: User) => void
 }
 
-export function AuthScreen({ onLoggedIn }: AuthScreenProps) {
-  const [email, setEmail] = useState("")
+export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
+  const [email, setEmail] = useState(initialEmail)
   const [code, setCode] = useState("")
   const [devCode, setDevCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

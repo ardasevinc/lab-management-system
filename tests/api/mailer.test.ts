@@ -3,6 +3,8 @@ import {
   createMailerFromEnv,
   renderBookingHtml,
   renderBookingText,
+  renderInviteHtml,
+  renderInviteText,
   renderLoginOtpHtml,
   renderLoginOtpText,
 } from "../../apps/api/src/mailer"
@@ -65,6 +67,44 @@ describe("mailer templates", () => {
     expect(html).toContain("&lt;123456&gt;")
     expect(html).toContain("May 10, 2026, 1:10 PM Europe/Istanbul")
     expect(html).not.toContain("<123456>")
+  })
+
+  it("renders invite email text with login action and support contact", () => {
+    expect(
+      renderInviteText({
+        to: "new.member@miralab.tr",
+        name: "New Member",
+        role: "member",
+        loginUrl: "https://lms.miralab.tr/login?email=new.member%40miralab.tr",
+      }),
+    ).toBe(
+      [
+        "Hi New Member,",
+        "",
+        "You have been invited to MIRALAB as a member.",
+        "Use your invited email address to request a one-time login code.",
+        "",
+        "Sign in: https://lms.miralab.tr/login?email=new.member%40miralab.tr",
+        "",
+        "Need help? Contact support@miralab.tr.",
+      ].join("\n"),
+    )
+  })
+
+  it("renders invite email HTML with escaped name and login action", () => {
+    const html = renderInviteHtml({
+      to: "new.member@miralab.tr",
+      name: "<New Member>",
+      role: "admin",
+      loginUrl: "https://lms.miralab.tr/login?email=new.member%40miralab.tr",
+    })
+
+    expect(html).toContain("MIRALAB")
+    expect(html).toContain("&lt;New Member&gt;")
+    expect(html).toContain("admin access")
+    expect(html).toContain("https://lms.miralab.tr/login?email=new.member%40miralab.tr")
+    expect(html).toContain("mailto:support@miralab.tr")
+    expect(html).not.toContain("<New Member>")
   })
 
   it("renders booking email text with schedule action and support contact", () => {

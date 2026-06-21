@@ -29,6 +29,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: { subject: string }) {
         sentSubjects.push(email.subject)
       },
@@ -61,6 +62,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: { subject: string }) {
         sentSubjects.push(email.subject)
       },
@@ -94,6 +96,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: { subject: string }) {
         attempts += 1
         if (attempts === 1) {
@@ -160,6 +163,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail() {
         throw new Error("SES still down")
       },
@@ -203,6 +207,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: { subject: string }) {
         sentSubjects.push(email.subject)
       },
@@ -239,6 +244,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: { subject: string }) {
         sentSubjects.push(email.subject)
       },
@@ -273,6 +279,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: BookingEmail) {
         sentEmails.push(email)
       },
@@ -316,6 +323,7 @@ describe("booking notifications", () => {
 
     const mailer = {
       async sendLoginOtp() {},
+      async sendInviteEmail() {},
       async sendBookingEmail(email: { subject: string }) {
         sentSubjects.push(email.subject)
         await new Promise<void>((resolve) => {

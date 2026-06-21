@@ -306,6 +306,12 @@ export function createApiApp({
       ...body.data,
       invitedByUserId: c.get("user").id,
     })
+    await emailSender.sendInviteEmail({
+      to: invite.email,
+      name: invite.name,
+      role: invite.role,
+      loginUrl: loginUrlForInvite(runtimeConfig.publicAppUrl, invite.email),
+    })
 
     return c.json({ invite }, 201)
   })
@@ -438,6 +444,12 @@ function clearSessionCookie(c: Context, config: ApiRuntimeConfig) {
     secure: config.sessionCookieSecure,
     domain: config.sessionCookieDomain,
   })
+}
+
+function loginUrlForInvite(publicAppUrl: string, email: string) {
+  const url = new URL("/login", publicAppUrl)
+  url.searchParams.set("email", email)
+  return url.toString()
 }
 
 function assertAdmin(user: CurrentUser) {

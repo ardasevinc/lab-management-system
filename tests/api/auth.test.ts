@@ -27,6 +27,18 @@ describe("auth and invites", () => {
   })
 
   it("lets an admin invite a researcher who can then sign in", async () => {
+    const inviteEmails: Array<{ to: string; name: string; role: string; loginUrl: string }> = []
+    app = createApiApp({
+      db: testDb.db,
+      config: { publicAppUrl: "https://lms.miralab.tr" },
+      mailer: {
+        async sendLoginOtp() {},
+        async sendInviteEmail(email) {
+          inviteEmails.push(email)
+        },
+        async sendBookingEmail() {},
+      },
+    })
     const adminHeaders = await login("admin@miralab.tr")
     const inviteResponse = await app.request("/admin/invites", {
       method: "POST",
@@ -55,6 +67,14 @@ describe("auth and invites", () => {
     })
 
     expect(inviteResponse.status).toBe(201)
+    expect(inviteEmails).toEqual([
+      {
+        to: "new.member@miralab.tr",
+        name: "New Member",
+        role: "member",
+        loginUrl: "https://lms.miralab.tr/login?email=new.member%40miralab.tr",
+      },
+    ])
     expect(otpResponse.status).toBe(200)
     expect(verifyResponse.status).toBe(200)
     expect(user).toEqual({

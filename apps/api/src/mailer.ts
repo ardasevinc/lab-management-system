@@ -18,8 +18,16 @@ export type BookingEmail = {
   actionUrl?: string
 }
 
+export type InviteEmail = {
+  to: string
+  name: string
+  role: "admin" | "member"
+  loginUrl: string
+}
+
 export type Mailer = {
   sendLoginOtp(email: LoginOtpEmail): Promise<void>
+  sendInviteEmail(email: InviteEmail): Promise<void>
   sendBookingEmail(email: BookingEmail): Promise<void>
 }
 
@@ -61,6 +69,9 @@ export function createConsoleMailer(): Mailer {
     async sendLoginOtp(email) {
       console.info(`[lab-api] login code for ${email.to}: ${email.code} expires ${email.expiresAt}`)
     },
+    async sendInviteEmail(email) {
+      console.info(`[lab-api] invite email to ${email.to}: ${labConfig.shortName} access`)
+    },
     async sendBookingEmail(email) {
       console.info(`[lab-api] booking email to ${email.to}: ${email.subject}`)
     },
@@ -94,6 +105,34 @@ export function createSesMailer(config: SesMailerConfig): Mailer {
               Html: {
                 Charset: "UTF-8",
                 Data: renderLoginOtpHtml(email.code, expiresAt),
+              },
+            },
+          },
+        }),
+      )
+    },
+    async sendInviteEmail(email) {
+      await client.send(
+        new SendEmailCommand({
+          Source: formatAddress(config.fromName, config.fromEmail),
+          Destination: {
+            ToAddresses: [email.to],
+          },
+          ReplyToAddresses: config.replyTo ? [config.replyTo] : undefined,
+          ConfigurationSetName: config.configurationSet,
+          Message: {
+            Subject: {
+              Charset: "UTF-8",
+              Data: `You've been invited to ${labConfig.shortName}`,
+            },
+            Body: {
+              Text: {
+                Charset: "UTF-8",
+                Data: renderInviteText(email),
+              },
+              Html: {
+                Charset: "UTF-8",
+                Data: renderInviteHtml(email),
               },
             },
           },
@@ -165,6 +204,40 @@ export function renderLoginOtpHtml(code: string, expiresAt: Date) {
     </main>
   </body>
 </html>`
+}
+
+export function renderInviteText(email: InviteEmail) {
+  return [
+    `Hi ${email.name},`,
+    "",
+    `You have been invited to ${labConfig.appTitle} as ${articleForRole(email.role)} ${email.role}.`,
+    "Use your invited email address to request a one-time login code.",
+    "",
+    `Sign in: ${email.loginUrl}`,
+    "",
+    `Need help? Contact ${labConfig.email.supportAddress}.`,
+  ].join("\n")
+}
+
+export function renderInviteHtml(email: InviteEmail) {
+  return `<!doctype html>
+<html>
+  <body style="margin:0;background:#f4f7f8;color:#172124;font-family:Arial,sans-serif;">
+    <main style="max-width:560px;margin:0 auto;padding:32px 20px;">
+      <section style="background:#ffffff;border:1px solid #d8e2e4;border-radius:12px;padding:24px;">
+        <p style="margin:0 0 8px;color:#647176;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(labConfig.shortName)}</p>
+        <h1 style="margin:0 0 14px;font-size:22px;line-height:1.25;">You have been invited</h1>
+        <p style="margin:0 0 18px;color:#455157;font-size:15px;line-height:1.5;">Hi ${escapeHtml(email.name)}, you now have ${escapeHtml(email.role)} access to ${escapeHtml(labConfig.appTitle)}. Use your invited email address to request a one-time login code.</p>
+        <p style="margin:22px 0 0;"><a href="${escapeHtml(email.loginUrl)}" style="display:inline-block;border-radius:10px;background:#007f67;color:#ffffff;font-size:14px;font-weight:700;line-height:1;text-decoration:none;padding:13px 16px;">Sign in</a></p>
+        <p style="margin:22px 0 0;color:#647176;font-size:12px;line-height:1.5;">Need help? Contact <a href="mailto:${escapeHtml(labConfig.email.supportAddress)}" style="color:#007f67;text-decoration:none;">${escapeHtml(labConfig.email.supportAddress)}</a>.</p>
+      </section>
+    </main>
+  </body>
+</html>`
+}
+
+function articleForRole(role: InviteEmail["role"]) {
+  return role === "admin" ? "an" : "a"
 }
 
 function formatLabTimezone(date: Date) {

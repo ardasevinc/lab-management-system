@@ -22,6 +22,19 @@ test("login returns users to the requested workspace route", async ({ page }, te
   expect(consoleProblems).toEqual([])
 })
 
+test("invite login links prefill the invited email", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop invite-link smoke")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await page.goto("/login?email=member%40miralab.tr")
+
+  await expect(page.getByLabel("Email")).toHaveValue("member@miralab.tr")
+  await page.getByRole("button", { name: "Continue" }).click()
+  await expect(page.getByLabel("Login code")).toBeVisible()
+  await expect(page.getByText("member@miralab.tr")).toBeVisible()
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop week-board flow")
 

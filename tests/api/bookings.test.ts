@@ -27,6 +27,8 @@ describe("booking API", () => {
         async sendLoginOtp(email) {
           sentEmails.push(email)
         },
+        async sendInviteEmail() {},
+        async sendBookingEmail() {},
       },
     })
 
@@ -537,6 +539,7 @@ describe("booking API", () => {
       },
       mailer: {
         async sendLoginOtp() {},
+        async sendInviteEmail() {},
         async sendBookingEmail(email) {
           sentBookingEmails.push(email)
         },
@@ -598,6 +601,7 @@ describe("booking API", () => {
       db: testDb.db,
       mailer: {
         async sendLoginOtp() {},
+        async sendInviteEmail() {},
         async sendBookingEmail(email) {
           sentBookingEmails.push(email)
         },

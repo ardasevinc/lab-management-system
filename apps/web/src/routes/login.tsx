@@ -9,6 +9,7 @@ export const Route = createFileRoute("/login")({
 function LoginRoute() {
   const navigate = useNavigate()
   const redirect = getLoginRedirect()
+  const initialEmail = getLoginEmail()
 
   if (getStoredToken()) {
     return <Navigate to={redirect ?? "/schedule"} replace />
@@ -16,6 +17,7 @@ function LoginRoute() {
 
   return (
     <AuthScreen
+      initialEmail={initialEmail}
       onLoggedIn={(user) => {
         navigate({
           to: redirect ?? (user.role === "admin" ? "/admin" : "/schedule"),
@@ -26,8 +28,22 @@ function LoginRoute() {
   )
 }
 
+function getLoginEmail() {
+  const value = new URLSearchParams(globalThis.location?.search).get("email")
+  return sanitizeEmail(value)
+}
+
 function getLoginRedirect() {
   return sanitizeRedirect(new URLSearchParams(globalThis.location?.search).get("redirect"))
+}
+
+function sanitizeEmail(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed.toLowerCase() : undefined
 }
 
 function sanitizeRedirect(value: unknown) {
