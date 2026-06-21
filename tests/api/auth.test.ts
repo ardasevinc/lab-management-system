@@ -322,6 +322,11 @@ describe("auth and invites", () => {
       body: JSON.stringify({ email: "admin@miralab.tr" }),
     })
     expect(request.status).toBe(200)
+    expect(await request.json()).toEqual({
+      ok: true,
+      email: "admin@miralab.tr",
+      expiresAt: expect.any(String),
+    })
     const code = await latestOtpCode("admin@miralab.tr")
     const verify = await app.request("/auth/verify-otp", {
       method: "POST",
