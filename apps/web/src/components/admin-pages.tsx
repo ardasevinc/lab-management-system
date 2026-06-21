@@ -110,7 +110,7 @@ export function AdminOverviewPage() {
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-px bg-border xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-px bg-border xl:grid-cols-5" data-admin-summary-grid>
           <SummaryPanel
             icon={MonitorCog}
             label="Machines"
@@ -140,6 +140,7 @@ export function AdminOverviewPage() {
             label="Reminders"
             value={reminderHealth.value}
             detail={reminderHealth.detail}
+            className="col-span-2 xl:col-span-1"
           />
         </div>
       </section>
@@ -431,14 +432,19 @@ function SummaryPanel({
   label,
   value,
   detail,
+  className,
 }: {
   icon: LucideIcon
   label: string
   value: string
   detail: string
+  className?: string
 }) {
   return (
-    <section className="bg-card px-4 py-3">
+    <section
+      className={cn("bg-card px-4 py-3", className)}
+      data-admin-summary-panel={label.toLowerCase()}
+    >
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-muted-foreground text-xs">{label}</div>

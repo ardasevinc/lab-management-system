@@ -721,6 +721,10 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
   const consoleProblems = collectConsoleProblems(page)
   await loginAsAdmin(page)
 
+  await page.goto("/admin")
+  await expect(page.getByRole("heading", { name: "Admin overview" })).toBeVisible()
+  await expectReminderSummarySpansResponsiveGrid(page)
+
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
 
@@ -1290,6 +1294,22 @@ async function expectElementFullyWithinViewport(page: Page, locator: Locator) {
 
 async function expectRouteContentWithinViewport(page: Page) {
   await expectElementWithinViewport(page, page.locator("main").last())
+}
+
+async function expectReminderSummarySpansResponsiveGrid(page: Page) {
+  const summaryGrid = page.locator("[data-admin-summary-grid]")
+  const reminderTile = page.locator('[data-admin-summary-panel="reminders"]')
+  await expect(summaryGrid).toBeVisible()
+  await expect(reminderTile).toBeVisible()
+
+  const [summaryGridBox, reminderTileBox] = await Promise.all([
+    summaryGrid.boundingBox(),
+    reminderTile.boundingBox(),
+  ])
+
+  expect(summaryGridBox).not.toBeNull()
+  expect(reminderTileBox).not.toBeNull()
+  expect(reminderTileBox?.width ?? 0).toBeGreaterThan((summaryGridBox?.width ?? 0) * 0.9)
 }
 
 async function openNewBookingSheet(page: Page, projectName: string) {
