@@ -1,0 +1,48 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: caprover-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to CapRover
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CAPROVER_APP: miralab-lms
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify deployment contract
+        run: |
+          bun run verify:caprover-package
+          bun run verify:caprover-env
+
+      - name: Run tests
+        run: bun run check
+
+      - name: Build app
+        run: bun run build
+
+      - name: Create CapRover deploy archive
+        run: git archive --format=tar --output=deploy.tar HEAD
+
+      - name: Deploy to CapRover
+        uses: caprover/deploy-from-github@v1.2.0
+        with:
+          server: ${{ secrets.CAPROVER_SERVER }}
+          app: ${{ env.CAPROVER_APP }}
+          token: ${{ secrets.CAPROVER_APP_TOKEN }}
