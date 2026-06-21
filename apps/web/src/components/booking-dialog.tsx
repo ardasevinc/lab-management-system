@@ -1,6 +1,17 @@
 import { format } from "date-fns"
 import { CalendarDays } from "lucide-react"
 import { useEffect, useState } from "react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -244,14 +255,32 @@ export function BookingDialog({
 
           <SheetFooter className="-mx-4 mt-0 shrink-0 border-border border-t bg-background px-4 pt-3 sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             {mode === "edit" ? (
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={pending}
-                onClick={() => onDelete(adminReason)}
-              >
-                Delete
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="destructive" disabled={pending}>
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete booking?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This removes the booking from the schedule and records the action in audit
+                      history.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      disabled={pending}
+                      onClick={() => onDelete(adminReason)}
+                    >
+                      Delete booking
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             ) : (
               <span />
             )}
