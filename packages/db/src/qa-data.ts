@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import type { Db } from "."
 import {
   bookingAuditEvents,
@@ -41,6 +41,16 @@ export async function seedRealisticQaData(db: Db, now = new Date("2026-06-15T06:
     await tx.delete(invites).where(inArray(invites.id, qaInviteIds))
     await tx.delete(users).where(inArray(users.id, qaUserIds))
     await tx.delete(machines).where(inArray(machines.id, qaMachineIds))
+    await tx
+      .update(machines)
+      .set({
+        accessNotes: "",
+        active: true,
+        description: "MIRALAB GPU workstation for remote AI training and research sessions.",
+        specsJson: JSON.stringify(["NVIDIA GPU workstation"]),
+        updatedAt: now,
+      })
+      .where(eq(machines.id, "tohum"))
 
     await tx
       .insert(users)

@@ -1,4 +1,10 @@
-import { listBookingsForMachine, listMachines, listUsers, seedRealisticQaData } from "@lab/db"
+import {
+  listBookingsForMachine,
+  listMachines,
+  listUsers,
+  seedRealisticQaData,
+  updateMachine,
+} from "@lab/db"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { createTestDb } from "../helpers/db"
 
@@ -62,5 +68,29 @@ describe("realistic QA data seed", () => {
     expect(users.filter((user) => user.email.endsWith("@miralab.tr"))).toHaveLength(7)
     expect(machines).toHaveLength(3)
     expect(tohumBookings).toHaveLength(5)
+  })
+
+  it("resets the baseline tohum presentation for deterministic browser QA", async () => {
+    await updateMachine(testDb.db, "tohum", {
+      accessNotes: "Remote access details are shared by lab admins.",
+      active: false,
+      description: "stale local edit",
+      specs: ["stale spec"],
+    })
+
+    await seedRealisticQaData(testDb.db)
+
+    const machines = await listMachines(testDb.db)
+    expect(machines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          accessNotes: "",
+          active: true,
+          description: "MIRALAB GPU workstation for remote AI training and research sessions.",
+          slug: "tohum",
+          specs: ["NVIDIA GPU workstation"],
+        }),
+      ]),
+    )
   })
 })
