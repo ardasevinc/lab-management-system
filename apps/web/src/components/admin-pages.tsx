@@ -1,17 +1,11 @@
 import { Navigate } from "@tanstack/react-router"
-import { CalendarDays, Clock3, type LucideIcon, MonitorCog, Wrench } from "lucide-react"
+import { differenceInMinutes, isAfter } from "date-fns"
+import { CalendarDays, Clock3, type LucideIcon, MonitorCog, Pencil, Wrench } from "lucide-react"
 import { AdminPageFrame } from "@/components/admin-page-frame"
 import { useWorkspace } from "@/components/app-workspace-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import {
   Table,
   TableBody,
@@ -197,12 +191,23 @@ export function AdminMaintenancePage() {
     return <Navigate to="/schedule" replace />
   }
 
-  const maintenanceBookings = workspace.bookings.filter((booking) => booking.type === "maintenance")
+  const maintenanceBookings = workspace.bookings
+    .filter((booking) => booking.type === "maintenance")
+    .sort((left, right) => left.startsAt.localeCompare(right.startsAt))
+  const maintenanceHours = maintenanceBookings.reduce(
+    (total, booking) =>
+      total +
+      Math.max(0, differenceInMinutes(new Date(booking.endsAt), new Date(booking.startsAt))) / 60,
+    0,
+  )
+  const nextMaintenance = maintenanceBookings.find((booking) =>
+    isAfter(new Date(booking.endsAt), new Date()),
+  )
 
   return (
     <AdminPageFrame
       title="Maintenance"
-      description="Service windows"
+      description={workspace.selectedMachine?.name ?? "Service windows"}
       action={
         <Button type="button" onClick={workspace.openMaintenanceBooking}>
           <Wrench data-icon="inline-start" aria-hidden="true" />
@@ -210,9 +215,37 @@ export function AdminMaintenancePage() {
         </Button>
       }
     >
-      <section className="rounded-lg border border-border bg-card">
-        <div className="border-border border-b px-4 py-3">
-          <h2 className="font-medium text-sm">This week</h2>
+      <section className="grid gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-3">
+        <MaintenanceMetric
+          icon={MonitorCog}
+          label="Machine"
+          value={workspace.selectedMachine?.name ?? "None"}
+          detail={workspace.selectedMachine?.active ? "available" : "inactive"}
+        />
+        <MaintenanceMetric
+          icon={Wrench}
+          label="Service"
+          value={formatBlockCount(maintenanceBookings.length)}
+          detail={`${formatHours(maintenanceHours)} reserved`}
+        />
+        <MaintenanceMetric
+          icon={Clock3}
+          label="Next"
+          value={nextMaintenance?.title ?? "Open"}
+          detail={
+            nextMaintenance
+              ? `${formatDate(nextMaintenance.startsAt)} · ${formatTime(
+                  nextMaintenance.startsAt,
+                )} - ${formatTime(nextMaintenance.endsAt)}`
+              : "No maintenance this week"
+          }
+        />
+      </section>
+
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
+          <h2 className="font-medium text-sm">Maintenance windows</h2>
+          <Badge variant="outline">{formatBlockCount(maintenanceBookings.length)}</Badge>
         </div>
         {maintenanceBookings.length ? (
           <>
@@ -224,10 +257,15 @@ export function AdminMaintenancePage() {
                   className="w-full px-4 py-3 text-left transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => workspace.editBooking(booking)}
                 >
-                  <div className="truncate font-medium text-sm">{booking.title}</div>
-                  <div className="mt-1 text-muted-foreground text-xs tabular-nums">
-                    {formatDate(booking.startsAt)} {formatTime(booking.startsAt)} -{" "}
-                    {formatDate(booking.endsAt)} {formatTime(booking.endsAt)}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-sm">{booking.title}</div>
+                      <div className="mt-1 text-muted-foreground text-xs tabular-nums">
+                        {formatDate(booking.startsAt)} {formatTime(booking.startsAt)} -{" "}
+                        {formatDate(booking.endsAt)} {formatTime(booking.endsAt)}
+                      </div>
+                    </div>
+                    <Pencil className="text-muted-foreground" aria-hidden="true" />
                   </div>
                 </button>
               ))}
@@ -238,17 +276,30 @@ export function AdminMaintenancePage() {
                   <TableHead>Title</TableHead>
                   <TableHead>Starts</TableHead>
                   <TableHead>Ends</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {maintenanceBookings.map((booking) => (
-                  <TableRow key={booking.id} onClick={() => workspace.editBooking(booking)}>
+                  <TableRow key={booking.id}>
                     <TableCell className="font-medium">{booking.title}</TableCell>
                     <TableCell className="text-muted-foreground tabular-nums">
                       {formatDate(booking.startsAt)} {formatTime(booking.startsAt)}
                     </TableCell>
                     <TableCell className="text-muted-foreground tabular-nums">
                       {formatDate(booking.endsAt)} {formatTime(booking.endsAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Edit ${booking.title}`}
+                        onClick={() => workspace.editBooking(booking)}
+                      >
+                        <Pencil data-icon="inline-start" aria-hidden="true" />
+                        Edit
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -266,17 +317,46 @@ export function AdminMaintenancePage() {
                 Schedule service windows before taking a machine offline.
               </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
-              <Button type="button" variant="outline" onClick={workspace.openMaintenanceBooking}>
-                <Wrench data-icon="inline-start" aria-hidden="true" />
-                Add maintenance
-              </Button>
-            </EmptyContent>
           </Empty>
         )}
       </section>
     </AdminPageFrame>
   )
+}
+
+function MaintenanceMetric({
+  icon: Icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  detail: string
+}) {
+  return (
+    <section className="bg-card px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-muted-foreground text-xs">{label}</div>
+          <div className="mt-1 truncate font-semibold text-lg">{value}</div>
+          <div className="mt-0.5 truncate text-muted-foreground text-xs">{detail}</div>
+        </div>
+        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+          <Icon aria-hidden="true" />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function formatBlockCount(count: number) {
+  return `${count} ${count === 1 ? "block" : "blocks"}`
+}
+
+function formatHours(hours: number) {
+  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}h`
 }
 
 function OverviewDetailRow({

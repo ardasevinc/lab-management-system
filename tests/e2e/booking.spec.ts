@@ -354,7 +354,7 @@ test("admin can create a maintenance block from the maintenance route", async ({
   await loginAsAdmin(page)
 
   await page.goto("/admin/maintenance")
-  await expect(page.getByRole("heading", { name: "Maintenance" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Maintenance", exact: true })).toBeVisible()
   await page.getByRole("button", { name: "Add maintenance" }).click()
 
   await expect(page.getByRole("heading", { name: "New maintenance block" })).toBeVisible()
@@ -363,6 +363,12 @@ test("admin can create a maintenance block from the maintenance route", async ({
   await page.getByRole("button", { name: "Create" }).click()
 
   await expect(page.locator("tbody").getByText(maintenanceTitle)).toBeVisible()
+  await expect(page.getByText("1 block").first()).toBeVisible()
+  await expect(page.getByText("1h reserved")).toBeVisible()
+  await page.getByRole("button", { name: `Edit ${maintenanceTitle}` }).click()
+  await expect(page.getByRole("heading", { name: "Edit maintenance block" })).toBeVisible()
+  await page.keyboard.press("Escape")
+  await expect(page.getByRole("heading", { name: "Edit maintenance block" })).toBeHidden()
 
   const createdBooking = await findBookingFromPage(page, maintenanceTitle)
   expect(createdBooking).toEqual(
