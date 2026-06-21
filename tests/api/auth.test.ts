@@ -49,6 +49,7 @@ describe("auth and invites", () => {
         role: "member",
       }),
     })
+    const usersAfterInviteResponse = await app.request("/admin/users", { headers: adminHeaders })
 
     const otpResponse = await app.request("/auth/request-otp", {
       method: "POST",
@@ -67,6 +68,17 @@ describe("auth and invites", () => {
     })
 
     expect(inviteResponse.status).toBe(201)
+    expect(usersAfterInviteResponse.status).toBe(200)
+    expect(await usersAfterInviteResponse.json()).toEqual({
+      users: expect.arrayContaining([
+        expect.objectContaining({
+          email: "new.member@miralab.tr",
+          name: "New Member",
+          role: "member",
+          active: true,
+        }),
+      ]),
+    })
     expect(inviteEmails).toEqual([
       {
         to: "new.member@miralab.tr",

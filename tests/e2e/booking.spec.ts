@@ -247,6 +247,41 @@ test("admin user role changes require confirmation", async ({ page }, testInfo) 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin invites with admin role require confirmation", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop user-admin flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const suffix = Date.now()
+  const email = `admin-invite-${suffix}@miralab.tr`
+  const name = `E2E Admin ${suffix}`
+
+  await loginAsAdmin(page)
+  await page.goto("/admin/users")
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+
+  await page.getByRole("button", { name: "Invite user" }).click()
+  await expect(page.getByRole("heading", { name: "Invite user" })).toBeVisible()
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Name").fill(name)
+  await page.getByRole("combobox", { name: "Role" }).click()
+  await page.getByRole("option", { name: "Admin" }).click()
+  await page.getByRole("button", { name: "Send invite" }).click()
+
+  await expect(page.getByRole("alertdialog", { name: "Invite admin?" })).toBeVisible()
+  await page.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Invite admin?" })).toBeHidden()
+  await expect(page.locator("tbody tr").filter({ hasText: email })).toHaveCount(0)
+
+  await page.getByRole("button", { name: "Send invite" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Invite admin?" })).toBeVisible()
+  await page.getByRole("button", { name: "Send admin invite" }).click()
+
+  const invitedRow = page.locator("tbody tr").filter({ hasText: email })
+  await expect(invitedRow).toBeVisible()
+  await expect(invitedRow.getByRole("combobox")).toHaveText("Admin")
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin machine deletion requires confirmation", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop machine-admin flow")
 

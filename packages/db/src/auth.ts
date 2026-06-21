@@ -187,6 +187,7 @@ export async function createInvite(
   now = new Date(),
 ) {
   const email = normalizeEmail(input.email)
+  const existingUser = await db.query.users.findFirst({ where: eq(users.email, email) })
   const values = {
     id: crypto.randomUUID(),
     email,
@@ -198,20 +199,50 @@ export async function createInvite(
     updatedAt: now,
   }
 
-  await db
-    .insert(invites)
-    .values(values)
-    .onConflictDoUpdate({
-      target: invites.email,
-      set: {
-        name: values.name,
-        role: values.role,
-        invitedByUserId: values.invitedByUserId,
-        updatedAt: now,
-      },
-    })
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(invites)
+      .values(values)
+      .onConflictDoUpdate({
+        target: invites.email,
+        set: {
+          name: values.name,
+          role: values.role,
+          invitedByUserId: values.invitedByUserId,
+          updatedAt: now,
+        },
+      })
 
-  return { id: values.id, email, name: values.name, role: values.role, active: true }
+    if (existingUser) {
+      await tx
+        .update(users)
+        .set({
+          name: values.name,
+          role: values.role,
+          updatedAt: now,
+        })
+        .where(eq(users.id, existingUser.id))
+      return
+    }
+
+    await tx.insert(users).values({
+      id: values.id,
+      email: values.email,
+      name: values.name,
+      role: values.role,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  })
+
+  return {
+    id: existingUser?.id ?? values.id,
+    email,
+    name: values.name,
+    role: values.role,
+    active: existingUser?.active ?? true,
+  }
 }
 
 export function normalizeEmail(email: string) {

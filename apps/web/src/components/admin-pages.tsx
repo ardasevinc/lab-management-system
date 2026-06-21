@@ -362,9 +362,22 @@ function InviteUserSheet({
   onSubmit: (form: FormData) => void
 }) {
   const isMobile = useIsMobile()
+  const [pendingAdminInvite, setPendingAdminInvite] = useState<{
+    form: FormData
+    name: string
+    email: string
+  } | null>(null)
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setPendingAdminInvite(null)
+        }
+        onOpenChange(nextOpen)
+      }}
+    >
       <SheetContent
         side={isMobile ? "bottom" : "right"}
         className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-md sm:p-5"
@@ -373,7 +386,17 @@ function InviteUserSheet({
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault()
-            onSubmit(new FormData(event.currentTarget))
+            const form = new FormData(event.currentTarget)
+            const role = String(form.get("role") ?? "member")
+            if (role === "admin") {
+              setPendingAdminInvite({
+                form,
+                name: String(form.get("name") ?? "this user"),
+                email: String(form.get("email") ?? "their email"),
+              })
+              return
+            }
+            onSubmit(form)
           }}
         >
           <SheetHeader className="px-0 pt-0">
@@ -406,7 +429,7 @@ function InviteUserSheet({
                 <SelectTrigger id="invite-role" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper">
                   <SelectGroup>
                     <SelectItem value="member">Member</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
@@ -425,6 +448,34 @@ function InviteUserSheet({
             </Button>
           </SheetFooter>
         </form>
+        <AlertDialog
+          open={pendingAdminInvite !== null}
+          onOpenChange={(nextOpen) => !nextOpen && setPendingAdminInvite(null)}
+        >
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Invite admin?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will invite {pendingAdminInvite?.name ?? "this user"} with admin access for{" "}
+                {pendingAdminInvite?.email ?? "their email"}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={pending || pendingAdminInvite === null}
+                onClick={() => {
+                  if (pendingAdminInvite) {
+                    onSubmit(pendingAdminInvite.form)
+                    setPendingAdminInvite(null)
+                  }
+                }}
+              >
+                Send admin invite
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
     </Sheet>
   )
