@@ -113,7 +113,11 @@ export function MachineInventory({
                     const isSelected = machine.slug === selectedMachineSlug
 
                     return (
-                      <TableRow key={machine.id} data-state={isSelected ? "selected" : undefined}>
+                      <TableRow
+                        key={machine.id}
+                        data-machine-slug={machine.slug}
+                        data-state={isSelected ? "selected" : undefined}
+                      >
                         <TableCell className="min-w-56 whitespace-normal">
                           <div className="font-medium">{machine.name}</div>
                           <div className="mt-1 max-w-xl text-muted-foreground text-sm">
@@ -179,6 +183,7 @@ export function MachineInventory({
                 return (
                   <article
                     key={machine.id}
+                    data-machine-slug={machine.slug}
                     className={cn("px-4 py-3", isSelected && "bg-accent/45")}
                   >
                     <div className="flex items-start justify-between gap-3">

@@ -1065,6 +1065,65 @@ test("machine inventory filter keeps dense labs scannable", async ({ page }) => 
   expect(consoleProblems).toEqual([])
 })
 
+test("machines route keeps inactive machines visible but not schedulable", async ({ page }) => {
+  const consoleProblems = collectConsoleProblems(page)
+  await page.route("**/machines", async (route) => {
+    if (route.request().resourceType() !== "fetch") {
+      await route.continue()
+      return
+    }
+
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        machines: [
+          {
+            id: "machine-tohum",
+            slug: "tohum",
+            name: "tohum",
+            description: "MIRALAB GPU workstation for remote AI training and research.",
+            specs: ["NVIDIA GPU workstation"],
+            accessNotes: "",
+            active: true,
+          },
+          {
+            id: "machine-ada",
+            slug: "ada",
+            name: "ada",
+            description: "Secondary GPU workstation.",
+            specs: ["NVIDIA RTX 4090"],
+            accessNotes: "",
+            active: true,
+          },
+          {
+            id: "machine-incir",
+            slug: "incir",
+            name: "incir",
+            description: "Offline workstation kept for maintenance drills.",
+            specs: ["NVIDIA RTX 3090"],
+            accessNotes: "",
+            active: false,
+          },
+        ],
+      }),
+    })
+  })
+
+  await loginAsAdmin(page)
+  await page.goto("/machines")
+  await expect(page.getByRole("heading", { name: "Machines", exact: true })).toBeVisible()
+
+  const inventory = page.locator("section").filter({ hasText: "All machines" })
+  const adaRow = inventory.locator('[data-machine-slug="ada"]').filter({ visible: true })
+  const incirRow = inventory.locator('[data-machine-slug="incir"]').filter({ visible: true })
+  await expect(adaRow).toBeVisible()
+  await expect(incirRow).toBeVisible()
+  await expect(inventory.getByRole("button", { name: "Use for schedule" })).toHaveCount(1)
+  await expect(adaRow.getByRole("button", { name: "Use for schedule" })).toBeVisible()
+  await expect(incirRow.getByRole("button", { name: "Use for schedule" })).toHaveCount(0)
+  expect(consoleProblems).toEqual([])
+})
+
 function isDesktopProject(projectName: string) {
   return projectName === "chromium"
 }
