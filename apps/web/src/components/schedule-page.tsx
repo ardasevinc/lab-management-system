@@ -75,7 +75,7 @@ export function SchedulePage() {
               {selectedMachine?.name ?? "Machine"} schedule
             </h1>
             <Badge variant={selectedMachine?.active ? "secondary" : "outline"}>
-              {selectedMachine?.active ? "bookable" : "inactive"}
+              {selectedMachine?.active ? "available" : "inactive"}
             </Badge>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground text-sm">

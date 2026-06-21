@@ -63,7 +63,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
           <div className="max-w-xl">
             <p className="font-medium text-white/52 text-sm uppercase tracking-[0.18em]">Tohum</p>
             <h2 className="mt-3 max-w-lg font-semibold text-4xl leading-tight tracking-tight">
-              GPU reservations for MIRALAB.
+              MIRALAB machine access.
             </h2>
           </div>
 

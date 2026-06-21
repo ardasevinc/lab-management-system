@@ -36,7 +36,7 @@ export function MachineInventory({
       <div className="flex items-center justify-between gap-3 border-border border-b px-4 py-3">
         <div>
           <h2 className="font-medium text-sm">{title}</h2>
-          <p className="text-muted-foreground text-xs">{machines.length} configured</p>
+          <p className="text-muted-foreground text-xs">{formatMachineCount(machines.length)}</p>
         </div>
         <MonitorCog className="text-muted-foreground" aria-hidden="true" />
       </div>
@@ -74,7 +74,7 @@ export function MachineInventory({
                   </TableCell>
                   {showAccessNotes ? (
                     <TableCell className="max-w-md whitespace-normal text-muted-foreground">
-                      {machine.accessNotes || "No access notes"}
+                      {machine.accessNotes || "Not set"}
                     </TableCell>
                   ) : null}
                   {onSelectMachine || onEditMachine ? (
@@ -130,7 +130,7 @@ export function MachineInventory({
                 {showAccessNotes ? (
                   <div className="grid gap-1">
                     <dt className="text-muted-foreground text-xs">Access</dt>
-                    <dd>{machine.accessNotes || "No access notes"}</dd>
+                    <dd>{machine.accessNotes || "Not set"}</dd>
                   </div>
                 ) : null}
                 {machine.specs.length ? (
@@ -175,13 +175,13 @@ export function MachineInventory({
 
 function MachineStateBadge({ active }: { active: boolean }) {
   return (
-    <Badge variant={active ? "secondary" : "outline"}>{active ? "bookable" : "inactive"}</Badge>
+    <Badge variant={active ? "secondary" : "outline"}>{active ? "available" : "inactive"}</Badge>
   )
 }
 
 function SpecList({ specs }: { specs: string[] }) {
   if (!specs.length) {
-    return <span className="text-muted-foreground">No specs recorded</span>
+    return <span className="text-muted-foreground">Not set</span>
   }
 
   return (
@@ -193,4 +193,8 @@ function SpecList({ specs }: { specs: string[] }) {
       ))}
     </div>
   )
+}
+
+function formatMachineCount(count: number) {
+  return count === 1 ? "1 machine" : `${count} machines`
 }

@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -87,7 +87,7 @@ export function AdminOverviewPage() {
   return (
     <AdminPageFrame
       title="Admin overview"
-      description="Bookings and access for the selected machine."
+      description="Selected machine"
       action={
         <div className="flex items-center gap-2">
           <Button type="button" onClick={workspace.openNewBooking}>
@@ -124,7 +124,7 @@ export function AdminOverviewPage() {
                 {selectedMachine?.name ?? "No machine selected"}
               </h2>
               <Badge variant={selectedMachine?.active ? "secondary" : "outline"}>
-                {selectedMachine?.active ? "bookable" : "inactive"}
+                {selectedMachine?.active ? "available" : "inactive"}
               </Badge>
             </div>
             <p className="mt-1 line-clamp-1 text-muted-foreground text-sm">
@@ -141,7 +141,7 @@ export function AdminOverviewPage() {
             icon={MonitorCog}
             label="Machines"
             value={`${activeMachines}/${workspace.machines.length}`}
-            detail="bookable"
+            detail="available"
           />
           <SummaryPanel
             icon={CalendarDays}
@@ -196,7 +196,6 @@ export function AdminOverviewPage() {
             <Empty className="items-start justify-start p-4 text-left">
               <EmptyHeader className="items-start text-left">
                 <EmptyTitle>No reservations this week</EmptyTitle>
-                <EmptyDescription>This machine is free for the selected week.</EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
@@ -209,11 +208,11 @@ export function AdminOverviewPage() {
           <div className="divide-y divide-border">
             <OverviewDetailRow
               label="Next"
-              value={nextBooking?.title ?? "No upcoming booking"}
+              value={nextBooking?.title ?? "Open"}
               detail={
                 nextBooking
                   ? `${formatDate(nextBooking.startsAt)} · ${formatTime(nextBooking.startsAt)} - ${formatTime(nextBooking.endsAt)}`
-                  : "The upcoming slot is open."
+                  : "No upcoming booking"
               }
               badge={nextBooking?.type ?? "open"}
               onClick={nextBooking ? () => workspace.editBooking(nextBooking) : undefined}
@@ -225,7 +224,7 @@ export function AdminOverviewPage() {
             />
             <OverviewDetailRow
               label="Access"
-              value={selectedMachine?.accessNotes || "Not configured"}
+              value={selectedMachine?.accessNotes || "Not set"}
               detail={accessDetail}
             />
           </div>
@@ -248,7 +247,7 @@ export function AdminUsersPage() {
   return (
     <AdminPageFrame
       title="Users"
-      description="Members and access."
+      description="Roles and access"
       action={
         <Button type="button" onClick={() => setInviteOpen(true)}>
           <MailPlus data-icon="inline-start" aria-hidden="true" />
@@ -620,7 +619,7 @@ export function AdminMachinesPage() {
   return (
     <AdminPageFrame
       title="Machines"
-      description="Machine records and booking availability."
+      description="Inventory"
       action={
         <Button type="button" onClick={() => setCreatingMachine(true)}>
           <Plus data-icon="inline-start" aria-hidden="true" />
@@ -758,7 +757,7 @@ function MachineEditorSheet({
           <SheetHeader className="px-0 pt-0">
             <SheetTitle>{mode === "create" ? "New machine" : "Edit machine"}</SheetTitle>
             <SheetDescription>
-              {mode === "create" ? "Add a bookable lab resource." : defaults.slug}
+              {mode === "create" ? "Machine details" : defaults.slug}
             </SheetDescription>
           </SheetHeader>
 
@@ -787,7 +786,7 @@ function MachineEditorSheet({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="true">Bookable</SelectItem>
+                    <SelectItem value="true">Available</SelectItem>
                     <SelectItem value="false">Inactive</SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -881,7 +880,7 @@ export function AdminMaintenancePage() {
   return (
     <AdminPageFrame
       title="Maintenance"
-      description="Blocking reservations for machine work."
+      description="Service windows"
       action={
         <Button type="button" onClick={workspace.openMaintenanceBooking}>
           <Wrench data-icon="inline-start" aria-hidden="true" />

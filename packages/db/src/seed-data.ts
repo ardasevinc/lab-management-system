@@ -58,7 +58,7 @@ export async function seedInitialData(db: Db, now = new Date()) {
       name: "tohum",
       description: "MIRALAB GPU workstation for remote AI training and research sessions.",
       specsJson: JSON.stringify(["NVIDIA GPU workstation"]),
-      accessNotes: "Remote access details are shared by lab admins.",
+      accessNotes: "Ask an admin for access details.",
       active: true,
       createdAt: now,
       updatedAt: now,
