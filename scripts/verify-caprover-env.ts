@@ -6,7 +6,8 @@ import {
 } from "../apps/api/src/env"
 import { createMailerFromEnv } from "../apps/api/src/mailer"
 
-const envPath = Bun.argv[2] ?? "deploy/caprover.env.example"
+const options = parseArgs(Bun.argv.slice(2))
+const envPath = options.envPath ?? "deploy/caprover.env.example"
 const env = parseEnvFile(await Bun.file(envPath).text())
 
 apiRuntimeConfigFromEnv(env)
@@ -47,10 +48,38 @@ assertAbsolutePathEnv("WEB_DIST_DIR")
 assertAbsolutePathEnv("BACKUP_DATABASE_PATH")
 assertAbsolutePathEnv("BACKUP_DIR")
 assertSameSqlitePath()
-assertPlaceholderSecret("AWS_ACCESS_KEY_ID")
-assertPlaceholderSecret("AWS_SECRET_ACCESS_KEY")
+if (options.realSecrets) {
+  assertMaterializedSecret("AWS_ACCESS_KEY_ID")
+  assertMaterializedSecret("AWS_SECRET_ACCESS_KEY")
+} else {
+  assertPlaceholderSecret("AWS_ACCESS_KEY_ID")
+  assertPlaceholderSecret("AWS_SECRET_ACCESS_KEY")
+}
 
 console.log(`verified CapRover env template: ${envPath}`)
+
+function parseArgs(args: string[]) {
+  const parsed: { envPath?: string; realSecrets: boolean } = { realSecrets: false }
+
+  for (const arg of args) {
+    if (arg === "--real-secrets") {
+      parsed.realSecrets = true
+      continue
+    }
+
+    if (arg.startsWith("-")) {
+      throw new Error(`Unknown option: ${arg}`)
+    }
+
+    if (parsed.envPath) {
+      throw new Error(`Unexpected extra argument: ${arg}`)
+    }
+
+    parsed.envPath = arg
+  }
+
+  return parsed
+}
 
 function parseEnvFile(contents: string) {
   const parsed: Record<string, string> = {}
@@ -106,5 +135,12 @@ function assertSameSqlitePath() {
 function assertPlaceholderSecret(key: string) {
   if (env[key] !== "<set-in-caprover>") {
     throw new Error(`${key} must stay as <set-in-caprover> in deploy/caprover.env.example`)
+  }
+}
+
+function assertMaterializedSecret(key: string) {
+  const value = env[key]
+  if (!value || value === "<set-in-caprover>") {
+    throw new Error(`${key} must be materialized for real-secret env verification`)
   }
 }

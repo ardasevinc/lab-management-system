@@ -24,6 +24,39 @@ describe("CapRover env verifier", () => {
     expect(output).toBe("verified CapRover env template: deploy/caprover.env.example")
   })
 
+  it("accepts a materialized env file when real secret mode is explicit", () => {
+    const envPath = copyTemplate("real-secrets.env")
+    replaceInFile(envPath, "AWS_ACCESS_KEY_ID=<set-in-caprover>", "AWS_ACCESS_KEY_ID=AKIATEST")
+    replaceInFile(
+      envPath,
+      "AWS_SECRET_ACCESS_KEY=<set-in-caprover>",
+      "AWS_SECRET_ACCESS_KEY=test-secret",
+    )
+
+    const output = execFileSync(
+      "bun",
+      ["scripts/verify-caprover-env.ts", envPath, "--real-secrets"],
+      {
+        encoding: "utf8",
+        env: { ...process.env, NODE_ENV: "test" },
+      },
+    ).trim()
+
+    expect(output).toBe(`verified CapRover env template: ${envPath}`)
+  })
+
+  it("rejects placeholder secrets in real secret mode", () => {
+    const envPath = copyTemplate("placeholder-secrets.env")
+
+    expect(() =>
+      execFileSync("bun", ["scripts/verify-caprover-env.ts", envPath, "--real-secrets"], {
+        encoding: "utf8",
+        env: { ...process.env, NODE_ENV: "test" },
+        stdio: "pipe",
+      }),
+    ).toThrow("AWS_ACCESS_KEY_ID must be materialized for real-secret env verification")
+  })
+
   it("rejects production footguns in env templates", () => {
     const envPath = copyTemplate("bad-caprover.env")
     replaceInFile(envPath, "SESSION_COOKIE_SECURE=1", "SESSION_COOKIE_SECURE=0")
