@@ -50,4 +50,13 @@ describe("package scripts", () => {
 
     expect(packageJson.scripts?.["verify:postdeploy"]).toBe("bun scripts/verify-postdeploy.ts")
   })
+
+  it("keeps Playwright responsible for building the served app", () => {
+    const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as PackageJson
+    const config = readFileSync("playwright.config.ts", "utf8")
+
+    expect(packageJson.scripts?.playwright).toBe("playwright")
+    expect(packageJson.scripts?.["test:e2e"]).toBe("playwright test")
+    expect(config).toContain('command: "bun run build && bun scripts/start-e2e-server.ts"')
+  })
 })

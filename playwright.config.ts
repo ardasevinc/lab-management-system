@@ -33,7 +33,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun scripts/start-e2e-server.ts",
+    command: "bun run build && bun scripts/start-e2e-server.ts",
     url: "http://127.0.0.1:4173/health",
     reuseExistingServer: false,
     timeout: 120_000,
