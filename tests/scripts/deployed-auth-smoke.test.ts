@@ -34,8 +34,6 @@ describe("deployed auth smoke verifier", () => {
     const seenRequests: string[] = []
     const origin = await startServer(async (request, response) => {
       seenRequests.push(`${request.method} ${request.url}`)
-      const auth = request.headers.authorization
-
       if (request.method === "POST" && request.url === "/auth/request-otp") {
         expect(await readJson(request)).toEqual({ email: "admin@miralab.tr" })
         return json(response, { ok: true, email: "admin@miralab.tr" })
@@ -46,8 +44,29 @@ describe("deployed auth smoke verifier", () => {
           email: "admin@miralab.tr",
           code: "123456",
         })
+        return json(
+          response,
+          {
+            token: "smoke-token",
+            user: {
+              id: "admin-local",
+              email: "admin@miralab.tr",
+              name: "MIRALAB Admin",
+              role: "admin",
+            },
+          },
+          { "set-cookie": sessionCookieHeader() },
+        )
+      }
+
+      if (!hasSmokeAuth(request)) {
+        response.writeHead(401, { "content-type": "application/json" })
+        response.end(JSON.stringify({ error: "Authentication required" }))
+        return
+      }
+
+      if (request.method === "GET" && request.url === "/auth/me") {
         return json(response, {
-          token: "smoke-token",
           user: {
             id: "admin-local",
             email: "admin@miralab.tr",
@@ -57,13 +76,7 @@ describe("deployed auth smoke verifier", () => {
         })
       }
 
-      if (auth !== "Bearer smoke-token") {
-        response.writeHead(401, { "content-type": "application/json" })
-        response.end(JSON.stringify({ error: "Authentication required" }))
-        return
-      }
-
-      if (request.method === "GET" && request.url === "/auth/me") {
+      if (request.method === "GET" && request.url === "/auth/session") {
         return json(response, {
           user: {
             id: "admin-local",
@@ -142,6 +155,7 @@ describe("deployed auth smoke verifier", () => {
       "POST /auth/request-otp",
       "POST /auth/verify-otp",
       "GET /auth/me",
+      "GET /auth/session",
       "GET /machines",
       "POST /bookings",
       "PATCH /bookings/smoke-booking",
@@ -156,19 +170,27 @@ describe("deployed auth smoke verifier", () => {
       }
 
       if (request.method === "POST" && request.url === "/auth/verify-otp") {
-        return json(response, {
-          token: "smoke-token",
-          user: { id: "admin-local", email: "admin@miralab.tr" },
-        })
+        return json(
+          response,
+          {
+            token: "smoke-token",
+            user: { id: "admin-local", email: "admin@miralab.tr" },
+          },
+          { "set-cookie": sessionCookieHeader() },
+        )
       }
 
-      if (request.headers.authorization !== "Bearer smoke-token") {
+      if (!hasSmokeAuth(request)) {
         response.writeHead(401, { "content-type": "application/json" })
         response.end(JSON.stringify({ error: "Authentication required" }))
         return
       }
 
       if (request.method === "GET" && request.url === "/auth/me") {
+        return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
+      }
+
+      if (request.method === "GET" && request.url === "/auth/session") {
         return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
       }
 
@@ -204,19 +226,27 @@ describe("deployed auth smoke verifier", () => {
       }
 
       if (request.method === "POST" && request.url === "/auth/verify-otp") {
-        return json(response, {
-          token: "smoke-token",
-          user: { id: "admin-local", email: "admin@miralab.tr" },
-        })
+        return json(
+          response,
+          {
+            token: "smoke-token",
+            user: { id: "admin-local", email: "admin@miralab.tr" },
+          },
+          { "set-cookie": sessionCookieHeader() },
+        )
       }
 
-      if (request.headers.authorization !== "Bearer smoke-token") {
+      if (!hasSmokeAuth(request)) {
         response.writeHead(401, { "content-type": "application/json" })
         response.end(JSON.stringify({ error: "Authentication required" }))
         return
       }
 
       if (request.method === "GET" && request.url === "/auth/me") {
+        return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
+      }
+
+      if (request.method === "GET" && request.url === "/auth/session") {
         return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
       }
 
@@ -277,19 +307,27 @@ describe("deployed auth smoke verifier", () => {
       }
 
       if (request.method === "POST" && request.url === "/auth/verify-otp") {
-        return json(response, {
-          token: "smoke-token",
-          user: { id: "admin-local", email: "admin@miralab.tr" },
-        })
+        return json(
+          response,
+          {
+            token: "smoke-token",
+            user: { id: "admin-local", email: "admin@miralab.tr" },
+          },
+          { "set-cookie": sessionCookieHeader() },
+        )
       }
 
-      if (request.headers.authorization !== "Bearer smoke-token") {
+      if (!hasSmokeAuth(request)) {
         response.writeHead(401, { "content-type": "application/json" })
         response.end(JSON.stringify({ error: "Authentication required" }))
         return
       }
 
       if (request.method === "GET" && request.url === "/auth/me") {
+        return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
+      }
+
+      if (request.method === "GET" && request.url === "/auth/session") {
         return json(response, { user: { id: "admin-local", email: "admin@miralab.tr" } })
       }
 
@@ -354,9 +392,23 @@ async function startServer(handler: (request: IncomingMessage, response: ServerR
   return `http://127.0.0.1:${address.port}`
 }
 
-function json(response: ServerResponse, body: unknown) {
-  response.writeHead(200, { "content-type": "application/json" })
+function json(response: ServerResponse, body: unknown, headers: Record<string, string> = {}) {
+  response.writeHead(200, { "content-type": "application/json", ...headers })
   response.end(JSON.stringify(body))
+}
+
+function sessionCookieHeader() {
+  return "lab_session=smoke-cookie; HttpOnly; SameSite=Lax; Path=/; Expires=Tue, 21 Jun 2033 00:00:00 GMT"
+}
+
+function hasSmokeAuth(request: IncomingMessage) {
+  return (
+    request.headers.authorization === "Bearer smoke-token" ||
+    request.headers.cookie
+      ?.split(";")
+      .map((part) => part.trim())
+      .includes("lab_session=smoke-cookie") === true
+  )
 }
 
 async function readJson(request: IncomingMessage) {

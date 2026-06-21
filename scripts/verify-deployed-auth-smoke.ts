@@ -31,8 +31,9 @@ if (!target || !email) {
 
 const origin = normalizeOrigin(target)
 const otpCode = await getOtpCode(email)
-const { token, user } = await verifyOtpLogin(origin, email, otpCode)
+const { token, user, sessionCookie } = await verifyOtpLogin(origin, email, otpCode)
 await verifyCurrentUser(origin, token, email)
+await verifyCookieSession(origin, sessionCookie, email)
 const machine = await getBookableMachine(origin, token)
 const booking = await createSmokeBooking(origin, token, machine, user)
 await updateSmokeBooking(origin, token, booking)
@@ -86,11 +87,15 @@ async function getOtpCode(emailAddress: string) {
 }
 
 async function verifyOtpLogin(origin: string, emailAddress: string, code: string) {
-  const body = await requestJson<{ token?: string; user?: User }>(origin, "/auth/verify-otp", {
-    method: "POST",
-    headers: jsonHeaders(),
-    body: JSON.stringify({ email: emailAddress, code }),
-  })
+  const { body, response } = await requestJsonResponse<{ token?: string; user?: User }>(
+    origin,
+    "/auth/verify-otp",
+    {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ email: emailAddress, code }),
+    },
+  )
 
   if (!body.token) {
     fail("/auth/verify-otp did not return a session token")
@@ -100,7 +105,9 @@ async function verifyOtpLogin(origin: string, emailAddress: string, code: string
     fail("/auth/verify-otp did not return the expected user")
   }
 
-  return { token: body.token, user: body.user }
+  const sessionCookie = assertSessionCookie(response.headers.get("set-cookie"), origin)
+
+  return { token: body.token, user: body.user, sessionCookie }
 }
 
 async function verifyCurrentUser(origin: string, token: string, emailAddress: string) {
@@ -110,6 +117,19 @@ async function verifyCurrentUser(origin: string, token: string, emailAddress: st
 
   if (body.user?.email !== emailAddress) {
     fail("/auth/me did not return the authenticated smoke user")
+  }
+}
+
+async function verifyCookieSession(origin: string, sessionCookie: string, emailAddress: string) {
+  const body = await requestJson<{ user?: User | null }>(origin, "/auth/session", {
+    headers: {
+      accept: "application/json",
+      cookie: sessionCookie,
+    },
+  })
+
+  if (body.user?.email !== emailAddress) {
+    fail("/auth/session did not return the authenticated smoke user from the session cookie")
   }
 }
 
@@ -263,6 +283,15 @@ function authHeaders(token: string, init?: Record<string, string>) {
 }
 
 async function requestJson<T>(origin: string, path: string, init?: RequestInit): Promise<T> {
+  const { body } = await requestJsonResponse<T>(origin, path, init)
+  return body
+}
+
+async function requestJsonResponse<T>(
+  origin: string,
+  path: string,
+  init?: RequestInit,
+): Promise<{ body: T; response: Response }> {
   const response = await fetch(`${origin}${path}`, {
     ...init,
     signal: AbortSignal.timeout(15_000),
@@ -273,7 +302,40 @@ async function requestJson<T>(origin: string, path: string, init?: RequestInit):
     fail(`${path} returned ${response.status}${body?.error ? `: ${body.error}` : ""}`)
   }
 
-  return response.json() as Promise<T>
+  return { body: (await response.json()) as T, response }
+}
+
+function assertSessionCookie(setCookie: string | null, origin: string) {
+  if (!setCookie) {
+    fail("/auth/verify-otp did not set the browser session cookie")
+  }
+
+  if (!/(^|,\s*)lab_session=/.test(setCookie)) {
+    fail("/auth/verify-otp did not set lab_session")
+  }
+
+  const attributes = setCookie.toLowerCase()
+  for (const attribute of ["httponly", "samesite=lax", "path=/", "expires="]) {
+    if (!attributes.includes(attribute)) {
+      fail(`/auth/verify-otp session cookie is missing ${attribute}`)
+    }
+  }
+
+  if (!isLocalHttp(new URL(origin)) && !attributes.includes("secure")) {
+    fail("/auth/verify-otp session cookie is missing secure")
+  }
+
+  const sessionCookie = setCookie
+    .split(",")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("lab_session="))
+    ?.split(";")[0]
+
+  if (!sessionCookie) {
+    fail("/auth/verify-otp did not expose a usable lab_session cookie value")
+  }
+
+  return sessionCookie
 }
 
 function fail(message: string): never {
