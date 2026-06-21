@@ -482,8 +482,14 @@ test("admin users filter keeps member management scannable", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
 
   const membersPanel = page.locator("section").filter({ hasText: "Members" })
+  const userStats = membersPanel.locator("dl")
   await expectVisibleText(membersPanel, "admin@miralab.tr")
   await expectVisibleText(membersPanel, "member@miralab.tr")
+  await expect(userStats.getByText("Total").locator("..")).toContainText("2")
+  await expect(userStats.getByText("Active").locator("..")).toContainText("2")
+  await expect(userStats.getByText("Admins").locator("..")).toContainText("1")
+  await expect(userStats.getByText("Members").locator("..")).toContainText("1")
+  await expect(userStats.getByText("Disabled").locator("..")).toContainText("0")
 
   await page.getByLabel("Filter users").fill("member")
   await expectVisibleText(membersPanel, "member@miralab.tr")
