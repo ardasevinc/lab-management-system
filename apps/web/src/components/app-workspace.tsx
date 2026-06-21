@@ -3,13 +3,9 @@ import { Navigate, useLocation } from "@tanstack/react-router"
 import { addWeeks, isSameDay } from "date-fns"
 import { useEffect, useMemo, useState } from "react"
 import { AppShell, WorkspaceBootstrap } from "@/components/app-shell"
-import {
-  type MachineCreateValue,
-  type MachineUpdateValue,
-  WorkspaceContext,
-  type WorkspaceContextValue,
-} from "@/components/app-workspace-context"
+import { WorkspaceContext, type WorkspaceContextValue } from "@/components/app-workspace-context"
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
+import { useAdminWorkspaceActions } from "@/components/use-admin-workspace-actions"
 import {
   type AuditEvent,
   apiFetch,
@@ -174,103 +170,17 @@ export function AppWorkspace() {
     onError: reportMutationError,
   })
 
-  const inviteMutation = useMutation({
-    mutationFn: (form: FormData) =>
-      apiFetch<{ invite: User }>("/admin/invites", {
-        method: "POST",
-        body: JSON.stringify({
-          email: String(form.get("email") ?? ""),
-          name: String(form.get("name") ?? ""),
-          role: String(form.get("role") ?? "member"),
-        }),
-      }),
-    onSuccess: () => {
-      setAdminSheetError(null)
-      setWorkspaceError(null)
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] })
-    },
-    onError: (error: Error) => {
-      setAdminSheetError(error.message)
-    },
-  })
-
-  const userAccessMutation = useMutation({
-    mutationFn: ({ id, value }: { id: string; value: { active?: boolean; role?: User["role"] } }) =>
-      apiFetch<{ user: User }>(`/admin/users/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(value),
-      }),
-    onSuccess: () => {
-      setWorkspaceError(null)
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] })
-    },
-    onError: (error: Error) => {
-      setWorkspaceError(error.message)
-    },
-  })
-
-  const machineUpdateMutation = useMutation({
-    mutationFn: ({
-      id,
-      value,
-      onSuccess,
-    }: {
-      id: string
-      value: MachineUpdateValue
-      onSuccess?: () => void
-    }) =>
-      apiFetch<{ machine: Machine }>(`/admin/machines/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(value),
-      }).then(() => ({ onSuccess })),
-    onSuccess: ({ onSuccess }) => {
-      setAdminSheetError(null)
-      setWorkspaceError(null)
-      queryClient.invalidateQueries({ queryKey: ["machines"] })
-      onSuccess?.()
-    },
-    onError: (error: Error) => {
-      setAdminSheetError(error.message)
-    },
-  })
-
-  const machineCreateMutation = useMutation({
-    mutationFn: ({ value, onSuccess }: { value: MachineCreateValue; onSuccess?: () => void }) =>
-      apiFetch<{ machine: Machine }>("/admin/machines", {
-        method: "POST",
-        body: JSON.stringify(value),
-      }).then(() => ({ onSuccess })),
-    onSuccess: ({ onSuccess }) => {
-      setAdminSheetError(null)
-      setWorkspaceError(null)
-      queryClient.invalidateQueries({ queryKey: ["machines"] })
-      onSuccess?.()
-    },
-    onError: (error: Error) => {
-      setAdminSheetError(error.message)
-    },
-  })
-
-  const machineDeleteMutation = useMutation({
-    mutationFn: ({ machine, onSuccess }: { machine: Machine; onSuccess?: () => void }) =>
-      apiFetch<{ machine: Machine }>(`/admin/machines/${machine.id}`, {
-        method: "DELETE",
-      }).then(() => ({ machine, onSuccess })),
-    onSuccess: ({ machine, onSuccess }) => {
+  const adminActions = useAdminWorkspaceActions({
+    queryClient,
+    setAdminSheetError,
+    setWorkspaceError,
+    onMachineDeleted: (machine) => {
       const remainingMachines =
         machinesQuery.data?.machines.filter((candidate) => candidate.id !== machine.id) ?? []
 
       if (selectedMachineSlug === machine.slug && remainingMachines[0]) {
         setSelectedMachineSlug(remainingMachines[0].slug)
       }
-
-      setAdminSheetError(null)
-      setWorkspaceError(null)
-      queryClient.invalidateQueries({ queryKey: ["machines"] })
-      onSuccess?.()
-    },
-    onError: (error: Error) => {
-      setAdminSheetError(error.message)
     },
   })
 
@@ -311,15 +221,11 @@ export function AppWorkspace() {
     users,
     dashboardStats: getDashboardStats(bookings),
     pendingBookingId: updateBookingMutation.variables?.id ?? null,
-    invitePending: inviteMutation.isPending,
-    userAccessPendingId: userAccessMutation.isPending ? userAccessMutation.variables.id : null,
-    machineCreatePending: machineCreateMutation.isPending,
-    machineUpdatePendingId: machineUpdateMutation.isPending
-      ? machineUpdateMutation.variables.id
-      : null,
-    machineDeletePendingId: machineDeleteMutation.isPending
-      ? machineDeleteMutation.variables.machine.id
-      : null,
+    invitePending: adminActions.invitePending,
+    userAccessPendingId: adminActions.userAccessPendingId,
+    machineCreatePending: adminActions.machineCreatePending,
+    machineUpdatePendingId: adminActions.machineUpdatePendingId,
+    machineDeletePendingId: adminActions.machineDeletePendingId,
     workspaceError,
     adminSheetError,
     setSelectedMachineSlug,
@@ -344,34 +250,11 @@ export function AppWorkspace() {
         range: getRoundedOneHourRange(),
       })
     },
-    inviteUser: (form, options) => {
-      setAdminSheetError(null)
-      inviteMutation.mutate(form, { onSuccess: options?.onSuccess })
-    },
-    updateUserAccess: (targetUser, access) =>
-      userAccessMutation.mutate({ id: targetUser.id, value: access }),
-    updateMachine: (machine, machineUpdate, options) => {
-      setAdminSheetError(null)
-      machineUpdateMutation.mutate({
-        id: machine.id,
-        value: machineUpdate,
-        onSuccess: options?.onSuccess,
-      })
-    },
-    createMachine: (machineCreate, options) => {
-      setAdminSheetError(null)
-      machineCreateMutation.mutate({
-        value: machineCreate,
-        onSuccess: options?.onSuccess,
-      })
-    },
-    deleteMachine: (machine, options) => {
-      setAdminSheetError(null)
-      machineDeleteMutation.mutate({
-        machine,
-        onSuccess: options?.onSuccess,
-      })
-    },
+    inviteUser: adminActions.inviteUser,
+    updateUserAccess: adminActions.updateUserAccess,
+    updateMachine: adminActions.updateMachine,
+    createMachine: adminActions.createMachine,
+    deleteMachine: adminActions.deleteMachine,
     createRange: (range) => {
       setDialogError(null)
       setWorkspaceError(null)
