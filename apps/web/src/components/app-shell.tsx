@@ -5,10 +5,12 @@ import {
   ChevronsUpDown,
   Home,
   LogOut,
+  Mail,
   MonitorCog,
   PanelLeft,
   Plus,
   Settings,
+  ShieldCheck,
   UsersRound,
   Wrench,
   X,
@@ -85,9 +87,9 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-2 px-3 py-2">
+        <SidebarContent className="gap-1.5 px-3 py-2">
           <SidebarGroup className="gap-1 px-0 py-1">
-            <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
+            <SidebarGroupLabel className="h-6 px-2 text-[0.68rem] font-medium tracking-normal">
               Workspace
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -110,9 +112,9 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
 
           {isAdmin ? (
             <>
-              <SidebarSeparator className="my-2" />
+              <SidebarSeparator className="my-1.5" />
               <SidebarGroup className="gap-1 px-0 py-1">
-                <SidebarGroupLabel className="h-6 px-2 text-[0.7rem] tracking-normal">
+                <SidebarGroupLabel className="h-6 px-2 text-[0.68rem] font-medium tracking-normal">
                   Admin
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -269,7 +271,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-9 rounded-lg px-2.5 font-normal text-[0.86rem] text-sidebar-foreground/72 transition-[background-color,color,box-shadow] hover:bg-sidebar-accent/55 hover:text-sidebar-accent-foreground data-[active=true]:bg-background data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_2px_0_0_var(--primary),0_1px_2px_color-mix(in_oklch,var(--foreground)_10%,transparent)] [&_svg]:size-4 [&_svg]:text-sidebar-foreground/56 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
+        className="h-8 rounded-md px-2 font-normal text-[0.84rem] text-sidebar-foreground/70 transition-[background-color,color] hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&_svg]:text-sidebar-foreground/54 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
       >
         <Link
           to={to}
@@ -289,8 +291,8 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
-  const { isMobile, state } = useSidebar()
-  const menuSide = isMobile || state === "expanded" ? "top" : "right"
+  const { isMobile } = useSidebar()
+  const menuSide = isMobile ? "top" : "right"
   const displayName = user.name || user.email
   const roleLabel = user.role === "admin" ? "Admin" : "Member"
 
@@ -301,19 +303,20 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="h-11 rounded-lg px-2 text-sidebar-foreground/86 transition-[background-color,color,box-shadow] hover:bg-background hover:text-sidebar-accent-foreground hover:shadow-sm data-[state=open]:bg-background data-[state=open]:text-sidebar-accent-foreground data-[state=open]:shadow-sm"
+              aria-label={`Open account menu for ${displayName}`}
+              className="h-10 rounded-md px-2 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar size="sm">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-                <span className="truncate font-medium text-sm leading-5">{displayName}</span>
-                <span className="truncate text-muted-foreground text-xs leading-4">
-                  {user.email}
+              <div className="grid min-w-0 flex-1 gap-0.5 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate font-medium text-[0.84rem] leading-4">{displayName}</span>
+                <span className="truncate text-muted-foreground text-[0.72rem] leading-3">
+                  {roleLabel}
                 </span>
               </div>
               <ChevronsUpDown
-                className="ml-auto size-4 group-data-[collapsible=icon]:hidden"
+                className="ml-auto text-muted-foreground group-data-[collapsible=icon]:hidden"
                 aria-hidden="true"
               />
             </SidebarMenuButton>
@@ -324,31 +327,36 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={8}
-        className="w-64 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
+        className="w-72 max-w-[calc(100vw-1.5rem)] rounded-lg p-1.5"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="grid min-w-0 gap-2 rounded-md px-2.5 py-2.5">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar size="sm">
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-                <div className="grid min-w-0 flex-1 gap-0.5 text-left">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate font-medium text-sm text-popover-foreground">
-                      {displayName}
-                    </span>
-                    <Badge variant="secondary" className="h-5 shrink-0 capitalize">
-                      {roleLabel}
-                    </Badge>
-                  </div>
-                  <span className="truncate text-muted-foreground text-xs">{user.email}</span>
+            <div className="flex min-w-0 items-start gap-3 rounded-md px-2.5 py-2.5">
+              <Avatar className="mt-0.5" size="default">
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <div className="grid min-w-0 flex-1 gap-1 text-left">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium text-popover-foreground text-sm leading-5">
+                    {displayName}
+                  </span>
+                  <Badge variant="outline" className="h-5 shrink-0 capitalize">
+                    {roleLabel}
+                  </Badge>
+                </div>
+                <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs leading-4">
+                  <Mail aria-hidden="true" />
+                  <span className="truncate">{user.email}</span>
+                </div>
+                <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs leading-4">
+                  <ShieldCheck aria-hidden="true" />
+                  <span>{user.active ? "Active account" : "Access disabled"}</span>
                 </div>
               </div>
             </div>
           </DropdownMenuLabel>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-1" />
         <DropdownMenuGroup>
           <DropdownMenuItem onSelect={onLogout} variant="destructive" className="h-8 rounded-md">
             <LogOut data-icon="inline-start" aria-hidden="true" />
