@@ -843,6 +843,109 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   expect(consoleProblems).toEqual([])
 })
 
+test("admin route and sheet surfaces stay usable with mixed lab data", async ({
+  page,
+}, testInfo) => {
+  const consoleProblems = collectConsoleProblems(page)
+  const suffix = `${testInfo.project.name}-${Date.now()}`
+  const seededBookings: string[] = []
+
+  await loginAsAdmin(page)
+
+  for (const booking of [
+    {
+      title: `E2E mixed admin ${suffix}`,
+      startsAt: "2026-06-18T07:00:00.000Z",
+      endsAt: "2026-06-18T08:00:00.000Z",
+    },
+    {
+      title: `E2E mixed member ${suffix}`,
+      startsAt: "2026-06-18T09:00:00.000Z",
+      endsAt: "2026-06-18T10:00:00.000Z",
+      userId: "member-local",
+    },
+    {
+      title: `E2E mixed maintenance ${suffix}`,
+      startsAt: "2026-06-19T11:00:00.000Z",
+      endsAt: "2026-06-19T12:00:00.000Z",
+      type: "maintenance" as const,
+    },
+  ]) {
+    const created = await createBookingFromPage(page, booking)
+    seededBookings.push(created.id)
+  }
+
+  try {
+    await page.goto("/schedule")
+    await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+    if (isDesktopProject(testInfo.project.name)) {
+      await expect(page.getByText(`E2E mixed admin ${suffix}`)).toBeVisible()
+    } else {
+      await expect(page.getByText("Day agenda")).toBeVisible()
+    }
+    await expectRouteContentWithinViewport(page)
+
+    await openNewBookingSheet(page, testInfo.project.name)
+    const bookingSheet = page.getByRole("dialog", { name: "New booking" })
+    await expect(bookingSheet).toBeVisible()
+    await expect(bookingSheet.getByLabel("Title")).toBeVisible()
+    await expectElementFullyWithinViewport(page, bookingSheet)
+    await page.keyboard.press("Escape")
+    await expect(bookingSheet).toBeHidden()
+
+    await page.goto("/machines")
+    await expect(page.getByRole("heading", { name: "Machines", exact: true })).toBeVisible()
+    await expectVisibleText(page.locator("main"), "tohum")
+    await expectRouteContentWithinViewport(page)
+
+    await page.goto("/admin")
+    await expect(page.getByRole("heading", { name: "Admin overview" })).toBeVisible()
+    await expect(page.getByText("Week queue")).toBeVisible()
+    await expect(page.getByText("Machine status")).toBeVisible()
+    await expectRouteContentWithinViewport(page)
+
+    await page.goto("/admin/users")
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+    await expect(page.locator("section").filter({ hasText: "Members" })).toBeVisible()
+    await expectRouteContentWithinViewport(page)
+    await page.getByRole("button", { name: "Invite user" }).click()
+    const inviteSheet = page.getByRole("dialog", { name: "Invite user" })
+    await expect(inviteSheet).toBeVisible()
+    await expect(inviteSheet.getByRole("combobox", { name: "Role" })).toHaveText("Member")
+    await expectElementFullyWithinViewport(page, inviteSheet)
+    await page.keyboard.press("Escape")
+    await expect(inviteSheet).toBeHidden()
+
+    await page.goto("/admin/machines")
+    await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+    await expectVisibleText(page.locator("main"), "tohum")
+    await expectRouteContentWithinViewport(page)
+    await page.getByRole("button", { name: "New machine" }).click()
+    const machineSheet = page.getByRole("dialog", { name: "New machine" })
+    await expect(machineSheet).toBeVisible()
+    await expect(machineSheet.getByLabel("Name")).toBeVisible()
+    await expectElementFullyWithinViewport(page, machineSheet)
+    await page.keyboard.press("Escape")
+    await expect(machineSheet).toBeHidden()
+
+    await page.goto("/admin/maintenance")
+    await expect(page.getByRole("heading", { name: "Maintenance", exact: true })).toBeVisible()
+    await expectVisibleText(page.locator("main"), `E2E mixed maintenance ${suffix}`)
+    await expectRouteContentWithinViewport(page)
+    await page.getByRole("button", { name: "Add maintenance" }).click()
+    const maintenanceSheet = page.getByRole("dialog", { name: "New maintenance block" })
+    await expect(maintenanceSheet).toBeVisible()
+    await expect(maintenanceSheet.getByRole("combobox", { name: "Type" })).toHaveText("Maintenance")
+    await expectElementFullyWithinViewport(page, maintenanceSheet)
+
+    expect(consoleProblems).toEqual([])
+  } finally {
+    for (const bookingId of seededBookings) {
+      await deleteBookingFromPage(page, bookingId)
+    }
+  }
+})
+
 test("admin empty states expose primary recovery actions", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop admin empty-state flow")
 
@@ -993,28 +1096,39 @@ async function loginAs(page: Page, email: string, expectedUrl: RegExp) {
 
 async function createBookingFromPage(
   page: Page,
-  booking: { title: string; startsAt: string; endsAt: string; userId?: string },
+  booking: {
+    title: string
+    startsAt: string
+    endsAt: string
+    userId?: string
+    type?: "normal" | "maintenance"
+  },
 ) {
-  await page.evaluate(async (value) => {
-    const response = await window.fetch("/bookings", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        machineId: "tohum",
-        title: value.title,
-        startsAt: value.startsAt,
-        endsAt: value.endsAt,
-        userId: value.userId,
-      }),
-    })
+  return page
+    .evaluate(async (value) => {
+      const response = await window.fetch("/bookings", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          machineId: "tohum",
+          title: value.title,
+          startsAt: value.startsAt,
+          endsAt: value.endsAt,
+          userId: value.userId,
+          type: value.type,
+        }),
+      })
 
-    if (!response.ok) {
-      throw new Error(`Failed to seed booking: ${response.status} ${await response.text()}`)
-    }
-  }, booking)
+      if (!response.ok) {
+        throw new Error(`Failed to seed booking: ${response.status} ${await response.text()}`)
+      }
+
+      return (await response.json()) as { booking: { id: string } }
+    }, booking)
+    .then((body) => body.booking)
 }
 
 async function findBookingFromPage(
