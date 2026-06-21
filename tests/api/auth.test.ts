@@ -132,6 +132,44 @@ describe("auth and invites", () => {
     expect(latestVerify.status).toBe(200)
   })
 
+  it("rejects expired login codes", async () => {
+    const request = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr" }),
+    })
+    const { devCode } = await request.json()
+    await testDb.client.execute({
+      sql: "UPDATE otp_codes SET expires_at = ? WHERE email = ?",
+      args: [0, "member@miralab.tr"],
+    })
+
+    const verify = await app.request("/auth/verify-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@miralab.tr", code: devCode }),
+    })
+
+    expect(request.status).toBe(200)
+    expect(verify.status).toBe(401)
+    expect(await verify.json()).toEqual({ error: "Invalid or expired login code" })
+  })
+
+  it("rejects expired sessions", async () => {
+    const memberHeaders = await login("member@miralab.tr")
+    await testDb.client.execute({
+      sql: "UPDATE sessions SET expires_at = ? WHERE user_id = ?",
+      args: [0, "member-local"],
+    })
+
+    const me = await app.request("/auth/me", {
+      headers: memberHeaders,
+    })
+
+    expect(me.status).toBe(401)
+    expect(await me.json()).toEqual({ error: "Authentication required" })
+  })
+
   it("rate-limits repeated OTP requests for the same email", async () => {
     app = createApiApp({
       db: testDb.db,
