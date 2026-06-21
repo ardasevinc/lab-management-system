@@ -25,9 +25,12 @@ export function summarizePreflight(results: PreflightResult[]) {
   const failed = results.filter((result) => !result.ok)
 
   if (failed.length > 0) {
+    const hints = preflightFailureHints(failed.map((result) => result.step.label))
+    const hintText = hints.length > 0 ? `\n\nNext steps:\n${hints.join("\n")}` : ""
+
     return {
       ok: false,
-      message: `CapRover preflight failed: ${failed.map((result) => result.step.label).join(", ")}`,
+      message: `CapRover preflight failed: ${failed.map((result) => result.step.label).join(", ")}${hintText}`,
     }
   }
 
@@ -35,6 +38,43 @@ export function summarizePreflight(results: PreflightResult[]) {
     ok: true,
     message: "verified CapRover preflight",
   }
+}
+
+export function preflightFailureHints(labels: string[]) {
+  const hints: string[] = []
+  const failed = new Set(labels)
+
+  if (failed.has("verify:caprover-dns")) {
+    hints.push(
+      "- Fix app DNS: add pa item cloudflare/miralab/dns-edit-token or set CLOUDFLARE_API_TOKEN, then run bun run setup:cloudflare-dns && bun run verify:caprover-dns.",
+    )
+  }
+
+  if (failed.has("verify:caprover-host")) {
+    hints.push(
+      "- Check CapRover host state: ssh meruem, verify captain-captain/captain-nginx are running, and make sure miralab-lms is absent before first app creation.",
+    )
+  }
+
+  if (failed.has("verify:email-dns")) {
+    hints.push(
+      "- Fix SES DNS: rerun bun run verify:email-dns and update DMARC/custom MAIL FROM records until it passes.",
+    )
+  }
+
+  if (failed.has("verify:caprover-env")) {
+    hints.push(
+      "- Fix deploy/caprover.env.example or the generated env contract, then rerun bun run verify:caprover-env.",
+    )
+  }
+
+  if (failed.has("verify:caprover-package") || failed.has("pack:caprover")) {
+    hints.push(
+      "- Fix packaging: commit any tracked changes first; if the tree is clean, fix the CapRover package/build metadata and rerun bun run pack:caprover.",
+    )
+  }
+
+  return hints
 }
 
 function runStep(step: PreflightStep): PreflightResult {

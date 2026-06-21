@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { PREFLIGHT_STEPS, summarizePreflight } from "../../scripts/verify-caprover-preflight"
+import {
+  PREFLIGHT_STEPS,
+  preflightFailureHints,
+  summarizePreflight,
+} from "../../scripts/verify-caprover-preflight"
 
 describe("CapRover preflight orchestrator", () => {
   it("runs the deployment preflight steps in runbook order", () => {
@@ -28,8 +32,31 @@ describe("CapRover preflight orchestrator", () => {
 
     expect(summarizePreflight(results)).toEqual({
       ok: false,
-      message: "CapRover preflight failed: verify:caprover-env, verify:caprover-dns",
+      message: [
+        "CapRover preflight failed: verify:caprover-env, verify:caprover-dns",
+        "",
+        "Next steps:",
+        "- Fix app DNS: add pa item cloudflare/miralab/dns-edit-token or set CLOUDFLARE_API_TOKEN, then run bun run setup:cloudflare-dns && bun run verify:caprover-dns.",
+        "- Fix deploy/caprover.env.example or the generated env contract, then rerun bun run verify:caprover-env.",
+      ].join("\n"),
     })
+  })
+
+  it("prints actionable hints for known deploy blockers", () => {
+    expect(
+      preflightFailureHints([
+        "verify:caprover-dns",
+        "verify:caprover-host",
+        "verify:email-dns",
+        "verify:caprover-package",
+        "pack:caprover",
+      ]),
+    ).toEqual([
+      "- Fix app DNS: add pa item cloudflare/miralab/dns-edit-token or set CLOUDFLARE_API_TOKEN, then run bun run setup:cloudflare-dns && bun run verify:caprover-dns.",
+      "- Check CapRover host state: ssh meruem, verify captain-captain/captain-nginx are running, and make sure miralab-lms is absent before first app creation.",
+      "- Fix SES DNS: rerun bun run verify:email-dns and update DMARC/custom MAIL FROM records until it passes.",
+      "- Fix packaging: commit any tracked changes first; if the tree is clean, fix the CapRover package/build metadata and rerun bun run pack:caprover.",
+    ])
   })
 
   it("returns a passing summary when all steps pass", () => {
