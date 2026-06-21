@@ -14,6 +14,8 @@ describe("api runtime env", () => {
       sessionCookieSecure: false,
       sessionCookieDomain: undefined,
       devShowOtp: false,
+      otpRateLimitWindowSeconds: 900,
+      otpRateLimitMaxRequests: 5,
     })
   })
 
@@ -123,6 +125,20 @@ describe("api runtime env", () => {
         NODE_ENV: "prod",
       }),
     ).toThrow("NODE_ENV must be one of: development, production, test")
+  })
+
+  it("rejects invalid OTP rate limit config", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        OTP_RATE_LIMIT_WINDOW_SECONDS: "soon",
+      }),
+    ).toThrow("OTP_RATE_LIMIT_WINDOW_SECONDS must be a positive integer")
+
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        OTP_RATE_LIMIT_MAX_REQUESTS: "0",
+      }),
+    ).toThrow("OTP_RATE_LIMIT_MAX_REQUESTS must be a positive integer")
   })
 
   it("requires an explicit absolute SQLite database path in production", () => {

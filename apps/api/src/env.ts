@@ -7,6 +7,8 @@ export type ApiRuntimeConfig = {
   sessionCookieSecure: boolean
   sessionCookieDomain?: string
   devShowOtp: boolean
+  otpRateLimitWindowSeconds: number
+  otpRateLimitMaxRequests: number
 }
 
 export type NotificationWorkerConfig = {
@@ -46,6 +48,18 @@ export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>)
     sessionCookieSecure: env.SESSION_COOKIE_SECURE === "1",
     sessionCookieDomain: emptyToUndefined(env.SESSION_COOKIE_DOMAIN),
     devShowOtp: env.DEV_SHOW_OTP === "1",
+    otpRateLimitWindowSeconds: positiveIntegerFromEnv(
+      env.OTP_RATE_LIMIT_WINDOW_SECONDS,
+      "OTP_RATE_LIMIT_WINDOW_SECONDS",
+      900,
+      false,
+    ),
+    otpRateLimitMaxRequests: positiveIntegerFromEnv(
+      env.OTP_RATE_LIMIT_MAX_REQUESTS,
+      "OTP_RATE_LIMIT_MAX_REQUESTS",
+      5,
+      false,
+    ),
   }
 
   assertValidRuntimeConfig(config)

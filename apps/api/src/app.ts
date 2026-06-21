@@ -89,6 +89,13 @@ const defaultRuntimeConfig: ApiRuntimeConfig = {
   corsOrigins: ["http://localhost:5173"],
   sessionCookieSecure: false,
   devShowOtp: true,
+  otpRateLimitWindowSeconds: 900,
+  otpRateLimitMaxRequests: 5,
+}
+
+type OtpRateLimitBucket = {
+  count: number
+  resetAt: number
 }
 
 const defaultNotificationWorkerConfig: NotificationWorkerConfig = {
@@ -112,6 +119,7 @@ export function createApiApp({
   const runtimeConfig = { ...defaultRuntimeConfig, ...config }
   const notificationWorkerConfig = notificationWorker ?? defaultNotificationWorkerConfig
   const emailSender = mailer ?? createConsoleMailer()
+  const otpRateLimits = new Map<string, OtpRateLimitBucket>()
 
   app.onError((error, c) => apiErrorResponse(c, error))
 
@@ -141,6 +149,12 @@ export function createApiApp({
 
     if (!body.success) {
       return c.json({ error: "Invalid login request", issues: body.error.issues }, 400)
+    }
+
+    const rateLimit = consumeOtpRateLimit(otpRateLimits, body.data.email, runtimeConfig)
+    if (!rateLimit.allowed) {
+      c.header("Retry-After", String(rateLimit.retryAfterSeconds))
+      return c.json({ error: "Too many login code requests" }, 429)
     }
 
     return handleApiResult(c, async () => {
@@ -328,6 +342,32 @@ export function createApiApp({
   }
 
   return app
+}
+
+function consumeOtpRateLimit(
+  buckets: Map<string, OtpRateLimitBucket>,
+  email: string,
+  config: ApiRuntimeConfig,
+  now = Date.now(),
+) {
+  const key = email.trim().toLowerCase()
+  const windowMs = config.otpRateLimitWindowSeconds * 1000
+  const existing = buckets.get(key)
+
+  if (!existing || existing.resetAt <= now) {
+    buckets.set(key, { count: 1, resetAt: now + windowMs })
+    return { allowed: true }
+  }
+
+  if (existing.count >= config.otpRateLimitMaxRequests) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    }
+  }
+
+  existing.count += 1
+  return { allowed: true }
 }
 
 function htmlNavigationOnly(webMiddleware: MiddlewareHandler): MiddlewareHandler {

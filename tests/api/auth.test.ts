@@ -132,6 +132,34 @@ describe("auth and invites", () => {
     expect(latestVerify.status).toBe(200)
   })
 
+  it("rate-limits repeated OTP requests for the same email", async () => {
+    app = createApiApp({
+      db: testDb.db,
+      config: {
+        otpRateLimitMaxRequests: 2,
+        otpRateLimitWindowSeconds: 60,
+      },
+    })
+    const requestOtp = () =>
+      app.request("/auth/request-otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "member@miralab.tr" }),
+      })
+
+    const firstRequest = await requestOtp()
+    const secondRequest = await requestOtp()
+    const limitedRequest = await requestOtp()
+    const retryAfter = Number(limitedRequest.headers.get("Retry-After"))
+
+    expect(firstRequest.status).toBe(200)
+    expect(secondRequest.status).toBe(200)
+    expect(limitedRequest.status).toBe(429)
+    expect(retryAfter).toBeGreaterThan(0)
+    expect(retryAfter).toBeLessThanOrEqual(60)
+    expect(await limitedRequest.json()).toEqual({ error: "Too many login code requests" })
+  })
+
   it("lets admins deactivate and reactivate users", async () => {
     const adminHeaders = await login("admin@miralab.tr")
     const memberHeaders = await login("member@miralab.tr")
