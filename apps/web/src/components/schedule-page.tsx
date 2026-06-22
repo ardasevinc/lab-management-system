@@ -197,7 +197,7 @@ function WeekNavigation({
   return (
     <div
       className={cn(
-        "grid w-full grid-cols-[2.75rem_minmax(0,1fr)_auto_2.75rem] items-center gap-2 sm:inline-flex sm:w-auto sm:gap-1.5",
+        "grid w-full grid-cols-[2.75rem_auto_auto_2.75rem] items-center justify-start gap-2 max-[360px]:grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] sm:inline-flex sm:w-auto sm:gap-1.5",
         className,
       )}
     >
@@ -216,13 +216,18 @@ function WeekNavigation({
             type="button"
             variant="outline"
             size="sm"
-            className="w-full justify-start sm:w-36"
+            className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
           >
             <CalendarDays data-icon="inline-start" aria-hidden="true" />
             <span className="truncate">Week of {weekLabel}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="max-w-[calc(100vw-2rem)] p-0" align="start" sideOffset={8}>
+        <PopoverContent
+          className="max-w-[calc(100vw-2rem)] p-0"
+          align="start"
+          sideOffset={8}
+          collisionPadding={16}
+        >
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -236,10 +241,23 @@ function WeekNavigation({
           />
         </PopoverContent>
       </Popover>
-      <Button type="button" variant="outline" size="sm" onClick={onToday}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="max-[360px]:col-start-2 max-[360px]:row-start-2 max-[360px]:w-full"
+        onClick={onToday}
+      >
         Today
       </Button>
-      <Button type="button" variant="outline" size="icon" aria-label="Next week" onClick={onNext}>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="max-[360px]:col-start-3 max-[360px]:row-start-1"
+        aria-label="Next week"
+        onClick={onNext}
+      >
         <ChevronRight aria-hidden="true" />
       </Button>
     </div>

@@ -45,9 +45,11 @@ test("mobile auth controls keep stable touch targets", async ({ page }, testInfo
   await expectMinHeight(page.getByLabel("Email"), 44)
   await expectMinHeight(page.getByRole("button", { name: "Continue" }), 44)
   await expect(page.locator(".auth-background")).toHaveCSS("position", "fixed")
+  await expectAuthBackgroundOverscansViewport(page)
   await expectNoHorizontalOverflow(page)
 
   await page.getByLabel("Email").click()
+  await expectAuthBackgroundOverscansViewport(page)
   await expectNoHorizontalOverflow(page)
   expect(consoleProblems).toEqual([])
 })
@@ -267,10 +269,14 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   await page.keyboard.press("Escape")
 
   if (testInfo.project.name === "mobile-chromium") {
-    await expect(bookingSheet.getByLabel("Starts date")).toHaveAttribute("type", "date")
-    await expect(bookingSheet.getByLabel("Starts time")).toHaveAttribute("type", "time")
+    await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
+    const dateGrid = page.getByRole("grid")
+    await expect(dateGrid).toBeVisible()
+    await expectElementFullyWithinViewport(page, dateGrid)
+    await page.keyboard.press("Escape")
+
     await expectMinHeight(bookingSheet.getByLabel("Title"), 44)
-    await expectMinHeight(bookingSheet.getByLabel("Starts date"), 44)
+    await expectMinHeight(bookingSheet.getByRole("button", { name: /^Starts date/ }), 44)
     await expectElementNoHorizontalOverflow(bookingSheet)
   } else {
     await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
@@ -818,9 +824,19 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
 
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  const headerSidebarTrigger = page.locator("header").getByRole("button", {
+    name: "Toggle Sidebar",
+  })
 
   if (testInfo.project.name === "mobile-chromium") {
-    await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    await expectMinHeight(headerSidebarTrigger, 44)
+    const triggerIconSize = await headerSidebarTrigger
+      .locator("svg")
+      .evaluate((element) => element.getBoundingClientRect().width)
+    expect(triggerIconSize).toBeGreaterThanOrEqual(20)
+    await expect(page.locator("header [data-slot='separator']")).toBeHidden()
+
+    await headerSidebarTrigger.click()
     const sidebar = page.getByRole("dialog", { name: "Sidebar" })
     await expect(sidebar).toBeVisible()
     await expectElementNoHorizontalOverflow(sidebar)
@@ -834,7 +850,7 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
     await expect(sidebar).toBeHidden()
     await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
 
-    await page.getByRole("button", { name: "Toggle Sidebar" }).click()
+    await headerSidebarTrigger.click()
     await expect(sidebar).toBeVisible()
     await sidebar.getByRole("button").filter({ hasText: "Lab Admin" }).click()
   } else {
@@ -1485,6 +1501,21 @@ async function expectNoHorizontalOverflow(page: Page) {
       ),
     )
     .toBe(true)
+}
+
+async function expectAuthBackgroundOverscansViewport(page: Page) {
+  const viewportHeight = page.viewportSize()?.height
+  if (!viewportHeight) {
+    throw new Error("Page has no viewport size.")
+  }
+
+  await expect
+    .poll(() =>
+      page
+        .locator(".auth-background")
+        .evaluate((element) => element.getBoundingClientRect().height),
+    )
+    .toBeGreaterThanOrEqual(viewportHeight * 1.3)
 }
 
 async function expectMinHeight(locator: Locator, minHeight: number) {

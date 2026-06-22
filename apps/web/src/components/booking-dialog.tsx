@@ -173,7 +173,6 @@ export function BookingDialog({
                   timeId="startsTime"
                   dateValue={startsDate}
                   timeValue={startsTime}
-                  useNativeInputs={isMobile}
                   onDateChange={setStartsDate}
                   onTimeChange={setStartsTime}
                 />
@@ -183,7 +182,6 @@ export function BookingDialog({
                   timeId="endsTime"
                   dateValue={endsDate}
                   timeValue={endsTime}
-                  useNativeInputs={isMobile}
                   onDateChange={setEndsDate}
                   onTimeChange={setEndsTime}
                 />
@@ -313,7 +311,6 @@ function DateTimeField({
   timeId,
   dateValue,
   timeValue,
-  useNativeInputs,
   onDateChange,
   onTimeChange,
 }: {
@@ -322,40 +319,12 @@ function DateTimeField({
   timeId: string
   dateValue: string
   timeValue: string
-  useNativeInputs: boolean
   onDateChange: (date: string) => void
   onTimeChange: (time: string) => void
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const selectedDate = new Date(`${dateValue}T12:00:00`)
   const formattedDate = format(selectedDate, "MMM d, yyyy")
-
-  if (useNativeInputs) {
-    return (
-      <Field>
-        <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
-        <FieldGroup className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
-          <Input
-            id={dateId}
-            type="date"
-            value={dateValue}
-            onChange={(event) => onDateChange(event.target.value)}
-            aria-label={`${label} date`}
-            required
-          />
-          <Input
-            id={timeId}
-            type="time"
-            step={900}
-            value={timeValue}
-            onChange={(event) => onTimeChange(event.target.value)}
-            aria-label={`${label} time`}
-            required
-          />
-        </FieldGroup>
-      </Field>
-    )
-  }
 
   return (
     <Field>
@@ -374,7 +343,12 @@ function DateTimeField({
               <span className="truncate">{formattedDate}</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent
+            className="w-auto max-w-[calc(100vw-2rem)] p-0"
+            align="start"
+            sideOffset={8}
+            collisionPadding={16}
+          >
             <Calendar
               mode="single"
               selected={selectedDate}
