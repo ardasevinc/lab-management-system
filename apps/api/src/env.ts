@@ -87,8 +87,8 @@ export function bootstrapAdminFromEnv(
     }
 
     return {
-      email: "admin@miralab.tr",
-      name: "MIRALAB Admin",
+      email: "admin@example.org",
+      name: "Lab Admin",
     }
   }
 

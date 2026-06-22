@@ -47,8 +47,8 @@ describe("calendar geometry", () => {
     const range = normalizeRange(day, 7 * 60 + 30, 23 * 60)
 
     expect(range).toEqual({
-      startsAt: iso(8 * 60),
-      endsAt: iso(22 * 60),
+      startsAt: iso(7 * 60 + 30),
+      endsAt: iso(23 * 60),
     })
   })
 
@@ -65,8 +65,8 @@ describe("calendar geometry", () => {
     const range = defaultRangeAtMinutes(day, 21 * 60 + 50)
 
     expect(range).toEqual({
-      startsAt: iso(21 * 60),
-      endsAt: iso(22 * 60),
+      startsAt: iso(22 * 60),
+      endsAt: iso(23 * 60),
     })
   })
 
@@ -226,7 +226,7 @@ describe("calendar geometry", () => {
 
     expect(minutesSinceDayStart(new Date(packed.startsAt))).toBe(30)
     expect(bookingStyle(packed)).toEqual({
-      top: ((30 - 8 * 60) / 60) * hourHeightPx,
+      top: (30 / 60) * hourHeightPx,
       height: hourHeightPx,
       left: 0,
       width: 100,

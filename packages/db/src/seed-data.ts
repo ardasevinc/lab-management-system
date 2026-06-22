@@ -33,16 +33,16 @@ export async function seedInitialData(
       .values([
         {
           id: "admin-local",
-          email: "admin@miralab.tr",
-          name: "MIRALAB Admin",
+          email: "admin@example.org",
+          name: "Lab Admin",
           role: "admin",
           createdAt: now,
           updatedAt: now,
         },
         {
           id: "member-local",
-          email: "member@miralab.tr",
-          name: "MIRALAB Member",
+          email: "member@example.org",
+          name: "Lab Member",
           role: "member",
           createdAt: now,
           updatedAt: now,
@@ -55,20 +55,20 @@ export async function seedInitialData(
       .values([
         {
           id: "invite-admin-local",
-          email: "admin@miralab.tr",
-          name: "MIRALAB Admin",
+          email: "admin@example.org",
+          name: "Lab Admin",
           role: "admin",
-          invitedByUserId: "admin-local",
+          invitedByUserId: await fixtureAdminId(db),
           acceptedAt: now,
           createdAt: now,
           updatedAt: now,
         },
         {
           id: "invite-member-local",
-          email: "member@miralab.tr",
-          name: "MIRALAB Member",
+          email: "member@example.org",
+          name: "Lab Member",
           role: "member",
-          invitedByUserId: "admin-local",
+          invitedByUserId: await fixtureAdminId(db),
           acceptedAt: now,
           createdAt: now,
           updatedAt: now,
@@ -83,7 +83,7 @@ export async function seedInitialData(
       id: "tohum",
       slug: "tohum",
       name: "tohum",
-      description: "MIRALAB GPU workstation for remote AI training and research sessions.",
+      description: "Default GPU workstation for shared research workloads.",
       specsJson: JSON.stringify(["NVIDIA GPU workstation"]),
       accessNotes: "",
       active: true,
@@ -91,6 +91,15 @@ export async function seedInitialData(
       updatedAt: now,
     })
     .onConflictDoNothing()
+}
+
+async function fixtureAdminId(db: Db) {
+  const admin = await db.query.users.findFirst({ where: eq(users.email, "admin@example.org") })
+  if (!admin) {
+    throw new Error("Local fixture admin user could not be seeded")
+  }
+
+  return admin.id
 }
 
 async function seedBootstrapAdmin(db: Db, bootstrapAdmin: BootstrapAdminSeed, now: Date) {

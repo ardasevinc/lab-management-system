@@ -69,6 +69,7 @@ export function AppWorkspace() {
         )}&end=${encodeURIComponent(weekRange.end)}`,
       ),
     enabled: Boolean(selectedMachine),
+    placeholderData: (previousData) => previousData,
   })
 
   const usersQuery = useQuery({
@@ -195,9 +196,7 @@ export function AppWorkspace() {
 
   const user = meQuery.data.user
   const workspaceIsBooting =
-    queryIsBooting(machinesQuery) ||
-    (Boolean(selectedMachine) && queryIsBooting(bookingsQuery)) ||
-    (user.role === "admin" && queryIsBooting(usersQuery))
+    queryIsBooting(machinesQuery) || (user.role === "admin" && queryIsBooting(usersQuery))
 
   if (workspaceIsBooting) {
     return <WorkspaceBootstrap />
@@ -209,6 +208,7 @@ export function AppWorkspace() {
     createBookingMutation.isPending ||
     updateBookingMutation.isPending ||
     deleteBookingMutation.isPending
+  const canEditBooking = (booking: Booking) => canMutateBooking(user, booking)
 
   const value: WorkspaceContextValue = {
     user,
@@ -266,6 +266,9 @@ export function AppWorkspace() {
       setDialogState({ mode: "edit", booking, range: null, initialType: booking.type })
     },
     moveBooking: (booking, range) => {
+      if (!canEditBooking(booking)) {
+        return
+      }
       setWorkspaceError(null)
       updateBookingMutation.mutate({
         id: booking.id,
@@ -273,12 +276,16 @@ export function AppWorkspace() {
       })
     },
     resizeBooking: (booking, range) => {
+      if (!canEditBooking(booking)) {
+        return
+      }
       setWorkspaceError(null)
       updateBookingMutation.mutate({
         id: booking.id,
         value: bookingToDialogValue(booking, range),
       })
     },
+    canEditBooking,
   }
 
   return (
@@ -301,6 +308,11 @@ export function AppWorkspace() {
         currentUser={user}
         users={users}
         isAdmin={user.role === "admin"}
+        canMutate={
+          dialogState?.mode !== "edit" ||
+          !dialogState.booking ||
+          canMutateBooking(user, dialogState.booking)
+        }
         initialRange={dialogState?.range ?? null}
         initialType={dialogState?.initialType}
         pending={pending}
@@ -329,6 +341,10 @@ export function AppWorkspace() {
       />
     </WorkspaceContext.Provider>
   )
+}
+
+function canMutateBooking(user: User, booking: Booking) {
+  return user.role === "admin" || (booking.type === "normal" && booking.userId === user.id)
 }
 
 function queryIsBooting(query: { data: unknown; isPending: boolean; isError: boolean }) {

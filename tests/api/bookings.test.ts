@@ -10,7 +10,7 @@ let authHeaders: HeadersInit
 beforeEach(async () => {
   testDb = await createTestDb()
   app = createApiApp({ db: testDb.db })
-  authHeaders = await login("admin@miralab.tr")
+  authHeaders = await login("admin@example.org")
 })
 
 afterEach(() => {
@@ -35,19 +35,19 @@ describe("booking API", () => {
     const response = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "admin@miralab.tr" }),
+      body: JSON.stringify({ email: "admin@example.org" }),
     })
     const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(body).toEqual({
       ok: true,
-      email: "admin@miralab.tr",
+      email: "admin@example.org",
       expiresAt: expect.any(String),
     })
     expect(sentEmails).toEqual([
       {
-        to: "admin@miralab.tr",
+        to: "admin@example.org",
         code: expect.stringMatching(/^\d{6}$/),
         expiresAt: expect.any(String),
       },
@@ -579,14 +579,14 @@ describe("booking API", () => {
     expect(updateResponse.status).toBe(200)
     expect(deleteResponse.status).toBe(200)
     expect(sentBookingEmails.map((email) => email.subject)).toEqual([
-      "MIRALAB booking created: Notification run",
-      "MIRALAB booking updated: Notification run updated",
-      "MIRALAB booking deleted: Notification run updated",
+      "Lab LMS booking created: Notification run",
+      "Lab LMS booking updated: Notification run updated",
+      "Lab LMS booking deleted: Notification run updated",
     ])
     expect(sentBookingEmails.map((email) => email.to)).toEqual([
-      "member@miralab.tr",
-      "member@miralab.tr",
-      "member@miralab.tr",
+      "member@example.org",
+      "member@example.org",
+      "member@example.org",
     ])
     expect(sentBookingEmails.map((email) => email.actionUrl)).toEqual([
       "https://lms.miralab.tr/schedule",
@@ -638,17 +638,17 @@ describe("booking API", () => {
     expect(updateResponse.status).toBe(200)
     expect(sentBookingEmails[0]).toEqual(
       expect.objectContaining({
-        to: "admin@miralab.tr",
-        subject: "MIRALAB booking created: Reassigned notification run",
+        to: "admin@example.org",
+        subject: "Lab LMS booking created: Reassigned notification run",
       }),
     )
     expect(reassignmentEmails.map((email) => email.to).sort()).toEqual([
-      "admin@miralab.tr",
-      "member@miralab.tr",
+      "admin@example.org",
+      "member@example.org",
     ])
     expect(reassignmentEmails.map((email) => email.subject)).toEqual([
-      "MIRALAB booking updated: Reassigned notification run",
-      "MIRALAB booking updated: Reassigned notification run",
+      "Lab LMS booking updated: Reassigned notification run",
+      "Lab LMS booking updated: Reassigned notification run",
     ])
   })
 
@@ -658,7 +658,7 @@ describe("booking API", () => {
   })
 
   it("requires admin role for maintenance bookings and admin routes", async () => {
-    const memberHeaders = await login("member@miralab.tr")
+    const memberHeaders = await login("member@example.org")
     const maintenanceResponse = await app.request("/bookings", {
       method: "POST",
       headers: { ...memberHeaders, "content-type": "application/json" },
@@ -694,7 +694,7 @@ describe("booking API", () => {
   })
 
   it("lets members manage their own normal bookings", async () => {
-    const memberHeaders = await login("member@miralab.tr")
+    const memberHeaders = await login("member@example.org")
     const createResponse = await app.request("/bookings", {
       method: "POST",
       headers: { ...memberHeaders, "content-type": "application/json" },
@@ -727,7 +727,7 @@ describe("booking API", () => {
   })
 
   it("prevents members from managing another user's bookings", async () => {
-    const memberHeaders = await login("member@miralab.tr")
+    const memberHeaders = await login("member@example.org")
     const createForAdminResponse = await app.request("/bookings", {
       method: "POST",
       headers: { ...memberHeaders, "content-type": "application/json" },
@@ -864,7 +864,7 @@ describe("booking API", () => {
   })
 
   it("prevents members from reassigning their own bookings", async () => {
-    const memberHeaders = await login("member@miralab.tr")
+    const memberHeaders = await login("member@example.org")
     const createResponse = await app.request("/bookings", {
       method: "POST",
       headers: { ...memberHeaders, "content-type": "application/json" },
@@ -893,7 +893,7 @@ describe("booking API", () => {
   })
 
   it("requires admin role for booking audit history", async () => {
-    const memberHeaders = await login("member@miralab.tr")
+    const memberHeaders = await login("member@example.org")
     const createResponse = await app.request("/bookings", {
       method: "POST",
       headers: { ...memberHeaders, "content-type": "application/json" },

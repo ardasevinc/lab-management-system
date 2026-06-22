@@ -25,11 +25,11 @@ describe("api runtime env", () => {
   it("parses optional allowed email domains", () => {
     expect(
       apiRuntimeConfigFromEnv({
-        ALLOWED_EMAIL_DOMAINS: "miralab.tr, @std.yildiz.edu.tr",
+        ALLOWED_EMAIL_DOMAINS: "miralab.tr, @std.iyte.edu.tr",
       }),
     ).toEqual(
       expect.objectContaining({
-        allowedEmailDomains: ["miralab.tr", "std.yildiz.edu.tr"],
+        allowedEmailDomains: ["miralab.tr", "std.iyte.edu.tr"],
       }),
     )
 
@@ -54,8 +54,8 @@ describe("api runtime env", () => {
 
   it("derives bootstrap admin identity from environment", () => {
     expect(bootstrapAdminFromEnv({})).toEqual({
-      email: "admin@miralab.tr",
-      name: "MIRALAB Admin",
+      email: "admin@example.org",
+      name: "Lab Admin",
     })
 
     expect(

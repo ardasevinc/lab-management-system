@@ -11,12 +11,12 @@ describe("seed initial data", () => {
     try {
       await seedInitialData(testDb.db, now())
 
-      await expectUser(testDb.db, "admin@miralab.tr", {
-        name: "MIRALAB Admin",
+      await expectUser(testDb.db, "admin@example.org", {
+        name: "Lab Admin",
         role: "admin",
       })
-      await expectUser(testDb.db, "member@miralab.tr", {
-        name: "MIRALAB Member",
+      await expectUser(testDb.db, "member@example.org", {
+        name: "Lab Member",
         role: "member",
       })
     } finally {
@@ -63,12 +63,12 @@ describe("seed initial data", () => {
       )
       expect(
         await testDb.db.query.users.findFirst({
-          where: (users, { eq }) => eq(users.email, "admin@miralab.tr"),
+          where: (users, { eq }) => eq(users.email, "admin@example.org"),
         }),
       ).toBeUndefined()
       expect(
         await testDb.db.query.users.findFirst({
-          where: (users, { eq }) => eq(users.email, "member@miralab.tr"),
+          where: (users, { eq }) => eq(users.email, "member@example.org"),
         }),
       ).toBeUndefined()
       expect(

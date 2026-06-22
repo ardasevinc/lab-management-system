@@ -48,6 +48,7 @@ type BookingDialogProps = {
   currentUser: User
   users: User[]
   isAdmin: boolean
+  canMutate: boolean
   initialRange?: { startsAt: string; endsAt: string } | null
   initialType?: Booking["type"]
   pending: boolean
@@ -67,6 +68,7 @@ export function BookingDialog({
   currentUser,
   users,
   isAdmin,
+  canMutate,
   initialRange,
   initialType,
   pending,
@@ -124,12 +126,15 @@ export function BookingDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="flex flex-col overflow-hidden p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-5"
+        className="flex flex-col overflow-hidden p-5 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-6"
       >
         <form
           className="flex min-h-0 flex-1 flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault()
+            if (!canMutate) {
+              return
+            }
             const form = new FormData(event.currentTarget)
             onSubmit({
               title: String(form.get("title") ?? ""),
@@ -149,7 +154,7 @@ export function BookingDialog({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-1 pr-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-1 pb-1">
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="title">Title</FieldLabel>
@@ -247,8 +252,8 @@ export function BookingDialog({
             ) : null}
           </div>
 
-          <SheetFooter className="-mx-4 mt-0 shrink-0 border-border border-t bg-background px-4 pt-3 sm:-mx-5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            {mode === "edit" ? (
+          <SheetFooter className="-mx-5 mt-0 shrink-0 border-border border-t bg-background px-5 pt-3 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            {mode === "edit" && canMutate ? (
               <BookingDeleteDialog pending={pending} reason={adminReason} onDelete={onDelete} />
             ) : (
               <span />
@@ -257,9 +262,11 @@ export function BookingDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={pending}>
-                {mode === "create" ? "Create" : "Save"}
-              </Button>
+              {canMutate ? (
+                <Button type="submit" disabled={pending}>
+                  {mode === "create" ? "Create" : "Save"}
+                </Button>
+              ) : null}
             </div>
           </SheetFooter>
         </form>

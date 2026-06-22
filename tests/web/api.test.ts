@@ -49,7 +49,7 @@ describe("web api auth helpers", () => {
     )
     installBrowserMocks(fetchMock)
 
-    const session = await verifyOtp("admin@miralab.tr", "123456")
+    const session = await verifyOtp("admin@example.org", "123456")
 
     expect(session.token).toBe("server-session-token")
     expect(getStoredToken()).toBeNull()
@@ -88,8 +88,8 @@ function installBrowserMocks(fetchMock: typeof fetch) {
 
 const testUser = {
   id: "admin",
-  email: "admin@miralab.tr",
-  name: "MIRALAB Admin",
+  email: "admin@example.org",
+  name: "Lab Admin",
   role: "admin",
   active: true,
 }

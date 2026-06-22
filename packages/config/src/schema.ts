@@ -1,6 +1,7 @@
 export type LabConfig = {
   appTitle: string
   labName: string
+  institutionName: string
   shortName: string
   baseUrl: string
   logoPath: string

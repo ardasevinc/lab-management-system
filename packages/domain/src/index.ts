@@ -40,7 +40,7 @@ export const machines: Machine[] = [
     id: "tohum",
     slug: "tohum",
     name: "tohum",
-    description: "MIRALAB GPU workstation for remote AI training and research sessions.",
+    description: "Default GPU workstation for shared research workloads.",
     specs: ["NVIDIA GPU workstation"],
     accessNotes: "",
     active: true,

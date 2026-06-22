@@ -1,27 +1,23 @@
 import type { LabConfig } from "./packages/config/src/schema"
 
 export default {
-  appTitle: "MIRALAB",
-  labName: "Machine Intelligence Research and Applications Lab",
-  shortName: "MIRALAB",
-  baseUrl: "https://lms.miralab.tr",
+  appTitle: "Lab Management System",
+  labName: "Research Lab",
+  institutionName: "Your Institution",
+  shortName: "Lab LMS",
+  baseUrl: "http://localhost:5173",
   logoPath: "/logo.svg",
   faviconPath: "/favicon.svg",
   primaryColor: "#007f67",
   defaultTimezone: "Europe/Istanbul",
   authHero: {
-    eyebrow: "GPU workstation access",
-    headline: "Book tohum for research runs.",
+    eyebrow: "Shared lab resource booking",
+    headline: "Book lab machines without calendar drift.",
   },
   email: {
-    fromName: "MIRALAB",
-    fromAddress: "no-reply@miralab.tr",
-    supportAddress: "support@miralab.tr",
+    fromName: "Lab Management System",
+    fromAddress: "no-reply@example.org",
+    supportAddress: "support@example.org",
   },
-  links: [
-    {
-      label: "MIRALAB",
-      href: "https://miralab.tr",
-    },
-  ],
+  links: [],
 } satisfies LabConfig

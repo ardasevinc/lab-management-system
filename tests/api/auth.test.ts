@@ -39,7 +39,7 @@ describe("auth and invites", () => {
         async sendBookingEmail() {},
       },
     })
-    const adminHeaders = await login("admin@miralab.tr")
+    const adminHeaders = await login("admin@example.org")
     const inviteResponse = await app.request("/admin/invites", {
       method: "POST",
       headers: { ...adminHeaders, "content-type": "application/json" },
@@ -134,15 +134,15 @@ describe("auth and invites", () => {
   it("blocks admin invites outside configured email domains", async () => {
     app = createApiApp({
       db: testDb.db,
-      config: { allowedEmailDomains: ["miralab.tr"] },
+      config: { allowedEmailDomains: ["example.org"] },
     })
-    const adminHeaders = await login("admin@miralab.tr")
+    const adminHeaders = await login("admin@example.org")
 
     const response = await app.request("/admin/invites", {
       method: "POST",
       headers: { ...adminHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        email: "new.member@example.com",
+        email: "new.member@outside.test",
         name: "New Member",
         role: "member",
       }),
@@ -160,13 +160,13 @@ describe("auth and invites", () => {
   })
 
   it("returns the current user from the quiet session endpoint", async () => {
-    const headers = await login("admin@miralab.tr")
+    const headers = await login("admin@example.org")
     const response = await app.request("/auth/session", { headers })
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
       user: expect.objectContaining({
-        email: "admin@miralab.tr",
+        email: "admin@example.org",
         role: "admin",
         active: true,
       }),
@@ -177,26 +177,26 @@ describe("auth and invites", () => {
     const firstRequest = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr" }),
+      body: JSON.stringify({ email: "member@example.org" }),
     })
     const firstCode = (await firstRequest.json()).devCode
 
     const secondRequest = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr" }),
+      body: JSON.stringify({ email: "member@example.org" }),
     })
     const secondCode = (await secondRequest.json()).devCode
 
     const staleVerify = await app.request("/auth/verify-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr", code: firstCode }),
+      body: JSON.stringify({ email: "member@example.org", code: firstCode }),
     })
     const latestVerify = await app.request("/auth/verify-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr", code: secondCode }),
+      body: JSON.stringify({ email: "member@example.org", code: secondCode }),
     })
 
     expect(firstRequest.status).toBe(200)
@@ -210,18 +210,18 @@ describe("auth and invites", () => {
     const request = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr" }),
+      body: JSON.stringify({ email: "member@example.org" }),
     })
     const { devCode } = await request.json()
     await testDb.client.execute({
       sql: "UPDATE otp_codes SET expires_at = ? WHERE email = ?",
-      args: [0, "member@miralab.tr"],
+      args: [0, "member@example.org"],
     })
 
     const verify = await app.request("/auth/verify-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr", code: devCode }),
+      body: JSON.stringify({ email: "member@example.org", code: devCode }),
     })
 
     expect(request.status).toBe(200)
@@ -230,7 +230,7 @@ describe("auth and invites", () => {
   })
 
   it("rejects expired sessions", async () => {
-    const memberHeaders = await login("member@miralab.tr")
+    const memberHeaders = await login("member@example.org")
     await testDb.client.execute({
       sql: "UPDATE sessions SET expires_at = ? WHERE user_id = ?",
       args: [0, "member-local"],
@@ -256,7 +256,7 @@ describe("auth and invites", () => {
       app.request("/auth/request-otp", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: "member@miralab.tr" }),
+        body: JSON.stringify({ email: "member@example.org" }),
       })
 
     const firstRequest = await requestOtp()
@@ -273,8 +273,8 @@ describe("auth and invites", () => {
   })
 
   it("lets admins deactivate and reactivate users", async () => {
-    const adminHeaders = await login("admin@miralab.tr")
-    const memberHeaders = await login("member@miralab.tr")
+    const adminHeaders = await login("admin@example.org")
+    const memberHeaders = await login("member@example.org")
 
     const deactivateResponse = await app.request("/admin/users/member-local", {
       method: "PATCH",
@@ -288,7 +288,7 @@ describe("auth and invites", () => {
     const otpAfterDeactivate = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr" }),
+      body: JSON.stringify({ email: "member@example.org" }),
     })
 
     const reactivateResponse = await app.request("/admin/users/member-local", {
@@ -300,14 +300,14 @@ describe("auth and invites", () => {
     const otpAfterReactivate = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "member@miralab.tr" }),
+      body: JSON.stringify({ email: "member@example.org" }),
     })
 
     expect(deactivateResponse.status).toBe(200)
     expect(deactivated.user).toEqual(
       expect.objectContaining({
         id: "member-local",
-        email: "member@miralab.tr",
+        email: "member@example.org",
         active: false,
       }),
     )
@@ -326,7 +326,7 @@ describe("auth and invites", () => {
   })
 
   it("prevents admins from changing their own access", async () => {
-    const adminHeaders = await login("admin@miralab.tr")
+    const adminHeaders = await login("admin@example.org")
     const response = await app.request("/admin/users/admin-local", {
       method: "PATCH",
       headers: { ...adminHeaders, "content-type": "application/json" },
@@ -338,7 +338,7 @@ describe("auth and invites", () => {
   })
 
   it("lets admins change another user's role", async () => {
-    const adminHeaders = await login("admin@miralab.tr")
+    const adminHeaders = await login("admin@example.org")
     const response = await app.request("/admin/users/member-local", {
       method: "PATCH",
       headers: { ...adminHeaders, "content-type": "application/json" },
@@ -372,19 +372,19 @@ describe("auth and invites", () => {
     const request = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "admin@miralab.tr" }),
+      body: JSON.stringify({ email: "admin@example.org" }),
     })
     expect(request.status).toBe(200)
     expect(await request.json()).toEqual({
       ok: true,
-      email: "admin@miralab.tr",
+      email: "admin@example.org",
       expiresAt: expect.any(String),
     })
-    const code = await latestOtpCode("admin@miralab.tr")
+    const code = await latestOtpCode("admin@example.org")
     const verify = await app.request("/auth/verify-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "admin@miralab.tr", code }),
+      body: JSON.stringify({ email: "admin@example.org", code }),
     })
 
     const setCookie = verify.headers.get("set-cookie")
@@ -411,7 +411,7 @@ describe("auth and invites", () => {
       },
     })
 
-    const { authorization } = await login("admin@miralab.tr")
+    const { authorization } = await login("admin@example.org")
     const response = await app.request("/auth/logout", {
       method: "POST",
       headers: { authorization },

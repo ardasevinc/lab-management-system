@@ -22,7 +22,7 @@ describe("health endpoint", () => {
     expect(await response.json()).toEqual({
       ok: true,
       service: "lab-api",
-      lab: "MIRALAB",
+      lab: "Lab LMS",
       checks: {
         database: "ok",
         machines: 1,
@@ -84,7 +84,7 @@ describe("health endpoint", () => {
     expect(await response.json()).toEqual({
       ok: false,
       service: "lab-api",
-      lab: "MIRALAB",
+      lab: "Lab LMS",
       checks: {
         database: "unhealthy",
         reminders: {
@@ -109,7 +109,7 @@ describe("health endpoint", () => {
     expect(await response.json()).toEqual({
       ok: false,
       service: "lab-api",
-      lab: "MIRALAB",
+      lab: "Lab LMS",
       checks: {
         database: "ok",
         machines: 0,

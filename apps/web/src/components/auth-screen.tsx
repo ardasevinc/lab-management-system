@@ -55,9 +55,9 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
             <BrandMark className="size-9 shadow-sm" />
             <div>
               <p className="font-medium text-white/50 text-xs uppercase tracking-[0.18em]">
-                {labConfig.shortName}
+                {labConfig.institutionName}
               </p>
-              <h1 className="font-semibold text-lg leading-none">{labConfig.appTitle}</h1>
+              <h1 className="font-semibold text-lg leading-none">{labConfig.shortName}</h1>
             </div>
           </div>
 
@@ -79,7 +79,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
               <div>
                 <BrandMark className="mb-4 size-10 shadow-sm lg:hidden" />
                 <p className="font-medium text-muted-foreground text-sm">Sign in</p>
-                <h2 className="font-semibold text-2xl tracking-tight">Lab access</h2>
+                <h2 className="font-semibold text-2xl tracking-tight">{labConfig.labName}</h2>
               </div>
               <div className="rounded-full border bg-muted px-2.5 py-1 text-muted-foreground text-xs">
                 OTP

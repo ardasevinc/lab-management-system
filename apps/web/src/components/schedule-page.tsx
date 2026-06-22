@@ -15,6 +15,7 @@ import {
   dayEndHour,
   dayStartHour,
   defaultRangeAtMinutes,
+  defaultVisibleStartHour,
   hourHeightPx,
   normalizeRange,
   packOverlaps,
@@ -39,6 +40,7 @@ export function SchedulePage() {
     goToWeek,
     moveBooking,
     resizeBooking,
+    canEditBooking,
   } = useWorkspace()
   const [selectedDay, setSelectedDay] = useState(() => new Date())
   const mobileDays = useMemo(() => {
@@ -84,9 +86,8 @@ export function SchedulePage() {
               {selectedMachine?.active ? "available" : "inactive"}
             </Badge>
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays aria-hidden="true" />
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-sm">
+            <span>
               {formatDate(weekRange.start)} - {formatDate(weekDisplayEnd)}
             </span>
             {selectedMachine?.specs[0] ? (
@@ -154,10 +155,7 @@ export function SchedulePage() {
 
       <section className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-sm xl:block">
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-border border-b bg-muted/40 px-3 py-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <CalendarDays className="text-primary" aria-hidden="true" />
-            <span className="truncate font-medium text-sm">Week board</span>
-          </div>
+          <span className="truncate font-medium text-sm">Week board</span>
           <WeekNavigation
             selectedDate={new Date(weekRange.start)}
             onPrevious={goToPreviousWeek}
@@ -175,6 +173,7 @@ export function SchedulePage() {
             onEditBooking={editBooking}
             onMoveBooking={moveBooking}
             onResizeBooking={resizeBooking}
+            canEditBooking={canEditBooking}
           />
         </div>
       </section>
@@ -256,6 +255,7 @@ function MobileDayTimeline({
   onEditBooking: ReturnType<typeof useWorkspace>["editBooking"]
 }) {
   const laneRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [draft, setDraft] = useState<{
     startY: number
     currentY: number
@@ -301,6 +301,14 @@ function MobileDayTimeline({
   }, [day, draft, onCreateRange])
 
   const draftStyle = getMobileDraftStyle(draft, laneRef.current)
+  const dayScrollKey = day.toISOString()
+
+  useEffect(() => {
+    void dayScrollKey
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = (defaultVisibleStartHour - dayStartHour) * hourHeightPx
+    }
+  }, [dayScrollKey])
 
   return (
     <div className="overflow-hidden rounded-md border border-border bg-background">
@@ -319,6 +327,7 @@ function MobileDayTimeline({
       </div>
 
       <div
+        ref={scrollRef}
         className="grid grid-cols-[44px_minmax(0,1fr)] overflow-y-auto pt-2 pb-1"
         style={{ maxHeight: "min(58vh, 680px)" }}
       >
@@ -384,7 +393,9 @@ function MobileDayTimeline({
                       : "color-mix(in oklch, var(--color-primary) 34%, var(--color-border))",
                   opacity: pendingBookingId === booking.id ? 0.55 : 1,
                 }}
-                onClick={() => onEditBooking(booking)}
+                onClick={() => {
+                  onEditBooking(booking)
+                }}
               >
                 <div className="truncate font-medium leading-tight">{booking.title}</div>
                 <div className="truncate text-muted-foreground tabular-nums">

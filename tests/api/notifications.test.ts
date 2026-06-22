@@ -46,7 +46,7 @@ describe("booking notifications", () => {
       now: new Date("2026-05-10T10:00:00.000Z"),
     })
 
-    expect(sentSubjects).toEqual(["MIRALAB booking starting soon: Reminder run"])
+    expect(sentSubjects).toEqual(["Lab LMS booking starting soon: Reminder run"])
   })
 
   it("sends ending reminders once", async () => {
@@ -79,7 +79,7 @@ describe("booking notifications", () => {
       now: new Date("2026-05-10T10:00:00.000Z"),
     })
 
-    expect(sentSubjects).toEqual(["MIRALAB booking ending soon: Ending run"])
+    expect(sentSubjects).toEqual(["Lab LMS booking ending soon: Ending run"])
   })
 
   it("retries reminder deliveries after transient mailer failures", async () => {
@@ -141,7 +141,7 @@ describe("booking notifications", () => {
     })
 
     delivery = await testDb.db.query.notificationDeliveries.findFirst()
-    expect(sentSubjects).toEqual(["MIRALAB booking starting soon: Retry reminder run"])
+    expect(sentSubjects).toEqual(["Lab LMS booking starting soon: Retry reminder run"])
     expect(delivery).toEqual(
       expect.objectContaining({
         status: "sent",
@@ -339,11 +339,11 @@ describe("booking notifications", () => {
     })
 
     await vi.waitFor(() => {
-      expect(sentSubjects).toEqual(["MIRALAB booking starting soon: Slow reminder run"])
+      expect(sentSubjects).toEqual(["Lab LMS booking starting soon: Slow reminder run"])
     })
 
     await vi.advanceTimersByTimeAsync(3_000)
-    expect(sentSubjects).toEqual(["MIRALAB booking starting soon: Slow reminder run"])
+    expect(sentSubjects).toEqual(["Lab LMS booking starting soon: Slow reminder run"])
 
     releaseSend?.()
     await vi.advanceTimersByTimeAsync(1)

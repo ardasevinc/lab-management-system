@@ -4,15 +4,19 @@ import { labConfig } from "@lab/config"
 import { describe, expect, it } from "vitest"
 
 describe("lab config", () => {
-  it("uses deployable MIRALAB app origins and sender defaults", () => {
-    expect(labConfig.baseUrl).toBe("https://lms.miralab.tr")
+  it("uses neutral FOSS defaults when no deploy branding is configured", () => {
+    expect(labConfig.appTitle).toBe("Lab Management System")
+    expect(labConfig.labName).toBe("Research Lab")
+    expect(labConfig.institutionName).toBe("Your Institution")
+    expect(labConfig.shortName).toBe("Lab LMS")
+    expect(labConfig.baseUrl).toBe("http://localhost:5173")
     expect(labConfig.authHero).toEqual({
-      eyebrow: "GPU workstation access",
-      headline: "Book tohum for research runs.",
+      eyebrow: "Shared lab resource booking",
+      headline: "Book lab machines without calendar drift.",
     })
     expect(labConfig.primaryColor).toBe("#007f67")
-    expect(labConfig.email.fromAddress).toBe("no-reply@miralab.tr")
-    expect(labConfig.email.supportAddress).toBe("support@miralab.tr")
+    expect(labConfig.email.fromAddress).toBe("no-reply@example.org")
+    expect(labConfig.email.supportAddress).toBe("support@example.org")
   })
 
   it("points brand assets at checked-in public files", () => {

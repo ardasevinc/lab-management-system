@@ -97,7 +97,7 @@ function RootRouteSurface({
           <BrandMark className="size-10 shrink-0 shadow-sm" />
           <div className="min-w-0">
             <p className="truncate font-medium text-sm">{labConfig.shortName}</p>
-            <p className="truncate text-muted-foreground text-xs">Booking workspace</p>
+            <p className="truncate text-muted-foreground text-xs">{labConfig.appTitle}</p>
           </div>
         </div>
 

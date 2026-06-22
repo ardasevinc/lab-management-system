@@ -1,5 +1,5 @@
 import { format } from "date-fns"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import type { Booking } from "@/lib/api"
 import {
   bookingStyle,
@@ -10,6 +10,7 @@ import {
   dayEndHour,
   dayStartHour,
   defaultRangeAtMinutes,
+  defaultVisibleStartHour,
   hasConflict,
   hourHeightPx,
   minutesSinceDayStart,
@@ -30,6 +31,7 @@ type WeekCalendarProps = {
   onEditBooking: (booking: Booking) => void
   onMoveBooking: (booking: Booking, range: CalendarRange) => void
   onResizeBooking: (booking: Booking, range: CalendarRange) => void
+  canEditBooking: (booking: Booking) => boolean
 }
 
 type Draft =
@@ -76,10 +78,20 @@ export function WeekCalendar({
   onEditBooking,
   onMoveBooking,
   onResizeBooking,
+  canEditBooking,
 }: WeekCalendarProps) {
   const days = useMemo(() => buildWeekDays(weekDate), [weekDate])
   const [draft, setDraft] = useState<Draft | null>(null)
   const suppressClickRef = useRef(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const weekScrollKey = weekDate.toISOString()
+
+  useLayoutEffect(() => {
+    void weekScrollKey
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = (defaultVisibleStartHour - dayStartHour) * hourHeightPx
+    }
+  }, [weekScrollKey])
 
   useEffect(() => {
     if (!draft) {
@@ -168,34 +180,37 @@ export function WeekCalendar({
           ))}
         </div>
 
-        <div
-          className="grid grid-cols-[52px_repeat(7,minmax(92px,1fr))]"
-          style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
-        >
-          <div className="relative border-border border-r bg-muted/25">
-            {hours.slice(0, -1).map((hour) => (
-              <div
-                key={hour}
-                className="absolute right-2 -translate-y-2 text-muted-foreground text-[11px] tabular-nums"
-                style={{ top: (hour - dayStartHour) * hourHeightPx }}
-              >
-                {hour}:00
-              </div>
+        <div ref={scrollRef} className="max-h-[calc(100dvh-18rem)] min-h-[520px] overflow-y-auto">
+          <div
+            className="grid grid-cols-[52px_repeat(7,minmax(92px,1fr))]"
+            style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
+          >
+            <div className="relative border-border border-r bg-muted/25">
+              {hours.slice(0, -1).map((hour) => (
+                <div
+                  key={hour}
+                  className="absolute right-2 -translate-y-2 text-muted-foreground text-[11px] tabular-nums"
+                  style={{ top: (hour - dayStartHour) * hourHeightPx }}
+                >
+                  {hour}:00
+                </div>
+              ))}
+            </div>
+
+            {days.map((day) => (
+              <DayColumn
+                key={day.toISOString()}
+                day={day}
+                bookings={bookings}
+                draft={draft}
+                pendingBookingId={pendingBookingId}
+                suppressClickRef={suppressClickRef}
+                canEditBooking={canEditBooking}
+                onDraft={setDraft}
+                onEditBooking={onEditBooking}
+              />
             ))}
           </div>
-
-          {days.map((day) => (
-            <DayColumn
-              key={day.toISOString()}
-              day={day}
-              bookings={bookings}
-              draft={draft}
-              pendingBookingId={pendingBookingId}
-              suppressClickRef={suppressClickRef}
-              onDraft={setDraft}
-              onEditBooking={onEditBooking}
-            />
-          ))}
         </div>
       </div>
     </div>
@@ -208,6 +223,7 @@ function DayColumn({
   draft,
   pendingBookingId,
   suppressClickRef,
+  canEditBooking,
   onDraft,
   onEditBooking,
 }: {
@@ -216,6 +232,7 @@ function DayColumn({
   draft: Draft | null
   pendingBookingId?: string | null
   suppressClickRef: React.MutableRefObject<boolean>
+  canEditBooking: (booking: Booking) => boolean
   onDraft: (draft: Draft) => void
   onEditBooking: (booking: Booking) => void
 }) {
@@ -259,6 +276,7 @@ function DayColumn({
       {dayBookings.map((booking) => {
         const style = bookingStyle(booking)
         const conflicts = hasConflict(booking, bookings, booking.id)
+        const canEdit = canEditBooking(booking)
         return (
           <button
             key={booking.id}
@@ -286,7 +304,7 @@ function DayColumn({
               }
             }}
             onPointerDown={(event) => {
-              if (event.button !== 0) {
+              if (event.button !== 0 || !canEdit) {
                 return
               }
 
@@ -305,46 +323,50 @@ function DayColumn({
             }}
             title={`${booking.title}, ${formatTime(booking.startsAt)} - ${formatTime(booking.endsAt)}`}
           >
-            <span
-              className="absolute top-0 right-1 left-1 flex h-3 cursor-ns-resize items-start justify-center pt-1"
-              onPointerDown={(event) => {
-                if (event.button !== 0) {
-                  return
-                }
+            {canEdit ? (
+              <span
+                className="absolute top-0 right-1 left-1 flex h-3 cursor-ns-resize items-start justify-center pt-1"
+                onPointerDown={(event) => {
+                  if (event.button !== 0) {
+                    return
+                  }
 
-                event.stopPropagation()
-                onDraft({
-                  kind: "resize-start",
-                  booking,
-                  startY: event.clientY,
-                  currentY: event.clientY,
-                })
-              }}
-            >
-              <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
-            </span>
+                  event.stopPropagation()
+                  onDraft({
+                    kind: "resize-start",
+                    booking,
+                    startY: event.clientY,
+                    currentY: event.clientY,
+                  })
+                }}
+              >
+                <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+              </span>
+            ) : null}
             <div className="line-clamp-2 font-medium leading-tight">{booking.title}</div>
             <div className="truncate text-muted-foreground tabular-nums">
               {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
             </div>
-            <span
-              className="absolute right-1 bottom-0 left-1 flex h-3 cursor-ns-resize items-end justify-center pb-1"
-              onPointerDown={(event) => {
-                if (event.button !== 0) {
-                  return
-                }
+            {canEdit ? (
+              <span
+                className="absolute right-1 bottom-0 left-1 flex h-3 cursor-ns-resize items-end justify-center pb-1"
+                onPointerDown={(event) => {
+                  if (event.button !== 0) {
+                    return
+                  }
 
-                event.stopPropagation()
-                onDraft({
-                  kind: "resize-end",
-                  booking,
-                  startY: event.clientY,
-                  currentY: event.clientY,
-                })
-              }}
-            >
-              <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
-            </span>
+                  event.stopPropagation()
+                  onDraft({
+                    kind: "resize-end",
+                    booking,
+                    startY: event.clientY,
+                    currentY: event.clientY,
+                  })
+                }}
+              >
+                <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+              </span>
+            ) : null}
           </button>
         )
       })}

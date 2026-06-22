@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test"
 
-const adminEmail = "admin@miralab.tr"
-const memberEmail = "member@miralab.tr"
+const adminEmail = "admin@example.org"
+const memberEmail = "member@example.org"
 
 test("login returns users to the requested workspace route", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop route-preservation smoke")
@@ -26,12 +26,12 @@ test("invite login links prefill the invited email", async ({ page }, testInfo) 
   test.skip(!isDesktopProject(testInfo.project.name), "desktop invite-link smoke")
 
   const consoleProblems = collectConsoleProblems(page)
-  await page.goto("/login?email=member%40miralab.tr")
+  await page.goto("/login?email=member%40example.org")
 
-  await expect(page.getByLabel("Email")).toHaveValue("member@miralab.tr")
+  await expect(page.getByLabel("Email")).toHaveValue("member@example.org")
   await page.getByRole("button", { name: "Continue" }).click()
   await expect(page.getByLabel("Login code")).toBeVisible()
-  await expect(page.getByText("member@miralab.tr")).toBeVisible()
+  await expect(page.getByText("member@example.org")).toBeVisible()
   expect(consoleProblems).toEqual([])
 })
 
@@ -99,7 +99,7 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   const auditHistory = page.getByRole("region", { name: "Audit history" })
   await expect(auditHistory).toBeVisible()
   await expect(auditHistory.getByText("Created")).toBeVisible()
-  await expect(auditHistory.getByText(/MIRALAB Admin/)).toBeVisible()
+  await expect(auditHistory.getByText(/Lab Admin/)).toBeVisible()
 
   const updateReason = "E2E reason: adjusted by admin"
   await page.getByLabel("Audit reason").fill(updateReason)
@@ -192,7 +192,7 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
   await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
   await page.getByLabel("Title").fill(bookingTitle)
   await page.getByRole("combobox", { name: "Owner" }).click()
-  await page.getByRole("option", { name: /MIRALAB Member/ }).click()
+  await page.getByRole("option", { name: /Lab Member/ }).click()
   await page.getByRole("button", { name: "Create" }).click()
 
   const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
@@ -244,7 +244,7 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   await page.keyboard.press("Escape")
 
   await bookingSheet.getByRole("combobox", { name: "Owner" }).click()
-  await expect(page.getByRole("option", { name: /MIRALAB Member/ })).toBeVisible()
+  await expect(page.getByRole("option", { name: /Lab Member/ })).toBeVisible()
   await expectElementFullyWithinViewport(page, page.getByRole("listbox"))
   await page.keyboard.press("Escape")
 
@@ -283,7 +283,7 @@ test("admin can edit and delete a researcher booking from the booking sheet", as
 
   await booking.click()
   await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
-  await expect(page.getByRole("combobox", { name: "Owner" })).toContainText("MIRALAB Member")
+  await expect(page.getByRole("combobox", { name: "Owner" })).toContainText("Lab Member")
 
   const updateReason = "E2E reason: admin corrected member booking"
   await page.getByLabel("Title").fill(updatedTitle)
@@ -412,7 +412,7 @@ test("admin user disable requires confirmation", async ({ page }, testInfo) => {
   await page.goto("/admin/users")
   await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
 
-  const memberRow = page.locator("tbody tr").filter({ hasText: "member@miralab.tr" })
+  const memberRow = page.locator("tbody tr").filter({ hasText: "member@example.org" })
   const memberStatus = memberRow.locator("td").nth(3)
   await expect(memberRow).toBeVisible()
   const reactivateButton = memberRow.getByRole("button", { name: "Reactivate" })
@@ -449,7 +449,7 @@ test("admin user role changes require confirmation", async ({ page }, testInfo) 
   await page.goto("/admin/users")
   await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
 
-  const memberRow = page.locator("tbody tr").filter({ hasText: "member@miralab.tr" })
+  const memberRow = page.locator("tbody tr").filter({ hasText: "member@example.org" })
   const roleSelect = memberRow.getByRole("combobox")
   await expect(memberRow).toBeVisible()
   await expect(roleSelect).toHaveText("Member")
@@ -483,8 +483,8 @@ test("admin users filter keeps member management scannable", async ({ page }) =>
 
   const membersPanel = page.locator("section").filter({ hasText: "Members" })
   const userStats = membersPanel.locator("dl")
-  await expectVisibleText(membersPanel, "admin@miralab.tr")
-  await expectVisibleText(membersPanel, "member@miralab.tr")
+  await expectVisibleText(membersPanel, "admin@example.org")
+  await expectVisibleText(membersPanel, "member@example.org")
   await expect(userStats.getByText("Total").locator("..")).toContainText("2")
   await expect(userStats.getByText("Active").locator("..")).toContainText("2")
   await expect(userStats.getByText("Admins").locator("..")).toContainText("1")
@@ -492,15 +492,15 @@ test("admin users filter keeps member management scannable", async ({ page }) =>
   await expect(userStats.getByText("Disabled").locator("..")).toContainText("0")
 
   await page.getByLabel("Filter users").fill("member")
-  await expectVisibleText(membersPanel, "member@miralab.tr")
-  await expectNoVisibleText(membersPanel, "admin@miralab.tr")
+  await expectVisibleText(membersPanel, "member@example.org")
+  await expectNoVisibleText(membersPanel, "admin@example.org")
   await expect(membersPanel.getByText("1/2 shown")).toBeVisible()
 
   await page.getByLabel("Filter users").fill("no-such-user")
   await expect(membersPanel.getByText("No matching users")).toBeVisible()
   await page.getByRole("button", { name: "Clear filter" }).click()
-  await expectVisibleText(membersPanel, "admin@miralab.tr")
-  await expectVisibleText(membersPanel, "member@miralab.tr")
+  await expectVisibleText(membersPanel, "admin@example.org")
+  await expectVisibleText(membersPanel, "member@example.org")
   expect(consoleProblems).toEqual([])
 })
 
@@ -743,7 +743,7 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
 
     await page.getByRole("button", { name: "Toggle Sidebar" }).click()
     await expect(sidebar).toBeVisible()
-    await sidebar.getByRole("button").filter({ hasText: "MIRALAB Admin" }).click()
+    await sidebar.getByRole("button").filter({ hasText: "Lab Admin" }).click()
   } else {
     await expect(page.getByRole("link", { name: "Schedule" })).toBeVisible()
     await expect(page.getByRole("link", { name: "Machines" })).toHaveCount(2)
@@ -753,13 +753,13 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
     await expect(page).toHaveURL(/\/admin\/users$/)
     await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
 
-    await page.getByRole("button").filter({ hasText: "MIRALAB Admin" }).click()
+    await page.getByRole("button").filter({ hasText: "Lab Admin" }).click()
   }
 
   const accountMenu = page.getByRole("menu")
   await expect(accountMenu).toBeVisible()
-  await expect(accountMenu.getByText("MIRALAB Admin")).toBeVisible()
-  await expect(accountMenu.getByText("admin@miralab.tr")).toBeVisible()
+  await expect(accountMenu.getByText("Lab Admin")).toBeVisible()
+  await expect(accountMenu.getByText("admin@example.org")).toBeVisible()
   await expect(accountMenu.getByText("Admin", { exact: true })).toBeVisible()
   await expect(accountMenu.getByRole("menuitem", { name: "Log out" })).toBeVisible()
   await expectElementWithinViewport(page, accountMenu)
@@ -818,8 +818,8 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   await expect(page).toHaveURL(/\/admin\/users$/)
   await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
   const membersPanel = page.locator("section").filter({ hasText: "Members" })
-  await expect(membersPanel.getByText("admin@miralab.tr").first()).toBeVisible()
-  await expect(membersPanel.getByText("member@miralab.tr").first()).toBeVisible()
+  await expect(membersPanel.getByText("admin@example.org").first()).toBeVisible()
+  await expect(membersPanel.getByText("member@example.org").first()).toBeVisible()
   await expectRouteContentWithinViewport(page)
 
   await page.getByRole("button", { name: "Invite user" }).click()

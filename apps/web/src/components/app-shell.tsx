@@ -5,12 +5,10 @@ import {
   ChevronsUpDown,
   Home,
   LogOut,
-  Mail,
   MonitorCog,
   PanelLeft,
   Plus,
   Settings,
-  ShieldCheck,
   UsersRound,
   Wrench,
   X,
@@ -68,7 +66,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
   const isAdmin = user.role === "admin"
   const routeInfo = getRouteInfo(pathname)
   const brandSubtitle =
-    labConfig.appTitle === labConfig.shortName ? "Booking workspace" : labConfig.appTitle
+    labConfig.institutionName === labConfig.labName ? labConfig.appTitle : labConfig.labName
 
   return (
     <SidebarProvider>
@@ -327,29 +325,26 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
         align="end"
         side={menuSide}
         sideOffset={8}
-        className="w-72 max-w-[calc(100vw-1.5rem)] rounded-lg p-1.5"
+        className="w-64 max-w-[calc(100vw-1.5rem)] rounded-lg p-1"
       >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
-            <div className="flex min-w-0 items-start gap-3 rounded-md px-2.5 py-2.5">
-              <Avatar className="mt-0.5" size="default">
+            <div className="flex min-w-0 items-center gap-2.5 rounded-md px-2 py-2">
+              <Avatar size="sm">
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid min-w-0 flex-1 gap-1 text-left">
+              <div className="grid min-w-0 flex-1 gap-0.5 text-left">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="truncate font-medium text-popover-foreground text-sm leading-5">
                     {displayName}
                   </span>
-                  <Badge variant="outline" className="h-5 shrink-0 capitalize">
+                  <Badge variant="outline" className="h-5 shrink-0 px-1.5 font-normal capitalize">
                     {roleLabel}
                   </Badge>
                 </div>
-                <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs leading-4">
-                  <Mail aria-hidden="true" />
+                <div className="flex min-w-0 items-center gap-1 text-muted-foreground text-xs leading-4">
                   <span className="truncate">{user.email}</span>
-                </div>
-                <div className="flex min-w-0 items-center gap-1.5 text-muted-foreground text-xs leading-4">
-                  <ShieldCheck aria-hidden="true" />
+                  <span aria-hidden="true">·</span>
                   <span>{user.active ? "Active" : "Disabled"}</span>
                 </div>
               </div>

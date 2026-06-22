@@ -18,8 +18,10 @@ export type PackedBooking = Booking & {
   columnCount: number
 }
 
-export const dayStartHour = 8
-export const dayEndHour = 22
+export const dayStartHour = 0
+export const dayEndHour = 24
+export const defaultVisibleStartHour = 8
+export const defaultBookingStartHour = 8
 export const snapStepMinutes = 30
 export const defaultBookingDurationMinutes = 60
 export const hourHeightPx = 56
@@ -58,7 +60,7 @@ export function clampMinutesToDay(minutes: number) {
 }
 
 export function dateAtMinutes(day: Date, minutes: number) {
-  const clampedMinutes = Math.max(0, Math.min(24 * 60 - 1, Math.round(minutes)))
+  const clampedMinutes = Math.max(0, Math.min(24 * 60, Math.round(minutes)))
   const hours = Math.floor(clampedMinutes / 60)
   const remainingMinutes = clampedMinutes % 60
   return new Date(fromLabDateTimeParts(toLabDateValue(day), timeValue(hours, remainingMinutes)))
@@ -188,8 +190,11 @@ export function packOverlaps(bookings: Booking[]): PackedBooking[] {
 export function bookingStyle(booking: PackedBooking) {
   const start = new Date(booking.startsAt)
   const end = new Date(booking.endsAt)
-  const top = minutesToY(minutesSinceDayStart(start))
-  const height = Math.max(24, minutesToY(minutesSinceDayStart(end)) - top)
+  const startMinutes = minutesSinceDayStart(start)
+  const endMinutes =
+    toLabDateValue(end) === toLabDateValue(start) ? minutesSinceDayStart(end) : dayEndHour * 60
+  const top = minutesToY(startMinutes)
+  const height = Math.max(24, minutesToY(endMinutes) - top)
   const width = 100 / booking.columnCount
   const left = booking.column * width
 

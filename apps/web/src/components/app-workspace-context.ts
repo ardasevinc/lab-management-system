@@ -58,6 +58,7 @@ export type WorkspaceContextValue = {
   editBooking: (booking: Booking) => void
   moveBooking: (booking: Booking, range: CalendarRange) => void
   resizeBooking: (booking: Booking, range: CalendarRange) => void
+  canEditBooking: (booking: Booking) => boolean
 }
 
 export const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)

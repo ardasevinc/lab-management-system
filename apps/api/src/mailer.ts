@@ -50,7 +50,7 @@ export function createMailerFromEnv(env: Record<string, string | undefined>): Ma
   if (provider === "ses") {
     return createSesMailer({
       region: requiredEnv(env.AWS_REGION, "AWS_REGION"),
-      fromName: mailHeaderValue(env.SES_FROM_NAME ?? "MIRALAB", "SES_FROM_NAME"),
+      fromName: mailHeaderValue(env.SES_FROM_NAME ?? labConfig.email.fromName, "SES_FROM_NAME"),
       fromEmail: requiredEmailEnv(env.SES_FROM_EMAIL, "SES_FROM_EMAIL"),
       replyTo: optionalEmailEnv(env.SES_REPLY_TO, "SES_REPLY_TO"),
       configurationSet: optionalMailHeaderValue(env.SES_CONFIGURATION_SET, "SES_CONFIGURATION_SET"),
@@ -95,7 +95,7 @@ export function createSesMailer(config: SesMailerConfig): Mailer {
           Message: {
             Subject: {
               Charset: "UTF-8",
-              Data: "Your MIRALAB login code",
+              Data: `Your ${labConfig.shortName} login code`,
             },
             Body: {
               Text: {

@@ -65,7 +65,7 @@ describe("realistic QA data seed", () => {
       new Date("2026-06-22T00:00:00.000Z"),
     )
 
-    expect(users.filter((user) => user.email.endsWith("@miralab.tr"))).toHaveLength(7)
+    expect(users.filter((user) => user.email.endsWith("@miralab.tr"))).toHaveLength(5)
     expect(machines).toHaveLength(3)
     expect(tohumBookings).toHaveLength(5)
   })

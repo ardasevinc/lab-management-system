@@ -92,7 +92,7 @@ describe("mailer templates", () => {
   it("renders login OTP text in the configured lab timezone", () => {
     expect(renderLoginOtpText("123456", new Date("2026-05-10T10:10:00.000Z"))).toBe(
       [
-        "Your MIRALAB login code is 123456.",
+        "Your Lab LMS login code is 123456.",
         "It expires at May 10, 2026, 1:10 PM Europe/Istanbul.",
         "",
         "If you did not request this code, you can ignore this email.",
@@ -103,8 +103,8 @@ describe("mailer templates", () => {
   it("renders login OTP HTML with escaped code and configured lab copy", () => {
     const html = renderLoginOtpHtml("<123456>", new Date("2026-05-10T10:10:00.000Z"))
 
-    expect(html).toContain("MIRALAB")
-    expect(html).toContain("MIRALAB booking system")
+    expect(html).toContain("Lab LMS")
+    expect(html).toContain("Lab LMS booking system")
     expect(html).toContain("&lt;123456&gt;")
     expect(html).toContain("May 10, 2026, 1:10 PM Europe/Istanbul")
     expect(html).not.toContain("<123456>")
@@ -122,12 +122,12 @@ describe("mailer templates", () => {
       [
         "Hi New Member,",
         "",
-        "You have been invited to MIRALAB as a member.",
+        "You have been invited to Lab Management System as a member.",
         "Use your invited email address to request a one-time login code.",
         "",
         "Sign in: https://lms.miralab.tr/login?email=new.member%40miralab.tr",
         "",
-        "Need help? Contact support@miralab.tr.",
+        "Need help? Contact support@example.org.",
       ].join("\n"),
     )
   })
@@ -140,11 +140,11 @@ describe("mailer templates", () => {
       loginUrl: "https://lms.miralab.tr/login?email=new.member%40miralab.tr",
     })
 
-    expect(html).toContain("MIRALAB")
+    expect(html).toContain("Lab LMS")
     expect(html).toContain("&lt;New Member&gt;")
     expect(html).toContain("admin access")
     expect(html).toContain("https://lms.miralab.tr/login?email=new.member%40miralab.tr")
-    expect(html).toContain("mailto:support@miralab.tr")
+    expect(html).toContain("mailto:support@example.org")
     expect(html).not.toContain("<New Member>")
   })
 
@@ -169,7 +169,7 @@ describe("mailer templates", () => {
         "",
         "Open schedule: https://miralab.tr/schedule",
         "",
-        "Need help? Contact support@miralab.tr.",
+        "Need help? Contact support@example.org.",
       ].join("\n"),
     )
   })
@@ -185,11 +185,11 @@ describe("mailer templates", () => {
       actionUrl: "https://miralab.tr/schedule",
     })
 
-    expect(html).toContain("MIRALAB")
+    expect(html).toContain("Lab LMS")
     expect(html).toContain("Booking &lt;created&gt;")
     expect(html).toContain("&lt;Training&gt;")
     expect(html).toContain("https://miralab.tr/schedule")
-    expect(html).toContain("mailto:support@miralab.tr")
+    expect(html).toContain("mailto:support@example.org")
     expect(html).not.toContain("<Training>")
   })
 })
