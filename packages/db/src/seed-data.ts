@@ -30,51 +30,95 @@ export async function seedInitialData(
   if (seedLocalUsers) {
     await db
       .insert(users)
-      .values([
-        {
-          id: "admin-local",
+      .values({
+        id: "admin-local",
+        email: "admin@example.org",
+        name: "Lab Admin",
+        role: "admin",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
           email: "admin@example.org",
           name: "Lab Admin",
           role: "admin",
-          createdAt: now,
+          active: true,
           updatedAt: now,
         },
-        {
-          id: "member-local",
+      })
+
+    await db
+      .insert(users)
+      .values({
+        id: "member-local",
+        email: "member@example.org",
+        name: "Lab Member",
+        role: "member",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
           email: "member@example.org",
           name: "Lab Member",
           role: "member",
-          createdAt: now,
+          active: true,
           updatedAt: now,
         },
-      ])
-      .onConflictDoNothing()
+      })
+
+    const localAdminId = await fixtureAdminId(db)
 
     await db
       .insert(invites)
-      .values([
-        {
-          id: "invite-admin-local",
+      .values({
+        id: "invite-admin-local",
+        email: "admin@example.org",
+        name: "Lab Admin",
+        role: "admin",
+        invitedByUserId: localAdminId,
+        acceptedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: invites.id,
+        set: {
           email: "admin@example.org",
           name: "Lab Admin",
           role: "admin",
-          invitedByUserId: await fixtureAdminId(db),
+          invitedByUserId: localAdminId,
           acceptedAt: now,
-          createdAt: now,
           updatedAt: now,
         },
-        {
-          id: "invite-member-local",
+      })
+
+    await db
+      .insert(invites)
+      .values({
+        id: "invite-member-local",
+        email: "member@example.org",
+        name: "Lab Member",
+        role: "member",
+        invitedByUserId: localAdminId,
+        acceptedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: invites.id,
+        set: {
           email: "member@example.org",
           name: "Lab Member",
           role: "member",
-          invitedByUserId: await fixtureAdminId(db),
+          invitedByUserId: localAdminId,
           acceptedAt: now,
-          createdAt: now,
           updatedAt: now,
         },
-      ])
-      .onConflictDoNothing()
+      })
   }
 
   await db
