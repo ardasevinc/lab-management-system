@@ -173,6 +173,7 @@ export function BookingDialog({
                   timeId="startsTime"
                   dateValue={startsDate}
                   timeValue={startsTime}
+                  inlineDatePicker={isMobile}
                   onDateChange={setStartsDate}
                   onTimeChange={setStartsTime}
                 />
@@ -182,6 +183,7 @@ export function BookingDialog({
                   timeId="endsTime"
                   dateValue={endsDate}
                   timeValue={endsTime}
+                  inlineDatePicker={isMobile}
                   onDateChange={setEndsDate}
                   onTimeChange={setEndsTime}
                 />
@@ -311,6 +313,7 @@ function DateTimeField({
   timeId,
   dateValue,
   timeValue,
+  inlineDatePicker,
   onDateChange,
   onTimeChange,
 }: {
@@ -319,6 +322,7 @@ function DateTimeField({
   timeId: string
   dateValue: string
   timeValue: string
+  inlineDatePicker: boolean
   onDateChange: (date: string) => void
   onTimeChange: (time: string) => void
 }) {
@@ -330,38 +334,70 @@ function DateTimeField({
     <Field>
       <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
       <FieldGroup className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger asChild>
+        {inlineDatePicker ? (
+          <div className="grid min-w-0 gap-2">
             <Button
               id={dateId}
               type="button"
               variant="outline"
-              className="justify-start font-normal"
+              className="min-w-0 justify-start font-normal"
               aria-label={`${label} date ${formattedDate}`}
+              aria-expanded={pickerOpen}
+              onClick={() => setPickerOpen((open) => !open)}
             >
               <CalendarDays data-icon="inline-start" aria-hidden="true" />
               <span className="truncate">{formattedDate}</span>
             </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-auto max-w-[calc(100vw-2rem)] p-0"
-            align="start"
-            sideOffset={8}
-            collisionPadding={16}
-          >
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                if (date) {
-                  onDateChange(toLabDateValue(date))
-                }
-                setPickerOpen(false)
-              }}
-              autoFocus
-            />
-          </PopoverContent>
-        </Popover>
+            {pickerOpen ? (
+              <div className="max-w-full overflow-hidden rounded-lg border border-border bg-background p-1">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  className="mx-auto max-w-full"
+                  onSelect={(date) => {
+                    if (date) {
+                      onDateChange(toLabDateValue(date))
+                    }
+                    setPickerOpen(false)
+                  }}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id={dateId}
+                type="button"
+                variant="outline"
+                className="min-w-0 justify-start font-normal"
+                aria-label={`${label} date ${formattedDate}`}
+              >
+                <CalendarDays data-icon="inline-start" aria-hidden="true" />
+                <span className="truncate">{formattedDate}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto max-w-[calc(100vw-2rem)] p-0"
+              align="start"
+              sideOffset={8}
+              collisionPadding={16}
+            >
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  if (date) {
+                    onDateChange(toLabDateValue(date))
+                  }
+                  setPickerOpen(false)
+                }}
+                autoFocus
+              />
+            </PopoverContent>
+          </Popover>
+        )}
         <Input
           id={timeId}
           inputMode="numeric"

@@ -259,24 +259,33 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   await expectElementNoHorizontalOverflow(bookingSheet)
 
   await bookingSheet.getByRole("combobox", { name: "Type" }).click()
+  const typeListbox = page.getByRole("listbox")
   await expect(page.getByRole("option", { name: "Maintenance" })).toBeVisible()
-  await expectElementFullyWithinViewport(page, page.getByRole("listbox"))
+  await expectElementFullyWithinViewport(page, typeListbox)
+  await expectElementNoHorizontalOverflow(typeListbox)
   await page.keyboard.press("Escape")
 
   await bookingSheet.getByRole("combobox", { name: "Owner" }).click()
+  const ownerListbox = page.getByRole("listbox")
   await expect(page.getByRole("option", { name: /Lab Member/ })).toBeVisible()
-  await expectElementFullyWithinViewport(page, page.getByRole("listbox"))
+  await expectElementFullyWithinViewport(page, ownerListbox)
+  await expectElementNoHorizontalOverflow(ownerListbox)
   await page.keyboard.press("Escape")
 
   if (testInfo.project.name === "mobile-chromium") {
-    await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
-    const dateGrid = page.getByRole("grid")
+    const startsDateButton = bookingSheet.getByRole("button", { name: /^Starts date/ })
+    const startsTimeInput = bookingSheet.getByLabel("Starts time")
+    await startsDateButton.click()
+    const dateGrid = bookingSheet.getByRole("grid")
     await expect(dateGrid).toBeVisible()
     await expectElementFullyWithinViewport(page, dateGrid)
-    await page.keyboard.press("Escape")
+    await expectElementNoHorizontalOverflow(dateGrid)
+    await expectElementBelow(dateGrid, startsDateButton)
+    await expectElementBelow(startsTimeInput, dateGrid)
+    await startsDateButton.click()
 
     await expectMinHeight(bookingSheet.getByLabel("Title"), 44)
-    await expectMinHeight(bookingSheet.getByRole("button", { name: /^Starts date/ }), 44)
+    await expectMinHeight(startsDateButton, 44)
     await expectElementNoHorizontalOverflow(bookingSheet)
   } else {
     await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
@@ -786,6 +795,15 @@ test("mobile day agenda scroll does not open a booking sheet", async ({ page }, 
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
   await expect(page.getByText("Day agenda")).toBeVisible()
   await expectNoHorizontalOverflow(page)
+
+  const weekButton = page.getByRole("button", { name: /^Week of/ })
+  await weekButton.click()
+  const weekPickerGrid = page.locator("main").getByRole("grid")
+  await expect(weekPickerGrid).toBeVisible()
+  await expectElementFullyWithinViewport(page, weekPickerGrid)
+  await expectElementNoHorizontalOverflow(weekPickerGrid)
+  await expectElementBelow(weekPickerGrid, weekButton)
+  await weekButton.click()
 
   const timeline = page.locator("[data-mobile-day-timeline]")
   await expect(timeline).toBeVisible()
@@ -1490,6 +1508,21 @@ async function expectElementNoHorizontalOverflow(locator: Locator) {
         (element) => Math.ceil(element.scrollWidth) <= Math.ceil(element.clientWidth) + 1,
       ),
     )
+    .toBe(true)
+}
+
+async function expectElementBelow(locator: Locator, anchor: Locator) {
+  await expect(locator).toBeVisible()
+  await expect(anchor).toBeVisible()
+  await expect
+    .poll(async () => {
+      const [box, anchorBox] = await Promise.all([locator.boundingBox(), anchor.boundingBox()])
+      if (!box || !anchorBox) {
+        return false
+      }
+
+      return box.y >= anchorBox.y + anchorBox.height - 1
+    })
     .toBe(true)
 }
 

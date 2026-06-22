@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { WeekCalendar } from "@/components/week-calendar"
+import { useIsMobile } from "@/hooks/use-mobile"
 import type { Booking } from "@/lib/api"
 import {
   bookingStyle,
@@ -192,6 +193,7 @@ function WeekNavigation({
   onSelectDate: (date: Date) => void
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
+  const isMobile = useIsMobile()
   const weekLabel = format(selectedDate, "MMM d")
 
   return (
@@ -210,37 +212,51 @@ function WeekNavigation({
       >
         <ChevronLeft aria-hidden="true" />
       </Button>
-      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
-          >
-            <CalendarDays data-icon="inline-start" aria-hidden="true" />
-            <span className="truncate">Week of {weekLabel}</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="max-w-[calc(100vw-2rem)] p-0"
-          align="start"
-          sideOffset={8}
-          collisionPadding={16}
+      {isMobile ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
+          aria-expanded={pickerOpen}
+          onClick={() => setPickerOpen((open) => !open)}
         >
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => {
-              if (date) {
-                onSelectDate(date)
-              }
-              setPickerOpen(false)
-            }}
-            autoFocus
-          />
-        </PopoverContent>
-      </Popover>
+          <CalendarDays data-icon="inline-start" aria-hidden="true" />
+          <span className="truncate">Week of {weekLabel}</span>
+        </Button>
+      ) : (
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
+            >
+              <CalendarDays data-icon="inline-start" aria-hidden="true" />
+              <span className="truncate">Week of {weekLabel}</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="max-w-[calc(100vw-2rem)] p-0"
+            align="start"
+            sideOffset={8}
+            collisionPadding={16}
+          >
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => {
+                if (date) {
+                  onSelectDate(date)
+                }
+                setPickerOpen(false)
+              }}
+              autoFocus
+            />
+          </PopoverContent>
+        </Popover>
+      )}
       <Button
         type="button"
         variant="outline"
@@ -260,6 +276,21 @@ function WeekNavigation({
       >
         <ChevronRight aria-hidden="true" />
       </Button>
+      {isMobile && pickerOpen ? (
+        <div className="col-span-full max-w-full overflow-hidden rounded-lg border border-border bg-background p-1 shadow-sm">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            className="mx-auto max-w-full"
+            onSelect={(date) => {
+              if (date) {
+                onSelectDate(date)
+              }
+              setPickerOpen(false)
+            }}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
