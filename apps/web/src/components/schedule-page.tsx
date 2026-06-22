@@ -87,7 +87,7 @@ export function SchedulePage() {
             </Badge>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-sm">
-            <span>
+            <span className="inline-block w-44 shrink-0 tabular-nums">
               {formatDate(weekRange.start)} - {formatDate(weekDisplayEnd)}
             </span>
             {selectedMachine?.specs[0] ? (
@@ -212,7 +212,7 @@ function WeekNavigation({
       </Button>
       <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="min-w-28 justify-start">
+          <Button type="button" variant="outline" size="sm" className="w-36 justify-start">
             <CalendarDays data-icon="inline-start" aria-hidden="true" />
             <span className="truncate">Week of {weekLabel}</span>
           </Button>

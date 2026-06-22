@@ -1,6 +1,17 @@
-import { Check, MonitorCog, Pencil } from "lucide-react"
+import { Check, MonitorCog, Pencil, Power, RotateCcw } from "lucide-react"
 import type { ReactNode } from "react"
 import { useState } from "react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,6 +40,8 @@ type MachineInventoryProps = {
   selectedMachineSlug?: string
   onSelectMachine?: (slug: string) => void
   onEditMachine?: (machine: Machine) => void
+  onToggleMachineActive?: (machine: Machine) => void
+  activePendingMachineId?: string | null
   showAccessNotes?: boolean
   title?: string
   selectionLabel?: string
@@ -40,6 +53,8 @@ export function MachineInventory({
   selectedMachineSlug,
   onSelectMachine,
   onEditMachine,
+  onToggleMachineActive,
+  activePendingMachineId,
   showAccessNotes = false,
   title = "Machine inventory",
   selectionLabel = "Use",
@@ -103,8 +118,8 @@ export function MachineInventory({
                     <TableHead className="w-28">State</TableHead>
                     <TableHead>Specs</TableHead>
                     {showAccessNotes ? <TableHead>Access</TableHead> : null}
-                    {onSelectMachine || onEditMachine ? (
-                      <TableHead className="w-28 text-right">Actions</TableHead>
+                    {onSelectMachine || onEditMachine || onToggleMachineActive ? (
+                      <TableHead className="w-56 text-right">Actions</TableHead>
                     ) : null}
                   </TableRow>
                 </TableHeader>
@@ -135,7 +150,7 @@ export function MachineInventory({
                             {machine.accessNotes || "Not set"}
                           </TableCell>
                         ) : null}
-                        {onSelectMachine || onEditMachine ? (
+                        {onSelectMachine || onEditMachine || onToggleMachineActive ? (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               {onSelectMachine && machine.active ? (
@@ -165,6 +180,13 @@ export function MachineInventory({
                                   <Pencil data-icon="inline-start" aria-hidden="true" />
                                   Edit
                                 </Button>
+                              ) : null}
+                              {onToggleMachineActive ? (
+                                <MachineAccessButton
+                                  machine={machine}
+                                  pending={activePendingMachineId === machine.id}
+                                  onToggle={() => onToggleMachineActive(machine)}
+                                />
                               ) : null}
                             </div>
                           </TableCell>
@@ -240,6 +262,14 @@ export function MachineInventory({
                         Edit machine
                       </Button>
                     ) : null}
+                    {onToggleMachineActive ? (
+                      <MachineAccessButton
+                        machine={machine}
+                        pending={activePendingMachineId === machine.id}
+                        className="mt-2 w-full"
+                        onToggle={() => onToggleMachineActive(machine)}
+                      />
+                    ) : null}
                   </article>
                 )
               })}
@@ -300,6 +330,58 @@ function filterMachines(machines: Machine[], filter: string) {
 function MachineStateBadge({ active }: { active: boolean }) {
   return (
     <Badge variant={active ? "secondary" : "outline"}>{active ? "available" : "inactive"}</Badge>
+  )
+}
+
+function MachineAccessButton({
+  machine,
+  pending,
+  className,
+  onToggle,
+}: {
+  machine: Machine
+  pending: boolean
+  className?: string
+  onToggle: () => void
+}) {
+  const Icon = machine.active ? Power : RotateCcw
+  const button = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className={className}
+      disabled={pending}
+      onClick={machine.active ? undefined : onToggle}
+    >
+      <Icon data-icon="inline-start" aria-hidden="true" />
+      {pending ? "Saving" : machine.active ? "Deactivate" : "Reactivate"}
+    </Button>
+  )
+
+  if (!machine.active) {
+    return button
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{button}</AlertDialogTrigger>
+      <AlertDialogContent size="sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Deactivate machine?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This keeps {machine.name} visible but blocks new bookings and schedule moves until it is
+            reactivated.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={pending} onClick={onToggle}>
+            Deactivate machine
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 

@@ -66,6 +66,16 @@ export function AdminMachinesPage() {
         machines={workspace.machines}
         showAccessNotes
         onEditMachine={setEditingMachine}
+        onToggleMachineActive={(machine) =>
+          workspace.updateMachine(machine, {
+            name: machine.name,
+            description: machine.description,
+            specs: machine.specs,
+            accessNotes: machine.accessNotes,
+            active: !machine.active,
+          })
+        }
+        activePendingMachineId={workspace.machineUpdatePendingId}
         emptyAction={
           <Button type="button" onClick={() => setCreatingMachine(true)}>
             <Plus data-icon="inline-start" aria-hidden="true" />

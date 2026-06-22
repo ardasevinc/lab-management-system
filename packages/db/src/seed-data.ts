@@ -19,14 +19,18 @@ export async function seedInitialData(
   options: SeedInitialDataOptions = {},
 ) {
   const seedLocalUsers = options.seedLocalUsers ?? true
+  const bootstrapAdmin =
+    seedLocalUsers && options.bootstrapAdmin?.email === "admin@example.org"
+      ? null
+      : options.bootstrapAdmin
   const existingAdmin = await db.query.users.findFirst({ where: eq(users.role, "admin") })
 
-  if (!existingAdmin && options.bootstrapAdmin) {
-    await seedBootstrapAdmin(db, options.bootstrapAdmin, now)
+  if (!existingAdmin && bootstrapAdmin) {
+    await seedBootstrapAdmin(db, bootstrapAdmin, now)
   } else if (!existingAdmin && options.requireBootstrapAdmin) {
     throw new Error("BOOTSTRAP_ADMIN_EMAIL is required when no admin user exists")
-  } else if (existingAdmin && seedLocalUsers && options.bootstrapAdmin) {
-    await seedBootstrapAdmin(db, options.bootstrapAdmin, now)
+  } else if (existingAdmin && seedLocalUsers && bootstrapAdmin) {
+    await seedBootstrapAdmin(db, bootstrapAdmin, now)
   }
 
   if (seedLocalUsers) {

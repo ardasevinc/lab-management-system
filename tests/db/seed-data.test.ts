@@ -48,6 +48,31 @@ describe("seed initial data", () => {
     }
   })
 
+  it("does not duplicate the neutral local fixture admin as a bootstrap admin", async () => {
+    const testDb = await createEmptyTestDb()
+
+    try {
+      await seedInitialData(testDb.db, now(), {
+        bootstrapAdmin: {
+          email: "admin@example.org",
+          name: "Lab Admin",
+        },
+      })
+
+      await expectUser(testDb.db, "admin@example.org", {
+        name: "Lab Admin",
+        role: "admin",
+      })
+      expect(
+        await testDb.db.query.users.findFirst({
+          where: (users, { eq }) => eq(users.id, "bootstrap-admin"),
+        }),
+      ).toBeUndefined()
+    } finally {
+      testDb.close()
+    }
+  })
+
   it("requires bootstrap admin when production seeding a fresh database", async () => {
     const testDb = await createEmptyTestDb()
 

@@ -9,6 +9,8 @@ const dbPath = join(rootDir, ".tmp", "e2e", "lab.sqlite")
 
 mkdirSync(dirname(dbPath), { recursive: true })
 rmSync(dbPath, { force: true })
+rmSync(`${dbPath}-shm`, { force: true })
+rmSync(`${dbPath}-wal`, { force: true })
 
 Bun.env.APP_ENV = "development"
 Bun.env.PORT = port

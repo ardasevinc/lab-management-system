@@ -248,10 +248,15 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   await expectElementFullyWithinViewport(page, page.getByRole("listbox"))
   await page.keyboard.press("Escape")
 
-  await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
-  const dateGrid = page.getByRole("grid")
-  await expect(dateGrid).toBeVisible()
-  await expectElementFullyWithinViewport(page, dateGrid)
+  if (testInfo.project.name === "mobile-chromium") {
+    await expect(bookingSheet.getByLabel("Starts date")).toHaveAttribute("type", "date")
+    await expect(bookingSheet.getByLabel("Starts time")).toHaveAttribute("type", "time")
+  } else {
+    await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
+    const dateGrid = page.getByRole("grid")
+    await expect(dateGrid).toBeVisible()
+    await expectElementFullyWithinViewport(page, dateGrid)
+  }
 
   expect(consoleProblems).toEqual([])
 })
@@ -575,6 +580,37 @@ test("admin machine deletion requires confirmation", async ({ page }, testInfo) 
   await expect(page.getByRole("alertdialog", { name: "Delete machine?" })).toBeVisible()
   await page.getByRole("button", { name: "Delete machine" }).click()
   await expect(machineRow).toBeHidden()
+  expect(consoleProblems).toEqual([])
+})
+
+test("admin machine deactivation is visible and confirmed", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop machine-admin flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+  await setMachineActiveFromPage(page, "tohum", true)
+
+  await page.goto("/admin/machines")
+  await expect(page.getByRole("heading", { name: "Machines" })).toBeVisible()
+
+  const machineRow = page.getByRole("row").filter({ hasText: "tohum" })
+  const machineState = machineRow.locator("td").nth(1)
+  await expect(machineRow).toBeVisible()
+  await expect(machineState).toHaveText("available")
+
+  await machineRow.getByRole("button", { name: "Deactivate" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Deactivate machine?" })).toBeVisible()
+  await page.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Deactivate machine?" })).toBeHidden()
+  await expect(machineState).toHaveText("available")
+
+  await machineRow.getByRole("button", { name: "Deactivate" }).click()
+  await expect(page.getByRole("alertdialog", { name: "Deactivate machine?" })).toBeVisible()
+  await page.getByRole("button", { name: "Deactivate machine" }).click()
+  await expect(machineState).toHaveText("inactive")
+
+  await machineRow.getByRole("button", { name: "Reactivate" }).click()
+  await expect(machineState).toHaveText("available")
   expect(consoleProblems).toEqual([])
 })
 
@@ -1284,6 +1320,28 @@ async function setUserRoleFromPage(page: Page, id: string, role: "admin" | "memb
       }
     },
     { userId: id, nextRole: role },
+  )
+}
+
+async function setMachineActiveFromPage(page: Page, id: string, active: boolean) {
+  await page.evaluate(
+    async ({ machineId, nextActive }) => {
+      const response = await window.fetch(`/admin/machines/${machineId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ active: nextActive }),
+      })
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to update machine access: ${response.status} ${await response.text()}`,
+        )
+      }
+    },
+    { machineId: id, nextActive: active },
   )
 }
 
