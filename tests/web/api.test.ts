@@ -3,6 +3,7 @@ import {
   apiFetch,
   getStoredToken,
   logout,
+  resolveApiBaseUrl,
   setStoredToken,
   verifyOtp,
 } from "../../apps/web/src/lib/api"
@@ -12,6 +13,41 @@ afterEach(() => {
 })
 
 describe("web api auth helpers", () => {
+  it("rewrites a loopback API URL to the current LAN host in dev", () => {
+    const location = { hostname: "seele.local" } as Pick<Location, "hostname">
+
+    expect(resolveApiBaseUrl("http://localhost:3001", location)).toBe("http://seele.local:3001")
+    expect(resolveApiBaseUrl("http://127.0.0.1:3001", location)).toBe("http://seele.local:3001")
+    expect(resolveApiBaseUrl("http://[::1]:3001", location)).toBe("http://seele.local:3001")
+  })
+
+  it("keeps explicit non-loopback API URLs unchanged", () => {
+    expect(
+      resolveApiBaseUrl("https://lms.miralab.tr/api", {
+        hostname: "seele.local",
+      } as Pick<Location, "hostname">),
+    ).toBe("https://lms.miralab.tr/api")
+  })
+
+  it("does not rewrite loopback API URLs when the dev rewrite is disabled", () => {
+    expect(
+      resolveApiBaseUrl(
+        "http://localhost:3001",
+        { hostname: "lms.miralab.tr" } as Pick<Location, "hostname">,
+        false,
+      ),
+    ).toBe("http://localhost:3001")
+  })
+
+  it("does not rewrite when the page is already on loopback", () => {
+    expect(
+      resolveApiBaseUrl("http://localhost:3001", { hostname: "localhost" } as Pick<
+        Location,
+        "hostname"
+      >),
+    ).toBe("http://localhost:3001")
+  })
+
   it("uses cookie credentials without sending a bearer token by default", async () => {
     const fetchMock = vi.fn(async () => jsonResponse({ user: testUser }))
     installBrowserMocks(fetchMock)
@@ -73,10 +109,11 @@ describe("web api auth helpers", () => {
   })
 })
 
-function installBrowserMocks(fetchMock: typeof fetch) {
+function installBrowserMocks(fetchMock: typeof fetch, location = { hostname: "localhost" }) {
   const storage = new Map<string, string>()
 
   vi.stubGlobal("window", {
+    location,
     localStorage: {
       getItem: (key: string) => storage.get(key) ?? null,
       setItem: (key: string, value: string) => storage.set(key, value),

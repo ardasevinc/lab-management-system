@@ -59,7 +59,7 @@ type ApiErrorBody = {
   error?: string
 }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ""
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ""
 const tokenStorageKey = "lab_session_token"
 
 export function getStoredToken() {
@@ -75,6 +75,36 @@ export function setStoredToken(token: string | null) {
   window.localStorage.removeItem(tokenStorageKey)
 }
 
+export function resolveApiBaseUrl(
+  configured = configuredApiBaseUrl,
+  currentLocation: Pick<Location, "hostname"> = window.location,
+  allowLoopbackHostRewrite = import.meta.env.DEV,
+) {
+  const normalized = configured.replace(/\/$/, "")
+
+  if (!normalized) {
+    return ""
+  }
+
+  let url: URL
+  try {
+    url = new URL(normalized)
+  } catch {
+    return normalized
+  }
+
+  if (
+    allowLoopbackHostRewrite &&
+    isLoopbackHost(url.hostname) &&
+    !isLoopbackHost(currentLocation.hostname)
+  ) {
+    url.hostname = currentLocation.hostname
+    return url.toString().replace(/\/$/, "")
+  }
+
+  return normalized
+}
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredToken()
   const headers = new Headers(init.headers)
@@ -87,7 +117,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     headers.set("content-type", "application/json")
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${resolveApiBaseUrl()}${path}`, {
     ...init,
     headers,
     credentials: "include",
@@ -142,4 +172,13 @@ async function readErrorBody(response: Response): Promise<ApiErrorBody> {
   } catch {
     return {}
   }
+}
+
+function isLoopbackHost(hostname: string) {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  )
 }
