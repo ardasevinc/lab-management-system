@@ -11,15 +11,11 @@ import type { Booking } from "@/lib/api"
 import {
   bookingStyle,
   bookingsForDay,
-  type CalendarRange,
   dayEndHour,
   dayStartHour,
-  defaultRangeAtMinutes,
   defaultVisibleStartHour,
   hourHeightPx,
-  normalizeRange,
   packOverlaps,
-  yToMinutes,
 } from "@/lib/calendar-geometry"
 import { dayAgendaDefaultRange } from "@/lib/schedule-defaults"
 import { formatDate, formatTime } from "@/lib/time"
@@ -97,14 +93,6 @@ export function SchedulePage() {
               </span>
             ) : null}
           </div>
-          <WeekNavigation
-            className="mt-3 xl:hidden"
-            selectedDate={new Date(weekRange.start)}
-            onPrevious={goToPreviousWeek}
-            onToday={goToCurrentWeek}
-            onNext={goToNextWeek}
-            onSelectDate={goToWeek}
-          />
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 xl:max-w-[520px] xl:justify-end">
@@ -112,6 +100,14 @@ export function SchedulePage() {
             <ScheduleStat key={stat.label} label={stat.label} value={stat.value} />
           ))}
         </div>
+        <WeekNavigation
+          className="xl:hidden"
+          selectedDate={new Date(weekRange.start)}
+          onPrevious={goToPreviousWeek}
+          onToday={goToCurrentWeek}
+          onNext={goToNextWeek}
+          onSelectDate={goToWeek}
+        />
       </div>
 
       <section className="mb-3 rounded-lg border border-border bg-card p-3 xl:hidden">
@@ -148,7 +144,6 @@ export function SchedulePage() {
           day={selectedDay}
           bookings={selectedDayBookings}
           pendingBookingId={pendingBookingId}
-          onCreateRange={createRange}
           onEditBooking={editBooking}
         />
       </section>
@@ -200,7 +195,12 @@ function WeekNavigation({
   const weekLabel = format(selectedDate, "MMM d")
 
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div
+      className={cn(
+        "grid w-full grid-cols-[2.75rem_minmax(0,1fr)_auto_2.75rem] items-center gap-2 sm:inline-flex sm:w-auto sm:gap-1.5",
+        className,
+      )}
+    >
       <Button
         type="button"
         variant="outline"
@@ -212,12 +212,17 @@ function WeekNavigation({
       </Button>
       <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="w-36 justify-start">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-start sm:w-36"
+          >
             <CalendarDays data-icon="inline-start" aria-hidden="true" />
             <span className="truncate">Week of {weekLabel}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
+        <PopoverContent className="max-w-[calc(100vw-2rem)] p-0" align="start" sideOffset={8}>
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -245,62 +250,20 @@ function MobileDayTimeline({
   day,
   bookings,
   pendingBookingId,
-  onCreateRange,
   onEditBooking,
 }: {
   day: Date
   bookings: Booking[]
   pendingBookingId?: string | null
-  onCreateRange: (range: CalendarRange) => void
   onEditBooking: ReturnType<typeof useWorkspace>["editBooking"]
 }) {
-  const laneRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [draft, setDraft] = useState<{
-    startY: number
-    currentY: number
-    columnTop: number
-  } | null>(null)
   const packedBookings = useMemo(() => packOverlaps(bookings), [bookings])
   const hours = useMemo(
     () => Array.from({ length: dayEndHour - dayStartHour + 1 }, (_, index) => dayStartHour + index),
     [],
   )
 
-  useEffect(() => {
-    if (!draft) {
-      return
-    }
-
-    const onPointerMove = (event: PointerEvent) => {
-      setDraft((current) => (current ? { ...current, currentY: event.clientY } : current))
-    }
-
-    const onPointerUp = () => {
-      if (!draft) {
-        return
-      }
-
-      const moved = Math.abs(draft.currentY - draft.startY) > 4
-      const startMinutes = yToMinutes(draft.startY - draft.columnTop)
-      const range = moved
-        ? normalizeRange(day, startMinutes, yToMinutes(draft.currentY - draft.columnTop))
-        : defaultRangeAtMinutes(day, startMinutes)
-
-      onCreateRange(range)
-      setDraft(null)
-    }
-
-    window.addEventListener("pointermove", onPointerMove)
-    window.addEventListener("pointerup", onPointerUp, { once: true })
-
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove)
-      window.removeEventListener("pointerup", onPointerUp)
-    }
-  }, [day, draft, onCreateRange])
-
-  const draftStyle = getMobileDraftStyle(draft, laneRef.current)
   const dayScrollKey = day.toISOString()
 
   useEffect(() => {
@@ -328,6 +291,7 @@ function MobileDayTimeline({
 
       <div
         ref={scrollRef}
+        data-mobile-day-timeline
         className="grid grid-cols-[44px_minmax(0,1fr)] overflow-y-auto pt-2 pb-1"
         style={{ maxHeight: "min(58vh, 680px)" }}
       >
@@ -349,22 +313,8 @@ function MobileDayTimeline({
         </div>
 
         <div
-          ref={laneRef}
-          className="relative touch-none select-none bg-card"
+          className="relative touch-pan-y bg-card"
           style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
-          onPointerDown={(event) => {
-            if (event.button !== 0 || event.target !== event.currentTarget) {
-              return
-            }
-
-            const rect = event.currentTarget.getBoundingClientRect()
-            setDraft({
-              startY: event.clientY,
-              currentY: event.clientY,
-              columnTop: rect.top,
-            })
-            safelySetPointerCapture(event.currentTarget, event.pointerId)
-          }}
         >
           {hours.slice(0, -1).map((hour) => (
             <div
@@ -406,41 +356,10 @@ function MobileDayTimeline({
               </button>
             )
           })}
-
-          {draftStyle ? (
-            <div
-              className="pointer-events-none absolute right-2 left-2 rounded-md border border-primary bg-primary/12 shadow-sm"
-              style={draftStyle}
-            />
-          ) : null}
         </div>
       </div>
     </div>
   )
-}
-
-function getMobileDraftStyle(
-  draft: { startY: number; currentY: number } | null,
-  lane: HTMLDivElement | null,
-) {
-  if (!draft || !lane) {
-    return null
-  }
-
-  const rect = lane.getBoundingClientRect()
-  const top = Math.min(draft.startY, draft.currentY) - rect.top
-  const height = Math.max(28, Math.abs(draft.currentY - draft.startY))
-
-  return { top, height }
-}
-
-function safelySetPointerCapture(element: HTMLElement, pointerId: number) {
-  try {
-    element.setPointerCapture(pointerId)
-  } catch {
-    // Synthetic pointer events and some interrupted browser gestures do not have
-    // an active pointer to capture. The global move/up listeners still handle it.
-  }
 }
 
 function ScheduleStat({ label, value }: { label: string; value: string }) {

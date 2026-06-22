@@ -35,6 +35,23 @@ test("invite login links prefill the invited email", async ({ page }, testInfo) 
   expect(consoleProblems).toEqual([])
 })
 
+test("mobile auth controls keep stable touch targets", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "mobile auth ergonomics")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await page.goto("/login")
+
+  await expect(page.getByLabel("Email")).toBeVisible()
+  await expectMinHeight(page.getByLabel("Email"), 44)
+  await expectMinHeight(page.getByRole("button", { name: "Continue" }), 44)
+  await expect(page.locator(".auth-background")).toHaveCSS("position", "fixed")
+  await expectNoHorizontalOverflow(page)
+
+  await page.getByLabel("Email").click()
+  await expectNoHorizontalOverflow(page)
+  expect(consoleProblems).toEqual([])
+})
+
 test("machines route presents the selected machine cleanly", async ({ page }, testInfo) => {
   const consoleProblems = collectConsoleProblems(page)
   await loginAsMember(page)
@@ -237,6 +254,7 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   const bookingSheet = page.getByRole("dialog", { name: "New booking" })
   await expect(bookingSheet).toBeVisible()
   await expectElementFullyWithinViewport(page, bookingSheet)
+  await expectElementNoHorizontalOverflow(bookingSheet)
 
   await bookingSheet.getByRole("combobox", { name: "Type" }).click()
   await expect(page.getByRole("option", { name: "Maintenance" })).toBeVisible()
@@ -251,6 +269,9 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   if (testInfo.project.name === "mobile-chromium") {
     await expect(bookingSheet.getByLabel("Starts date")).toHaveAttribute("type", "date")
     await expect(bookingSheet.getByLabel("Starts time")).toHaveAttribute("type", "time")
+    await expectMinHeight(bookingSheet.getByLabel("Title"), 44)
+    await expectMinHeight(bookingSheet.getByLabel("Starts date"), 44)
+    await expectElementNoHorizontalOverflow(bookingSheet)
   } else {
     await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
     const dateGrid = page.getByRole("grid")
@@ -749,6 +770,40 @@ test("researchers can create and delete a booking from the responsive day agenda
   expect(consoleProblems).toEqual([])
 })
 
+test("mobile day agenda scroll does not open a booking sheet", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "mobile scroll ergonomics")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsMember(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByText("Day agenda")).toBeVisible()
+  await expectNoHorizontalOverflow(page)
+
+  const timeline = page.locator("[data-mobile-day-timeline]")
+  await expect(timeline).toBeVisible()
+  const timelineBox = await timeline.boundingBox()
+  if (!timelineBox) {
+    throw new Error("Mobile timeline did not produce a bounding box.")
+  }
+
+  await page.mouse.move(timelineBox.x + timelineBox.width / 2, timelineBox.y + 220)
+  await page.mouse.down()
+  await page.mouse.move(timelineBox.x + timelineBox.width / 2, timelineBox.y + 80)
+  await page.mouse.up()
+  await expect(page.getByRole("heading", { name: "New booking" })).toHaveCount(0)
+
+  const beforeScroll = await timeline.evaluate((element) => element.scrollTop)
+  await timeline.hover()
+  await page.mouse.wheel(0, 260)
+  await expect
+    .poll(() => timeline.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(beforeScroll)
+  await expect(page.getByRole("heading", { name: "New booking" })).toHaveCount(0)
+  expect(consoleProblems).toEqual([])
+})
+
 test("admin responsive shell keeps navigation and account menu usable", async ({
   page,
 }, testInfo) => {
@@ -768,7 +823,9 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
     await page.getByRole("button", { name: "Toggle Sidebar" }).click()
     const sidebar = page.getByRole("dialog", { name: "Sidebar" })
     await expect(sidebar).toBeVisible()
+    await expectElementNoHorizontalOverflow(sidebar)
     await expect(sidebar.getByRole("link", { name: "Schedule" })).toBeVisible()
+    await expectMinHeight(sidebar.getByRole("link", { name: "Schedule" }), 44)
     await expect(sidebar.getByRole("link", { name: "Machines" })).toHaveCount(2)
     await expect(sidebar.getByRole("link", { name: "Users" })).toBeVisible()
 
@@ -1407,6 +1464,37 @@ async function expectElementFullyWithinViewport(page: Page, locator: Locator) {
       )
     })
     .toBe(true)
+}
+
+async function expectElementNoHorizontalOverflow(locator: Locator) {
+  await expect(locator).toBeVisible()
+  await expect
+    .poll(() =>
+      locator.evaluate(
+        (element) => Math.ceil(element.scrollWidth) <= Math.ceil(element.clientWidth) + 1,
+      ),
+    )
+    .toBe(true)
+}
+
+async function expectNoHorizontalOverflow(page: Page) {
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => Math.ceil(document.documentElement.scrollWidth) <= Math.ceil(window.innerWidth) + 1,
+      ),
+    )
+    .toBe(true)
+}
+
+async function expectMinHeight(locator: Locator, minHeight: number) {
+  await expect(locator).toBeVisible()
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox()
+      return box?.height ?? 0
+    })
+    .toBeGreaterThanOrEqual(minHeight)
 }
 
 async function expectRouteContentWithinViewport(page: Page) {

@@ -63,7 +63,12 @@ export function InviteUserSheet({
     >
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-md sm:p-5"
+        className="overflow-y-auto overflow-x-hidden p-4 data-[side=bottom]:max-h-[calc(100svh-1rem)] data-[side=right]:w-full sm:max-w-md sm:p-5"
+        onOpenAutoFocus={(event) => {
+          if (isMobile) {
+            event.preventDefault()
+          }
+        }}
       >
         <form
           className="flex flex-col gap-4"

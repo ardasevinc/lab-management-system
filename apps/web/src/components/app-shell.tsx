@@ -269,7 +269,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-8 rounded-md px-2 font-normal text-[0.84rem] text-sidebar-foreground/70 transition-[background-color,color] hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground [&_svg]:text-sidebar-foreground/54 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
+        className="h-11 rounded-md px-2.5 font-normal text-base text-sidebar-foreground/70 transition-[background-color,color] hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8 md:px-2 md:text-[0.84rem] [&_svg]:text-sidebar-foreground/54 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
       >
         <Link
           to={to}
@@ -302,7 +302,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
             <SidebarMenuButton
               size="lg"
               aria-label={`Open account menu for ${displayName}`}
-              className="h-10 rounded-md px-2 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="h-12 rounded-md px-2.5 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-10 md:px-2"
             >
               <Avatar size="sm">
                 <AvatarFallback>{initials}</AvatarFallback>

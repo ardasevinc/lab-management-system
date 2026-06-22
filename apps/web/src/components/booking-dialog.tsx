@@ -126,7 +126,12 @@ export function BookingDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="flex flex-col overflow-hidden p-5 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-6"
+        className="flex flex-col overflow-hidden p-4 data-[side=bottom]:max-h-[calc(100svh-1rem)] data-[side=right]:w-full sm:max-w-lg sm:p-6"
+        onOpenAutoFocus={(event) => {
+          if (isMobile) {
+            event.preventDefault()
+          }
+        }}
       >
         <form
           className="flex min-h-0 flex-1 flex-col gap-5"
@@ -154,7 +159,7 @@ export function BookingDialog({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-1 pb-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-1 pb-2">
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="title">Title</FieldLabel>
@@ -254,13 +259,13 @@ export function BookingDialog({
             ) : null}
           </div>
 
-          <SheetFooter className="-mx-5 mt-0 shrink-0 border-border border-t bg-background px-5 pt-3 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <SheetFooter className="-mx-4 mt-0 shrink-0 border-border border-t bg-background px-4 pt-3 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             {mode === "edit" && canMutate ? (
               <BookingDeleteDialog pending={pending} reason={adminReason} onDelete={onDelete} />
             ) : (
               <span />
             )}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
@@ -329,7 +334,7 @@ function DateTimeField({
     return (
       <Field>
         <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
-        <FieldGroup className="grid grid-cols-[minmax(0,1fr)_5.75rem] gap-2">
+        <FieldGroup className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
           <Input
             id={dateId}
             type="date"
@@ -355,7 +360,7 @@ function DateTimeField({
   return (
     <Field>
       <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
-      <FieldGroup className="grid grid-cols-[minmax(0,1fr)_5.75rem] gap-2">
+      <FieldGroup className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <PopoverTrigger asChild>
             <Button

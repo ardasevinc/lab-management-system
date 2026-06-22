@@ -178,7 +178,12 @@ function MachineEditorSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="overflow-y-auto p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=bottom]:rounded-t-xl data-[side=right]:w-full sm:max-w-lg sm:p-5"
+        className="overflow-y-auto overflow-x-hidden p-4 data-[side=bottom]:max-h-[calc(100svh-1rem)] data-[side=right]:w-full sm:max-w-lg sm:p-5"
+        onOpenAutoFocus={(event) => {
+          if (isMobile) {
+            event.preventDefault()
+          }
+        }}
       >
         <form
           key={`${mode}-${defaults.id}`}

@@ -175,7 +175,7 @@ body {
 }
 
 .auth-background {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background-image:
     linear-gradient(90deg, rgba(1, 8, 10, 0.34), rgba(1, 8, 10, 0.12) 44%, rgba(1, 8, 10, 0.44)),
