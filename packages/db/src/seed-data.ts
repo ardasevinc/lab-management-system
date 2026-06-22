@@ -25,6 +25,8 @@ export async function seedInitialData(
     await seedBootstrapAdmin(db, options.bootstrapAdmin, now)
   } else if (!existingAdmin && options.requireBootstrapAdmin) {
     throw new Error("BOOTSTRAP_ADMIN_EMAIL is required when no admin user exists")
+  } else if (existingAdmin && seedLocalUsers && options.bootstrapAdmin) {
+    await seedBootstrapAdmin(db, options.bootstrapAdmin, now)
   }
 
   if (seedLocalUsers) {

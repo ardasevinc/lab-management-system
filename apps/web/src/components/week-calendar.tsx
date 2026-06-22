@@ -189,8 +189,10 @@ export function WeekCalendar({
               {hours.slice(0, -1).map((hour) => (
                 <div
                   key={hour}
-                  className="absolute right-2 -translate-y-2 text-muted-foreground text-[11px] tabular-nums"
-                  style={{ top: (hour - dayStartHour) * hourHeightPx }}
+                  className={`absolute right-2 text-muted-foreground text-[11px] tabular-nums ${
+                    hour === dayStartHour ? "" : "-translate-y-2"
+                  }`}
+                  style={{ top: hour === dayStartHour ? 4 : (hour - dayStartHour) * hourHeightPx }}
                 >
                   {hour}:00
                 </div>

@@ -24,6 +24,30 @@ describe("seed initial data", () => {
     }
   })
 
+  it("adds configured bootstrap admin alongside local fixtures in development", async () => {
+    const testDb = await createEmptyTestDb()
+
+    try {
+      await seedInitialData(testDb.db, now(), {
+        bootstrapAdmin: {
+          email: "admin@miralab.tr",
+          name: "Arda Sevinc",
+        },
+      })
+
+      await expectUser(testDb.db, "admin@example.org", {
+        name: "Lab Admin",
+        role: "admin",
+      })
+      await expectUser(testDb.db, "admin@miralab.tr", {
+        name: "Arda Sevinc",
+        role: "admin",
+      })
+    } finally {
+      testDb.close()
+    }
+  })
+
   it("requires bootstrap admin when production seeding a fresh database", async () => {
     const testDb = await createEmptyTestDb()
 
