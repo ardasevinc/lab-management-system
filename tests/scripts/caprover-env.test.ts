@@ -32,6 +32,16 @@ describe("CapRover env verifier", () => {
       "AWS_SECRET_ACCESS_KEY=<set-in-caprover>",
       "AWS_SECRET_ACCESS_KEY=test-secret",
     )
+    replaceInFile(
+      envPath,
+      "BOOTSTRAP_ADMIN_EMAIL=<set-in-caprover>",
+      "BOOTSTRAP_ADMIN_EMAIL=arda@example.com",
+    )
+    replaceInFile(
+      envPath,
+      "BOOTSTRAP_ADMIN_NAME=<set-in-caprover>",
+      "BOOTSTRAP_ADMIN_NAME=Arda Sevinc",
+    )
 
     const output = execFileSync(
       "bun",
@@ -54,7 +64,7 @@ describe("CapRover env verifier", () => {
         env: { ...process.env, NODE_ENV: "test" },
         stdio: "pipe",
       }),
-    ).toThrow("AWS_ACCESS_KEY_ID must be materialized for real-secret env verification")
+    ).toThrow("BOOTSTRAP_ADMIN_EMAIL must be materialized for real-secret env verification")
   })
 
   it("rejects production footguns in env templates", () => {

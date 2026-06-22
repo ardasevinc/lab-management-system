@@ -3,18 +3,28 @@ import { fileURLToPath } from "node:url"
 import { createDatabaseClient, createDbFromClient, migrate, seedInitialData } from "@lab/db"
 import { serveStatic } from "hono/bun"
 import { createApiApp } from "./app"
-import { apiRuntimeConfigFromEnv, databaseUrlFromEnv, notificationWorkerConfigFromEnv } from "./env"
+import {
+  apiRuntimeConfigFromEnv,
+  bootstrapAdminFromEnv,
+  databaseUrlFromEnv,
+  notificationWorkerConfigFromEnv,
+} from "./env"
 import { createMailerFromEnv } from "./mailer"
 import { startNotificationWorker } from "./notifications"
 
 const defaultDatabaseUrl = `file:${fileURLToPath(new URL("../data/lab.sqlite", import.meta.url))}`
 const runtimeConfig = apiRuntimeConfigFromEnv(Bun.env)
+const bootstrapAdmin = bootstrapAdminFromEnv(Bun.env)
 const databaseUrl = databaseUrlFromEnv(Bun.env, defaultDatabaseUrl)
 const client = createDatabaseClient(databaseUrl)
 const db = createDbFromClient(client)
 
 await migrate(client)
-await seedInitialData(db)
+await seedInitialData(db, new Date(), {
+  bootstrapAdmin,
+  requireBootstrapAdmin: runtimeConfig.appEnv === "production",
+  seedLocalUsers: runtimeConfig.appEnv !== "production",
+})
 
 const port = Number(Bun.env.PORT ?? 3001)
 const serveWeb = Bun.env.SERVE_WEB === "1"

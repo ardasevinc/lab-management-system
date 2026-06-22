@@ -12,7 +12,7 @@ import {
 import type { Hono, MiddlewareHandler } from "hono"
 import { z } from "zod"
 import { handleApiResult } from "./api-errors"
-import type { ApiRuntimeConfig } from "./env"
+import { type ApiRuntimeConfig, isEmailAllowedByDomains } from "./env"
 import type { Mailer } from "./mailer"
 
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof getSessionUser>>>
@@ -56,10 +56,11 @@ export function registerAdminRoutes(
     db: Db
     mailer: Mailer
     publicAppUrl: ApiRuntimeConfig["publicAppUrl"]
+    allowedEmailDomains: ApiRuntimeConfig["allowedEmailDomains"]
     requireAuth: MiddlewareHandler<{ Variables: { user: CurrentUser } }>
   },
 ) {
-  const { db, mailer, publicAppUrl, requireAuth } = options
+  const { db, mailer, publicAppUrl, allowedEmailDomains, requireAuth } = options
 
   for (const path of [
     "/admin/users",
@@ -134,6 +135,10 @@ export function registerAdminRoutes(
 
     if (!body.success) {
       return c.json({ error: "Invalid invite", issues: body.error.issues }, 400)
+    }
+
+    if (!isEmailAllowedByDomains(body.data.email, allowedEmailDomains)) {
+      throw new ForbiddenError("Email domain is not allowed")
     }
 
     const invite = await createInvite(db, {

@@ -31,6 +31,10 @@ describe("CapRover env materializer", () => {
         "test/access-key",
         "--secret-key-item",
         "test/secret-key",
+        "--bootstrap-admin-email",
+        "arda@example.com",
+        "--bootstrap-admin-name",
+        "Arda Sevinc",
       ],
       {
         encoding: "utf8",
@@ -39,11 +43,15 @@ describe("CapRover env materializer", () => {
     )
 
     const contents = readFileSync(outputPath, "utf8")
-    expect(output).toBe(`wrote CapRover env with materialized SES secrets: ${outputPath}\n`)
+    expect(output).toBe(`wrote CapRover env with materialized deployment secrets: ${outputPath}\n`)
     expect(output).not.toContain("AKIATEST")
     expect(output).not.toContain("test-secret")
+    expect(output).not.toContain("arda@example.com")
     expect(contents).toContain("AWS_ACCESS_KEY_ID=AKIATEST")
     expect(contents).toContain("AWS_SECRET_ACCESS_KEY=test-secret")
+    expect(contents).toContain("BOOTSTRAP_ADMIN_EMAIL=arda@example.com")
+    expect(contents).toContain("BOOTSTRAP_ADMIN_NAME=Arda Sevinc")
+    expect(contents).toContain("ALLOWED_EMAIL_DOMAINS=")
     expect(statSync(outputPath).mode & 0o777).toBe(0o600)
   })
 
@@ -64,6 +72,10 @@ describe("CapRover env materializer", () => {
           "test/access-key",
           "--secret-key-item",
           "test/secret-key",
+          "--bootstrap-admin-email",
+          "arda@example.com",
+          "--bootstrap-admin-name",
+          "Arda Sevinc",
         ],
         {
           encoding: "utf8",
@@ -72,6 +84,38 @@ describe("CapRover env materializer", () => {
         },
       ),
     ).toThrow("pa item test/secret-key returned an empty AWS secret access key")
+  })
+
+  it("fails when bootstrap admin identity is missing", () => {
+    const outputPath = join(tempDir, "caprover.env")
+    const fakePa = writeFakePa()
+
+    expect(() =>
+      execFileSync(
+        "bun",
+        [
+          "scripts/materialize-caprover-env.ts",
+          "--out",
+          outputPath,
+          "--pa-bin",
+          fakePa,
+          "--access-key-item",
+          "test/access-key",
+          "--secret-key-item",
+          "test/secret-key",
+        ],
+        {
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            NODE_ENV: "test",
+            BOOTSTRAP_ADMIN_EMAIL: "",
+            BOOTSTRAP_ADMIN_NAME: "",
+          },
+          stdio: "pipe",
+        },
+      ),
+    ).toThrow("BOOTSTRAP_ADMIN_EMAIL must be set or passed with --bootstrap-admin-email")
   })
 })
 

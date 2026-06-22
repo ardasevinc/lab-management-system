@@ -50,6 +50,7 @@
     "test:db:bookings": "vitest run tests/db/bookings.test.ts",
     "test:db:machines": "vitest run tests/db/machines.test.ts",
     "test:db:qa-data": "vitest run tests/db/qa-data.test.ts",
+    "test:db:seed-data": "vitest run tests/db/seed-data.test.ts",
     "test:e2e": "playwright test",
     "test:scripts:backup-cron": "vitest run tests/scripts/backup-cron-entry.test.ts",
     "test:scripts:caprover-dns": "vitest run tests/scripts/caprover-dns.test.ts",

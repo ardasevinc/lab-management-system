@@ -44,7 +44,7 @@ describe("auth and invites", () => {
       method: "POST",
       headers: { ...adminHeaders, "content-type": "application/json" },
       body: JSON.stringify({
-        email: "new.member@miralab.tr",
+        email: "new.member@example.com",
         name: "New Member",
         role: "member",
       }),
@@ -54,13 +54,13 @@ describe("auth and invites", () => {
     const otpResponse = await app.request("/auth/request-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "new.member@miralab.tr" }),
+      body: JSON.stringify({ email: "new.member@example.com" }),
     })
     const { devCode } = await otpResponse.json()
     const verifyResponse = await app.request("/auth/verify-otp", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "new.member@miralab.tr", code: devCode }),
+      body: JSON.stringify({ email: "new.member@example.com", code: devCode }),
     })
     const { token, user } = await verifyResponse.json()
     const meResponse = await app.request("/auth/me", {
@@ -72,7 +72,7 @@ describe("auth and invites", () => {
     expect(await usersAfterInviteResponse.json()).toEqual({
       users: expect.arrayContaining([
         expect.objectContaining({
-          email: "new.member@miralab.tr",
+          email: "new.member@example.com",
           name: "New Member",
           role: "member",
           active: true,
@@ -81,22 +81,75 @@ describe("auth and invites", () => {
     })
     expect(inviteEmails).toEqual([
       {
-        to: "new.member@miralab.tr",
+        to: "new.member@example.com",
         name: "New Member",
         role: "member",
-        loginUrl: "https://lms.miralab.tr/login?email=new.member%40miralab.tr",
+        loginUrl: "https://lms.miralab.tr/login?email=new.member%40example.com",
       },
     ])
     expect(otpResponse.status).toBe(200)
     expect(verifyResponse.status).toBe(200)
     expect(user).toEqual({
       id: expect.any(String),
-      email: "new.member@miralab.tr",
+      email: "new.member@example.com",
       name: "New Member",
       role: "member",
       active: true,
     })
     expect(await meResponse.json()).toEqual({ user })
+  })
+
+  it("blocks login requests outside configured email domains", async () => {
+    app = createApiApp({
+      db: testDb.db,
+      config: { allowedEmailDomains: ["miralab.tr"] },
+    })
+
+    const response = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "outsider@example.com" }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: "Email domain is not allowed" })
+  })
+
+  it("blocks login verification outside configured email domains", async () => {
+    app = createApiApp({
+      db: testDb.db,
+      config: { allowedEmailDomains: ["miralab.tr"] },
+    })
+
+    const response = await app.request("/auth/verify-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "outsider@example.com", code: "123456" }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: "Email domain is not allowed" })
+  })
+
+  it("blocks admin invites outside configured email domains", async () => {
+    app = createApiApp({
+      db: testDb.db,
+      config: { allowedEmailDomains: ["miralab.tr"] },
+    })
+    const adminHeaders = await login("admin@miralab.tr")
+
+    const response = await app.request("/admin/invites", {
+      method: "POST",
+      headers: { ...adminHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "new.member@example.com",
+        name: "New Member",
+        role: "member",
+      }),
+    })
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: "Email domain is not allowed" })
   })
 
   it("returns an empty session without failing for anonymous browsers", async () => {

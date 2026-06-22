@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
   apiRuntimeConfigFromEnv,
+  bootstrapAdminFromEnv,
   databaseUrlFromEnv,
+  isEmailAllowedByDomains,
   notificationWorkerConfigFromEnv,
 } from "../../apps/api/src/env"
 
@@ -16,7 +18,80 @@ describe("api runtime env", () => {
       devShowOtp: false,
       otpRateLimitWindowSeconds: 900,
       otpRateLimitMaxRequests: 5,
+      allowedEmailDomains: [],
     })
+  })
+
+  it("parses optional allowed email domains", () => {
+    expect(
+      apiRuntimeConfigFromEnv({
+        ALLOWED_EMAIL_DOMAINS: "miralab.tr, @std.yildiz.edu.tr",
+      }),
+    ).toEqual(
+      expect.objectContaining({
+        allowedEmailDomains: ["miralab.tr", "std.yildiz.edu.tr"],
+      }),
+    )
+
+    expect(isEmailAllowedByDomains("researcher@miralab.tr", ["miralab.tr"])).toBe(true)
+    expect(isEmailAllowedByDomains("researcher@ai.miralab.tr", ["miralab.tr"])).toBe(true)
+    expect(isEmailAllowedByDomains("researcher@example.com", ["miralab.tr"])).toBe(false)
+  })
+
+  it("rejects invalid allowed email domains", () => {
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        ALLOWED_EMAIL_DOMAINS: "miralab",
+      }),
+    ).toThrow("ALLOWED_EMAIL_DOMAINS must contain valid domain names")
+
+    expect(() =>
+      apiRuntimeConfigFromEnv({
+        ALLOWED_EMAIL_DOMAINS: "miralab.tr, bad_domain.test",
+      }),
+    ).toThrow("ALLOWED_EMAIL_DOMAINS must contain valid domain names")
+  })
+
+  it("derives bootstrap admin identity from environment", () => {
+    expect(bootstrapAdminFromEnv({})).toEqual({
+      email: "admin@miralab.tr",
+      name: "MIRALAB Admin",
+    })
+
+    expect(
+      bootstrapAdminFromEnv({
+        APP_ENV: "production",
+        BOOTSTRAP_ADMIN_EMAIL: "Arda+Lab@Example.COM",
+      }),
+    ).toEqual({
+      email: "arda+lab@example.com",
+      name: "arda+lab",
+    })
+
+    expect(
+      bootstrapAdminFromEnv({
+        APP_ENV: "production",
+        BOOTSTRAP_ADMIN_EMAIL: "arda@example.com",
+        BOOTSTRAP_ADMIN_NAME: "Arda Sevinc",
+      }),
+    ).toEqual({
+      email: "arda@example.com",
+      name: "Arda Sevinc",
+    })
+  })
+
+  it("requires a reachable bootstrap admin only for fresh production seeding", () => {
+    expect(bootstrapAdminFromEnv({ APP_ENV: "production" })).toBeNull()
+  })
+
+  it("applies allowed domains to bootstrap admin email", () => {
+    expect(() =>
+      bootstrapAdminFromEnv({
+        APP_ENV: "production",
+        BOOTSTRAP_ADMIN_EMAIL: "arda@example.com",
+        ALLOWED_EMAIL_DOMAINS: "miralab.tr",
+      }),
+    ).toThrow("BOOTSTRAP_ADMIN_EMAIL domain is not allowed")
   })
 
   it("rejects dev OTP exposure in production", () => {

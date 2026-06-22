@@ -17,7 +17,11 @@ import { z } from "zod"
 import { registerAdminRoutes } from "./admin-routes"
 import { apiErrorResponse, handleApiResult } from "./api-errors"
 import { registerBookingRoutes } from "./booking-routes"
-import type { ApiRuntimeConfig, NotificationWorkerConfig } from "./env"
+import {
+  type ApiRuntimeConfig,
+  isEmailAllowedByDomains,
+  type NotificationWorkerConfig,
+} from "./env"
 import { createConsoleMailer, type Mailer } from "./mailer"
 
 const bookingRangeSchema = z.object({
@@ -53,6 +57,7 @@ const defaultRuntimeConfig: ApiRuntimeConfig = {
   devShowOtp: true,
   otpRateLimitWindowSeconds: 900,
   otpRateLimitMaxRequests: 5,
+  allowedEmailDomains: [],
 }
 
 type OtpRateLimitBucket = {
@@ -113,6 +118,10 @@ export function createApiApp({
       return c.json({ error: "Invalid login request", issues: body.error.issues }, 400)
     }
 
+    if (!isEmailAllowedByDomains(body.data.email, runtimeConfig.allowedEmailDomains)) {
+      return c.json({ error: "Email domain is not allowed" }, 403)
+    }
+
     const rateLimit = consumeOtpRateLimit(otpRateLimits, body.data.email, runtimeConfig)
     if (!rateLimit.allowed) {
       c.header("Retry-After", String(rateLimit.retryAfterSeconds))
@@ -141,6 +150,10 @@ export function createApiApp({
 
     if (!body.success) {
       return c.json({ error: "Invalid login verification", issues: body.error.issues }, 400)
+    }
+
+    if (!isEmailAllowedByDomains(body.data.email, runtimeConfig.allowedEmailDomains)) {
+      return c.json({ error: "Email domain is not allowed" }, 403)
     }
 
     return handleApiResult(c, async () => {
@@ -212,6 +225,7 @@ export function createApiApp({
     db,
     mailer: emailSender,
     publicAppUrl: runtimeConfig.publicAppUrl,
+    allowedEmailDomains: runtimeConfig.allowedEmailDomains,
     requireAuth: requireAuth(db),
   })
 

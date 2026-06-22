@@ -49,6 +49,9 @@ docker run -d \
   -e DATABASE_URL=file:/app/data/lab.sqlite \
   -e SERVE_WEB=1 \
   -e WEB_DIST_DIR=/app/apps/web/dist \
+  -e BOOTSTRAP_ADMIN_EMAIL=admin@miralab.tr \
+  -e BOOTSTRAP_ADMIN_NAME="MIRALAB Admin" \
+  -e ALLOWED_EMAIL_DOMAINS= \
   -e EMAIL_PROVIDER=ses \
   -e AWS_REGION=eu-central-1 \
   -e AWS_ACCESS_KEY_ID=runtime-verify \

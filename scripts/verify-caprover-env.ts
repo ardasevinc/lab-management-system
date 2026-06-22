@@ -1,6 +1,7 @@
 import { isAbsolute } from "node:path"
 import {
   apiRuntimeConfigFromEnv,
+  bootstrapAdminFromEnv,
   databaseUrlFromEnv,
   notificationWorkerConfigFromEnv,
 } from "../apps/api/src/env"
@@ -28,6 +29,7 @@ assertEnv("SESSION_COOKIE_SECURE", "1")
 assertEnv("SESSION_COOKIE_DOMAIN", "")
 assertEnv("DATABASE_URL", "file:/app/data/lab.sqlite")
 assertEnv("WEB_DIST_DIR", "/app/apps/web/dist")
+assertEnv("ALLOWED_EMAIL_DOMAINS", "")
 assertEnv("OTP_RATE_LIMIT_WINDOW_SECONDS", "900")
 assertEnv("OTP_RATE_LIMIT_MAX_REQUESTS", "5")
 assertEnv("AWS_REGION", "eu-central-1")
@@ -49,9 +51,17 @@ assertAbsolutePathEnv("BACKUP_DATABASE_PATH")
 assertAbsolutePathEnv("BACKUP_DIR")
 assertSameSqlitePath()
 if (options.realSecrets) {
+  assertMaterializedSecret("BOOTSTRAP_ADMIN_EMAIL")
+  assertMaterializedSecret("BOOTSTRAP_ADMIN_NAME")
   assertMaterializedSecret("AWS_ACCESS_KEY_ID")
   assertMaterializedSecret("AWS_SECRET_ACCESS_KEY")
+
+  if (!bootstrapAdminFromEnv(env)) {
+    throw new Error("BOOTSTRAP_ADMIN_EMAIL must be materialized for real-secret env verification")
+  }
 } else {
+  assertPlaceholderSecret("BOOTSTRAP_ADMIN_EMAIL")
+  assertPlaceholderSecret("BOOTSTRAP_ADMIN_NAME")
   assertPlaceholderSecret("AWS_ACCESS_KEY_ID")
   assertPlaceholderSecret("AWS_SECRET_ACCESS_KEY")
 }

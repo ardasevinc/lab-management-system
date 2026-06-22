@@ -9,6 +9,7 @@ export type ApiRuntimeConfig = {
   devShowOtp: boolean
   otpRateLimitWindowSeconds: number
   otpRateLimitMaxRequests: number
+  allowedEmailDomains: string[]
 }
 
 export type NotificationWorkerConfig = {
@@ -18,6 +19,11 @@ export type NotificationWorkerConfig = {
   endingReminderMinutes: number
   retryDelayMinutes: number
   maxAttempts: number
+}
+
+export type BootstrapAdminConfig = {
+  email: string
+  name: string
 }
 
 export function databaseUrlFromEnv(
@@ -60,10 +66,61 @@ export function apiRuntimeConfigFromEnv(env: Record<string, string | undefined>)
       5,
       false,
     ),
+    allowedEmailDomains: domainsFromEnv(env.ALLOWED_EMAIL_DOMAINS),
   }
 
   assertValidRuntimeConfig(config)
   return config
+}
+
+export function bootstrapAdminFromEnv(
+  env: Record<string, string | undefined>,
+): BootstrapAdminConfig | null {
+  const appEnvironment = appEnvFromEnv(env)
+  const email = emptyToUndefined(env.BOOTSTRAP_ADMIN_EMAIL)
+  const name = emptyToUndefined(env.BOOTSTRAP_ADMIN_NAME)
+  const allowedEmailDomains = domainsFromEnv(env.ALLOWED_EMAIL_DOMAINS)
+
+  if (!email) {
+    if (appEnvironment === "production") {
+      return null
+    }
+
+    return {
+      email: "admin@miralab.tr",
+      name: "MIRALAB Admin",
+    }
+  }
+
+  const normalizedEmail = emailAddressFromEnv(email, "BOOTSTRAP_ADMIN_EMAIL")
+  assertEmailAllowedByDomains(normalizedEmail, allowedEmailDomains, "BOOTSTRAP_ADMIN_EMAIL")
+
+  return {
+    email: normalizedEmail,
+    name: name ?? defaultNameForEmail(normalizedEmail),
+  }
+}
+
+export function assertEmailAllowedByDomains(
+  email: string,
+  allowedEmailDomains: string[],
+  label = "Email",
+) {
+  if (!isEmailAllowedByDomains(email, allowedEmailDomains)) {
+    throw new Error(`${label} domain is not allowed`)
+  }
+}
+
+export function isEmailAllowedByDomains(email: string, allowedEmailDomains: string[]) {
+  if (!allowedEmailDomains.length) {
+    return true
+  }
+
+  const domain = emailDomain(email)
+  return Boolean(
+    domain &&
+      allowedEmailDomains.some((allowed) => domain === allowed || domain.endsWith(`.${allowed}`)),
+  )
 }
 
 export function appEnvFromEnv(env: Record<string, string | undefined>): ApiRuntimeConfig["appEnv"] {
@@ -185,6 +242,38 @@ function splitCsv(value: string) {
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean)
+}
+
+function domainsFromEnv(value: string | undefined) {
+  return splitCsv(value ?? "").map((domain) => normalizeDomain(domain))
+}
+
+function normalizeDomain(value: string) {
+  const domain = value.trim().toLowerCase().replace(/^@/, "")
+
+  if (!domain || domain.includes("..") || /[^a-z0-9.-]/.test(domain) || !domain.includes(".")) {
+    throw new Error("ALLOWED_EMAIL_DOMAINS must contain valid domain names")
+  }
+
+  return domain
+}
+
+function emailAddressFromEnv(value: string, name: "BOOTSTRAP_ADMIN_EMAIL") {
+  const email = value.trim().toLowerCase()
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error(`${name} must be a valid email address`)
+  }
+
+  return email
+}
+
+function emailDomain(email: string) {
+  return email.split("@").at(1)?.toLowerCase()
+}
+
+function defaultNameForEmail(email: string) {
+  return email.split("@")[0] || "Lab Admin"
 }
 
 function originFromEnv(
