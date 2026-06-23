@@ -5,6 +5,7 @@ import { useWorkspace } from "@/components/app-workspace-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { WeekCalendar } from "@/components/week-calendar"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -19,7 +20,7 @@ import {
   packOverlaps,
 } from "@/lib/calendar-geometry"
 import { dayAgendaDefaultRange } from "@/lib/schedule-defaults"
-import { formatDate, formatTime } from "@/lib/time"
+import { formatDate, formatTime, toLabDateValue } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
 export function SchedulePage() {
@@ -153,6 +154,7 @@ export function SchedulePage() {
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-border border-b bg-muted/40 px-3 py-2">
           <span className="truncate font-medium text-sm">Week board</span>
           <WeekNavigation
+            nativePickerOnMobile={false}
             selectedDate={new Date(weekRange.start)}
             onPrevious={goToPreviousWeek}
             onToday={goToCurrentWeek}
@@ -179,6 +181,7 @@ export function SchedulePage() {
 
 function WeekNavigation({
   className,
+  nativePickerOnMobile = true,
   selectedDate,
   onPrevious,
   onToday,
@@ -186,6 +189,7 @@ function WeekNavigation({
   onSelectDate,
 }: {
   className?: string
+  nativePickerOnMobile?: boolean
   selectedDate: Date
   onPrevious: () => void
   onToday: () => void
@@ -194,6 +198,7 @@ function WeekNavigation({
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const isMobile = useIsMobile()
+  const useNativePicker = isMobile && nativePickerOnMobile
   const weekLabel = format(selectedDate, "MMM d")
 
   return (
@@ -212,18 +217,22 @@ function WeekNavigation({
       >
         <ChevronLeft aria-hidden="true" />
       </Button>
-      {isMobile ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
-          aria-expanded={pickerOpen}
-          onClick={() => setPickerOpen((open) => !open)}
-        >
-          <CalendarDays data-icon="inline-start" aria-hidden="true" />
+      {useNativePicker ? (
+        <div className="relative flex h-[44px] min-h-[44px] w-[clamp(9rem,42vw,10rem)] min-w-0 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 font-medium text-sm shadow-xs max-[360px]:w-full sm:w-36">
+          <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span className="truncate">Week of {weekLabel}</span>
-        </Button>
+          <Input
+            type="date"
+            value={toLabDateValue(selectedDate)}
+            aria-label={`Week of ${weekLabel}`}
+            className="absolute inset-0 h-[44px] min-h-[44px] w-full cursor-pointer opacity-0"
+            onChange={(event) => {
+              if (event.target.value) {
+                onSelectDate(new Date(`${event.target.value}T12:00:00`))
+              }
+            }}
+          />
+        </div>
       ) : (
         <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <PopoverTrigger asChild>
@@ -276,21 +285,6 @@ function WeekNavigation({
       >
         <ChevronRight aria-hidden="true" />
       </Button>
-      {isMobile && pickerOpen ? (
-        <div className="col-span-full max-w-full overflow-hidden rounded-lg border border-border bg-background p-1 shadow-sm">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            className="mx-auto max-w-full"
-            onSelect={(date) => {
-              if (date) {
-                onSelectDate(date)
-              }
-              setPickerOpen(false)
-            }}
-          />
-        </div>
-      ) : null}
     </div>
   )
 }

@@ -46,10 +46,13 @@ test("mobile auth controls keep stable touch targets", async ({ page }, testInfo
   await expectMinHeight(page.getByRole("button", { name: "Continue" }), 44)
   await expect(page.locator(".auth-background")).toHaveCSS("position", "fixed")
   await expectAuthBackgroundOverscansViewport(page)
+  await expectAuthRootBackground(page)
   await expectNoHorizontalOverflow(page)
 
   await page.getByLabel("Email").click()
+  await page.setViewportSize({ width: 390, height: 620 })
   await expectAuthBackgroundOverscansViewport(page)
+  await expectAuthRootBackground(page)
   await expectNoHorizontalOverflow(page)
   expect(consoleProblems).toEqual([])
 })
@@ -273,19 +276,15 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   await page.keyboard.press("Escape")
 
   if (testInfo.project.name === "mobile-chromium") {
-    const startsDateButton = bookingSheet.getByRole("button", { name: /^Starts date/ })
+    const startsDateInput = bookingSheet.getByLabel("Starts date")
     const startsTimeInput = bookingSheet.getByLabel("Starts time")
-    await startsDateButton.click()
-    const dateGrid = bookingSheet.getByRole("grid")
-    await expect(dateGrid).toBeVisible()
-    await expectElementFullyWithinViewport(page, dateGrid)
-    await expectElementNoHorizontalOverflow(dateGrid)
-    await expectElementBelow(dateGrid, startsDateButton)
-    await expectElementBelow(startsTimeInput, dateGrid)
-    await startsDateButton.click()
+    await expect(startsDateInput).toHaveAttribute("type", "date")
+    await expect(startsTimeInput).toHaveAttribute("type", "time")
+    await expect(bookingSheet.getByRole("grid")).toHaveCount(0)
 
     await expectMinHeight(bookingSheet.getByLabel("Title"), 44)
-    await expectMinHeight(startsDateButton, 44)
+    await expectMinHeight(startsDateInput, 44)
+    await expectMinHeight(startsTimeInput, 44)
     await expectElementNoHorizontalOverflow(bookingSheet)
   } else {
     await bookingSheet.getByRole("button", { name: /^Starts date/ }).click()
@@ -796,14 +795,10 @@ test("mobile day agenda scroll does not open a booking sheet", async ({ page }, 
   await expect(page.getByText("Day agenda")).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  const weekButton = page.getByRole("button", { name: /^Week of/ })
-  await weekButton.click()
-  const weekPickerGrid = page.locator("main").getByRole("grid")
-  await expect(weekPickerGrid).toBeVisible()
-  await expectElementFullyWithinViewport(page, weekPickerGrid)
-  await expectElementNoHorizontalOverflow(weekPickerGrid)
-  await expectElementBelow(weekPickerGrid, weekButton)
-  await weekButton.click()
+  const weekInput = page.getByLabel(/^Week of/)
+  await expect(weekInput).toHaveAttribute("type", "date")
+  await expectMinHeight(weekInput, 44)
+  await expect(page.locator("main").getByRole("grid")).toHaveCount(0)
 
   const timeline = page.locator("[data-mobile-day-timeline]")
   await expect(timeline).toBeVisible()
@@ -1511,21 +1506,6 @@ async function expectElementNoHorizontalOverflow(locator: Locator) {
     .toBe(true)
 }
 
-async function expectElementBelow(locator: Locator, anchor: Locator) {
-  await expect(locator).toBeVisible()
-  await expect(anchor).toBeVisible()
-  await expect
-    .poll(async () => {
-      const [box, anchorBox] = await Promise.all([locator.boundingBox(), anchor.boundingBox()])
-      if (!box || !anchorBox) {
-        return false
-      }
-
-      return box.y >= anchorBox.y + anchorBox.height - 1
-    })
-    .toBe(true)
-}
-
 async function expectNoHorizontalOverflow(page: Page) {
   await expect
     .poll(() =>
@@ -1549,6 +1529,22 @@ async function expectAuthBackgroundOverscansViewport(page: Page) {
         .evaluate((element) => element.getBoundingClientRect().height),
     )
     .toBeGreaterThanOrEqual(viewportHeight * 1.3)
+}
+
+async function expectAuthRootBackground(page: Page) {
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        authScreen: document.documentElement.dataset.authScreen,
+        bodyBackground: getComputedStyle(document.body).backgroundColor,
+        rootBackground: getComputedStyle(document.documentElement).backgroundColor,
+      })),
+    )
+    .toEqual({
+      authScreen: "true",
+      bodyBackground: "rgb(7, 16, 15)",
+      rootBackground: "rgb(7, 16, 15)",
+    })
 }
 
 async function expectMinHeight(locator: Locator, minHeight: number) {

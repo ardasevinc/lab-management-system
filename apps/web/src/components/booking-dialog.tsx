@@ -126,7 +126,7 @@ export function BookingDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="flex flex-col overflow-hidden p-4 data-[side=bottom]:max-h-[calc(100svh-1rem)] data-[side=right]:w-full sm:max-w-lg sm:p-6"
+        className="flex flex-col overflow-y-auto overflow-x-hidden p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=right]:w-full sm:max-w-lg sm:p-6"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -134,7 +134,7 @@ export function BookingDialog({
         }}
       >
         <form
-          className="flex min-h-0 flex-1 flex-col gap-5"
+          className="flex min-h-full flex-1 flex-col gap-5"
           onSubmit={(event) => {
             event.preventDefault()
             if (!canMutate) {
@@ -159,7 +159,7 @@ export function BookingDialog({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-1 pb-2">
+          <div className="flex flex-col gap-5 px-1 pb-4">
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="title">Title</FieldLabel>
@@ -173,7 +173,7 @@ export function BookingDialog({
                   timeId="startsTime"
                   dateValue={startsDate}
                   timeValue={startsTime}
-                  inlineDatePicker={isMobile}
+                  useNativeInputs={isMobile}
                   onDateChange={setStartsDate}
                   onTimeChange={setStartsTime}
                 />
@@ -183,7 +183,7 @@ export function BookingDialog({
                   timeId="endsTime"
                   dateValue={endsDate}
                   timeValue={endsTime}
-                  inlineDatePicker={isMobile}
+                  useNativeInputs={isMobile}
                   onDateChange={setEndsDate}
                   onTimeChange={setEndsTime}
                 />
@@ -259,7 +259,7 @@ export function BookingDialog({
             ) : null}
           </div>
 
-          <SheetFooter className="-mx-4 mt-0 shrink-0 border-border border-t bg-background px-4 pt-3 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <SheetFooter className="-mx-4 -mb-4 sticky bottom-[-1rem] z-10 mt-auto shrink-0 border-border border-t bg-background/95 px-4 pt-3 pb-4 backdrop-blur sm:-mx-6 sm:-mb-6 sm:bottom-[-1.5rem] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-6">
             {mode === "edit" && canMutate ? (
               <BookingDeleteDialog pending={pending} reason={adminReason} onDelete={onDelete} />
             ) : (
@@ -313,7 +313,7 @@ function DateTimeField({
   timeId,
   dateValue,
   timeValue,
-  inlineDatePicker,
+  useNativeInputs,
   onDateChange,
   onTimeChange,
 }: {
@@ -322,7 +322,7 @@ function DateTimeField({
   timeId: string
   dateValue: string
   timeValue: string
-  inlineDatePicker: boolean
+  useNativeInputs: boolean
   onDateChange: (date: string) => void
   onTimeChange: (time: string) => void
 }) {
@@ -334,36 +334,16 @@ function DateTimeField({
     <Field>
       <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
       <FieldGroup className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
-        {inlineDatePicker ? (
-          <div className="grid min-w-0 gap-2">
-            <Button
-              id={dateId}
-              type="button"
-              variant="outline"
-              className="min-w-0 justify-start font-normal"
-              aria-label={`${label} date ${formattedDate}`}
-              aria-expanded={pickerOpen}
-              onClick={() => setPickerOpen((open) => !open)}
-            >
-              <CalendarDays data-icon="inline-start" aria-hidden="true" />
-              <span className="truncate">{formattedDate}</span>
-            </Button>
-            {pickerOpen ? (
-              <div className="max-w-full overflow-hidden rounded-lg border border-border bg-background p-1">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  className="mx-auto max-w-full"
-                  onSelect={(date) => {
-                    if (date) {
-                      onDateChange(toLabDateValue(date))
-                    }
-                    setPickerOpen(false)
-                  }}
-                />
-              </div>
-            ) : null}
-          </div>
+        {useNativeInputs ? (
+          <Input
+            id={dateId}
+            type="date"
+            autoComplete="off"
+            value={dateValue}
+            onChange={(event) => onDateChange(event.target.value)}
+            aria-label={`${label} date`}
+            required
+          />
         ) : (
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
@@ -400,7 +380,8 @@ function DateTimeField({
         )}
         <Input
           id={timeId}
-          inputMode="numeric"
+          type={useNativeInputs ? "time" : "text"}
+          inputMode={useNativeInputs ? undefined : "numeric"}
           autoComplete="off"
           value={timeValue}
           onChange={(event) => onTimeChange(event.target.value)}
