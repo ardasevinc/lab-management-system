@@ -254,6 +254,16 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
 
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  if (isDesktopProject(testInfo.project.name)) {
+    const weekBoard = page.locator("section").filter({ hasText: "Week board" })
+    const previousWeek = weekBoard.getByRole("button", { name: "Previous week" })
+    const weekPicker = weekBoard.getByRole("button", { name: /Week of/ })
+    const today = weekBoard.getByRole("button", { name: "Today" })
+    const nextWeek = weekBoard.getByRole("button", { name: "Next week" })
+    await expectSameHeight(previousWeek, weekPicker)
+    await expectSameHeight(nextWeek, weekPicker)
+    await expectSameHeight(today, weekPicker)
+  }
   const headerSidebarTrigger = page.locator("header").getByRole("button", {
     name: "Toggle Sidebar",
   })
@@ -1614,6 +1624,14 @@ async function expectMaxSize(locator: Locator, maxWidth: number, maxHeight: numb
   const box = await locator.boundingBox()
   expect(box?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxWidth)
   expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxHeight)
+}
+
+async function expectSameHeight(first: Locator, second: Locator) {
+  await expect(first).toBeVisible()
+  await expect(second).toBeVisible()
+  const firstBox = await first.boundingBox()
+  const secondBox = await second.boundingBox()
+  expect(Math.abs((firstBox?.height ?? 0) - (secondBox?.height ?? 0))).toBeLessThanOrEqual(1)
 }
 
 async function expectRouteContentWithinViewport(page: Page) {

@@ -280,7 +280,7 @@ function WeekNavigation({
       <Button
         type="button"
         variant="outline"
-        size="icon"
+        size="icon-sm"
         aria-label="Previous week"
         onClick={onPrevious}
       >
@@ -329,7 +329,7 @@ function WeekNavigation({
       <Button
         type="button"
         variant="outline"
-        size="icon"
+        size="icon-sm"
         className="max-[360px]:col-start-3 max-[360px]:row-start-1"
         aria-label="Next week"
         onClick={onNext}
