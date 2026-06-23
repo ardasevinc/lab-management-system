@@ -289,11 +289,11 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
-  const { isMobile, state } = useSidebar()
+  const { isMobile } = useSidebar()
   const menuSide = isMobile ? "top" : "right"
   const displayName = user.name || user.email
   const roleLabel = user.role === "admin" ? "Admin" : "Member"
-  const triggerAvatarSize = state === "collapsed" && !isMobile ? "default" : "sm"
+  const triggerAvatarSize = isMobile ? "sm" : "default"
 
   return (
     <DropdownMenu>
@@ -303,7 +303,7 @@ function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
             <SidebarMenuButton
               size="lg"
               aria-label={`Open account menu for ${displayName}`}
-              className="h-12 rounded-md px-2.5 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-10 md:px-2 group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
+              className="h-12 rounded-md px-2.5 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-10 md:px-2 group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:data-[state=open]:bg-sidebar-accent/60"
             >
               <Avatar size={triggerAvatarSize}>
                 <AvatarFallback>{initials}</AvatarFallback>

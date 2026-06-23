@@ -940,6 +940,9 @@ test("desktop collapsed sidebar keeps rail chrome aligned", async ({ page }, tes
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
 
+  const expandedAccountButton = page.getByRole("button", { name: /Open account menu/ })
+  await expectMinSize(expandedAccountButton.locator("[data-slot='avatar']"), 32, 32)
+
   await page.locator("header").getByRole("button", { name: "Toggle Sidebar" }).click()
   await expect(page.locator("div[data-slot='sidebar'][data-state='collapsed']")).toBeVisible()
 
@@ -963,6 +966,8 @@ test("desktop collapsed sidebar keeps rail chrome aligned", async ({ page }, tes
   await expectMinSize(overviewLink.locator("svg"), 20, 20)
   await expectMinSize(accountButton, 36, 36)
   await expectMinSize(accountAvatar, 32, 32)
+  await accountButton.hover()
+  await expectMinBorderRadius(accountButton, 18)
   expect(consoleProblems).toEqual([])
 })
 
@@ -1659,6 +1664,17 @@ async function expectMaxSize(locator: Locator, maxWidth: number, maxHeight: numb
   const box = await locator.boundingBox()
   expect(box?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxWidth)
   expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxHeight)
+}
+
+async function expectMinBorderRadius(locator: Locator, minRadius: number) {
+  await expect(locator).toBeVisible()
+  await expect
+    .poll(async () =>
+      locator.evaluate((element) =>
+        Number.parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      ),
+    )
+    .toBeGreaterThanOrEqual(minRadius)
 }
 
 async function expectSameHeight(first: Locator, second: Locator) {
