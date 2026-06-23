@@ -803,10 +803,20 @@ test("mobile day agenda scroll does not open a booking sheet", async ({ page }, 
   await expect(page.getByText("Day agenda")).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  const weekInput = page.getByLabel(/^Week of/)
-  await expect(weekInput).toHaveAttribute("type", "date")
-  await expectMinHeight(weekInput, 44)
+  const agendaDayInput = page.getByLabel("Agenda day")
+  await expect(agendaDayInput).toHaveAttribute("type", "date")
+  await expectMinHeight(agendaDayInput, 44)
+  await expect(page.getByRole("button", { name: "Previous day" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Next day" })).toBeVisible()
   await expect(page.locator("main").getByRole("grid")).toHaveCount(0)
+
+  const activeDay = page.locator("[data-mobile-day][data-active=true]")
+  const activeDayBefore = await activeDay.innerText()
+  await page.getByRole("button", { name: "Next day" }).click()
+  await expect.poll(() => activeDay.innerText()).not.toBe(activeDayBefore)
+
+  await agendaDayInput.fill("2026-06-23", { force: true })
+  await expect(activeDay).toContainText("23")
 
   const timeline = page.locator("[data-mobile-day-timeline]")
   await expect(timeline).toBeVisible()

@@ -8,7 +8,6 @@ import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { WeekCalendar } from "@/components/week-calendar"
-import { useIsMobile } from "@/hooks/use-mobile"
 import type { Booking } from "@/lib/api"
 import {
   bookingStyle,
@@ -49,6 +48,7 @@ export function SchedulePage() {
     () => bookingsForDay(bookings, selectedDay),
     [bookings, selectedDay],
   )
+  const pendingMobileDayRef = useRef<Date | null>(null)
   const weekDisplayEnd = mobileDays.at(-1) ?? new Date(weekRange.end)
   const scheduleStats = [
     { label: "Week", value: String(dashboardStats.weekBookings) },
@@ -64,6 +64,15 @@ export function SchedulePage() {
     }
 
     const selectedDayIsVisible = mobileDays.some((day) => isSameDay(day, selectedDay))
+    const pendingMobileDay = pendingMobileDayRef.current
+
+    if (pendingMobileDay) {
+      if (mobileDays.some((day) => isSameDay(day, pendingMobileDay))) {
+        setSelectedDay(pendingMobileDay)
+        pendingMobileDayRef.current = null
+      }
+      return
+    }
 
     if (!selectedDayIsVisible) {
       setSelectedDay(
@@ -71,6 +80,20 @@ export function SchedulePage() {
       )
     }
   }, [mobileDays, selectedDay])
+
+  function selectMobileDay(day: Date) {
+    if (!mobileDays.some((visibleDay) => isSameDay(visibleDay, day))) {
+      pendingMobileDayRef.current = day
+      goToWeek(day)
+    }
+    setSelectedDay(day)
+  }
+
+  function selectToday() {
+    pendingMobileDayRef.current = null
+    setSelectedDay(new Date())
+    goToCurrentWeek()
+  }
 
   return (
     <main className="min-w-0 p-3 sm:p-4">
@@ -85,7 +108,7 @@ export function SchedulePage() {
             </Badge>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-sm">
-            <span className="inline-block w-44 shrink-0 tabular-nums">
+            <span className="hidden w-44 shrink-0 tabular-nums xl:inline-block">
               {formatDate(weekRange.start)} - {formatDate(weekDisplayEnd)}
             </span>
             {selectedMachine?.specs[0] ? (
@@ -102,31 +125,33 @@ export function SchedulePage() {
             <ScheduleStat key={stat.label} label={stat.label} value={stat.value} />
           ))}
         </div>
-        <WeekNavigation
-          className="xl:hidden"
-          selectedDate={new Date(weekRange.start)}
-          onPrevious={goToPreviousWeek}
-          onToday={goToCurrentWeek}
-          onNext={goToNextWeek}
-          onSelectDate={goToWeek}
-        />
       </div>
 
       <section className="mb-3 rounded-lg border border-border bg-card p-3 xl:hidden">
-        <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <div>
             <h2 className="font-medium text-sm">Day agenda</h2>
-            <p className="text-muted-foreground text-xs">{format(selectedDay, "EEEE, MMM d")}</p>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => createRange(dayAgendaDefaultRange(selectedDay))}
-          >
-            Book
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={selectToday}>
+              Today
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => createRange(dayAgendaDefaultRange(selectedDay))}
+            >
+              Book
+            </Button>
+          </div>
         </div>
+        <MobileDayNavigation
+          selectedDate={selectedDay}
+          onPrevious={() => selectMobileDay(addDays(selectedDay, -1))}
+          onNext={() => selectMobileDay(addDays(selectedDay, 1))}
+          onSelectDate={selectMobileDay}
+        />
         <div className="mb-3 grid grid-cols-7 gap-1">
           {mobileDays.map((day) => (
             <button
@@ -135,7 +160,7 @@ export function SchedulePage() {
               className="grid min-w-0 rounded-md border border-transparent px-1 py-1.5 text-center transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=true]:border-primary/35 data-[active=true]:bg-accent"
               data-active={isSameDay(day, selectedDay)}
               data-mobile-day
-              onClick={() => setSelectedDay(day)}
+              onClick={() => selectMobileDay(day)}
             >
               <span className="text-muted-foreground text-xs">{format(day, "EEE")}</span>
               <span className="font-semibold text-sm tabular-nums">{format(day, "d")}</span>
@@ -154,7 +179,6 @@ export function SchedulePage() {
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-border border-b bg-muted/40 px-3 py-2">
           <span className="truncate font-medium text-sm">Week board</span>
           <WeekNavigation
-            nativePickerOnMobile={false}
             selectedDate={new Date(weekRange.start)}
             onPrevious={goToPreviousWeek}
             onToday={goToCurrentWeek}
@@ -179,9 +203,57 @@ export function SchedulePage() {
   )
 }
 
+function MobileDayNavigation({
+  selectedDate,
+  onPrevious,
+  onNext,
+  onSelectDate,
+}: {
+  selectedDate: Date
+  onPrevious: () => void
+  onNext: () => void
+  onSelectDate: (date: Date) => void
+}) {
+  const dayLabel = format(selectedDate, "EEE, MMM d")
+
+  return (
+    <div className="mb-3 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Previous day"
+        onClick={onPrevious}
+      >
+        <ChevronLeft aria-hidden="true" />
+      </Button>
+      <div
+        data-mobile-day-picker
+        className="relative flex h-[44px] min-h-[44px] min-w-0 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 font-medium text-sm shadow-xs"
+      >
+        <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <span className="truncate">{dayLabel}</span>
+        <Input
+          type="date"
+          value={toLabDateValue(selectedDate)}
+          aria-label="Agenda day"
+          className="absolute inset-0 h-[44px] min-h-[44px] w-full cursor-pointer opacity-0"
+          onChange={(event) => {
+            if (event.target.value) {
+              onSelectDate(new Date(`${event.target.value}T12:00:00`))
+            }
+          }}
+        />
+      </div>
+      <Button type="button" variant="outline" size="icon" aria-label="Next day" onClick={onNext}>
+        <ChevronRight aria-hidden="true" />
+      </Button>
+    </div>
+  )
+}
+
 function WeekNavigation({
   className,
-  nativePickerOnMobile = true,
   selectedDate,
   onPrevious,
   onToday,
@@ -189,7 +261,6 @@ function WeekNavigation({
   onSelectDate,
 }: {
   className?: string
-  nativePickerOnMobile?: boolean
   selectedDate: Date
   onPrevious: () => void
   onToday: () => void
@@ -197,8 +268,6 @@ function WeekNavigation({
   onSelectDate: (date: Date) => void
 }) {
   const [pickerOpen, setPickerOpen] = useState(false)
-  const isMobile = useIsMobile()
-  const useNativePicker = isMobile && nativePickerOnMobile
   const weekLabel = format(selectedDate, "MMM d")
 
   return (
@@ -217,55 +286,37 @@ function WeekNavigation({
       >
         <ChevronLeft aria-hidden="true" />
       </Button>
-      {useNativePicker ? (
-        <div className="relative flex h-[44px] min-h-[44px] w-[clamp(9rem,42vw,10rem)] min-w-0 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 font-medium text-sm shadow-xs max-[360px]:w-full sm:w-36">
-          <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">Week of {weekLabel}</span>
-          <Input
-            type="date"
-            value={toLabDateValue(selectedDate)}
-            aria-label={`Week of ${weekLabel}`}
-            className="absolute inset-0 h-[44px] min-h-[44px] w-full cursor-pointer opacity-0"
-            onChange={(event) => {
-              if (event.target.value) {
-                onSelectDate(new Date(`${event.target.value}T12:00:00`))
-              }
-            }}
-          />
-        </div>
-      ) : (
-        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
-            >
-              <CalendarDays data-icon="inline-start" aria-hidden="true" />
-              <span className="truncate">Week of {weekLabel}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="max-w-[calc(100vw-2rem)] p-0"
-            align="start"
-            sideOffset={8}
-            collisionPadding={16}
+      <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-[clamp(9rem,42vw,10rem)] justify-center max-[360px]:w-full sm:w-36 sm:justify-start"
           >
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                if (date) {
-                  onSelectDate(date)
-                }
-                setPickerOpen(false)
-              }}
-              autoFocus
-            />
-          </PopoverContent>
-        </Popover>
-      )}
+            <CalendarDays data-icon="inline-start" aria-hidden="true" />
+            <span className="truncate">Week of {weekLabel}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="max-w-[calc(100vw-2rem)] p-0"
+          align="start"
+          sideOffset={8}
+          collisionPadding={16}
+        >
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              if (date) {
+                onSelectDate(date)
+              }
+              setPickerOpen(false)
+            }}
+            autoFocus
+          />
+        </PopoverContent>
+      </Popover>
       <Button
         type="button"
         variant="outline"
