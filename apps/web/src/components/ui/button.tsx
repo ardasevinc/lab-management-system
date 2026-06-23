@@ -15,7 +15,7 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "border-transparent! bg-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
@@ -26,12 +26,13 @@ const buttonVariants = cva(
         xs: "h-10 gap-1 rounded-[min(var(--radius-md),10px)] px-2.5 text-xs md:h-6 md:px-2 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-11 gap-1 rounded-[min(var(--radius-md),12px)] px-3 text-[0.84rem] md:h-7 md:px-2.5 md:text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-12 gap-1.5 px-3 md:h-9 md:px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-11 md:size-8",
+        icon: "size-11 md:size-8 [&_svg:not([class*='size-'])]:size-6 md:[&_svg:not([class*='size-'])]:size-4.5",
         "icon-xs":
-          "size-10 rounded-[min(var(--radius-md),10px)] md:size-6 in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+          "size-10 rounded-[min(var(--radius-md),10px)] md:size-6 in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-5 md:[&_svg:not([class*='size-'])]:size-3.5",
         "icon-sm":
-          "size-11 rounded-[min(var(--radius-md),12px)] md:size-7 in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-12 md:size-9",
+          "size-11 rounded-[min(var(--radius-md),12px)] md:size-7 in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-6 md:[&_svg:not([class*='size-'])]:size-4.5",
+        "icon-lg":
+          "size-12 md:size-9 [&_svg:not([class*='size-'])]:size-6 md:[&_svg:not([class*='size-'])]:size-5",
       },
     },
     defaultVariants: {

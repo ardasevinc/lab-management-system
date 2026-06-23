@@ -254,6 +254,14 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
 
   await page.goto("/schedule")
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  const headerSidebarTrigger = page.locator("header").getByRole("button", {
+    name: "Toggle Sidebar",
+  })
+  await expectMinSize(
+    headerSidebarTrigger.locator("svg"),
+    testInfo.project.name === "mobile-chromium" ? 22 : 17,
+    testInfo.project.name === "mobile-chromium" ? 22 : 17,
+  )
   await openNewBookingSheet(page, testInfo.project.name)
 
   const bookingSheet = page.getByRole("dialog", { name: "New booking" })
@@ -274,6 +282,12 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   await expectElementFullyWithinViewport(page, ownerListbox)
   await expectElementNoHorizontalOverflow(ownerListbox)
   await page.keyboard.press("Escape")
+
+  await expectMinSize(
+    bookingSheet.locator("[data-slot='sheet-close'] svg"),
+    testInfo.project.name === "mobile-chromium" ? 22 : 17,
+    testInfo.project.name === "mobile-chromium" ? 22 : 17,
+  )
 
   if (testInfo.project.name === "mobile-chromium") {
     const startsDateInput = bookingSheet.getByLabel("Starts date")
@@ -807,7 +821,10 @@ test("mobile day agenda scroll does not open a booking sheet", async ({ page }, 
   await expect(agendaDayInput).toHaveAttribute("type", "date")
   await expectMinHeight(agendaDayInput, 44)
   await expect(page.getByRole("button", { name: "Previous day" })).toBeVisible()
+  await expectMinSize(page.getByRole("button", { name: "Previous day" }).locator("svg"), 22, 22)
   await expect(page.getByRole("button", { name: "Next day" })).toBeVisible()
+  await expectMinSize(page.getByRole("button", { name: "Next day" }).locator("svg"), 22, 22)
+  await expectMaxSize(page.locator("[data-mobile-day-timeline-header] svg"), 16, 16)
   await expect(page.locator("main").getByRole("grid")).toHaveCount(0)
 
   const activeDay = page.locator("[data-mobile-day][data-active=true]")
@@ -861,10 +878,7 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
 
   if (testInfo.project.name === "mobile-chromium") {
     await expectMinHeight(headerSidebarTrigger, 44)
-    const triggerIconSize = await headerSidebarTrigger
-      .locator("svg")
-      .evaluate((element) => element.getBoundingClientRect().width)
-    expect(triggerIconSize).toBeGreaterThanOrEqual(20)
+    await expectMinSize(headerSidebarTrigger.locator("svg"), 22, 22)
     await expect(page.locator("header [data-slot='separator']")).toBeHidden()
 
     await headerSidebarTrigger.click()
@@ -1577,6 +1591,29 @@ async function expectMinHeight(locator: Locator, minHeight: number) {
       return box?.height ?? 0
     })
     .toBeGreaterThanOrEqual(minHeight)
+}
+
+async function expectMinSize(locator: Locator, minWidth: number, minHeight: number) {
+  await expect(locator).toBeVisible()
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox()
+      return box?.width ?? 0
+    })
+    .toBeGreaterThanOrEqual(minWidth)
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox()
+      return box?.height ?? 0
+    })
+    .toBeGreaterThanOrEqual(minHeight)
+}
+
+async function expectMaxSize(locator: Locator, maxWidth: number, maxHeight: number) {
+  await expect(locator).toBeVisible()
+  const box = await locator.boundingBox()
+  expect(box?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxWidth)
+  expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxHeight)
 }
 
 async function expectRouteContentWithinViewport(page: Page) {

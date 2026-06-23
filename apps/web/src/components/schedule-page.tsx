@@ -369,9 +369,12 @@ function MobileDayTimeline({
 
   return (
     <div className="overflow-hidden rounded-md border border-border bg-background">
-      <div className="flex items-center justify-between border-border border-b bg-muted/30 px-3 py-2">
+      <div
+        data-mobile-day-timeline-header
+        className="flex items-center justify-between border-border border-b bg-muted/30 px-3 py-2"
+      >
         <div className="inline-flex items-center gap-2 text-muted-foreground text-xs">
-          <Clock3 aria-hidden="true" />
+          <Clock3 className="size-3.5" aria-hidden="true" />
           <span>{dayStartHour}:00</span>
           <span>-</span>
           <span>{dayEndHour}:00</span>

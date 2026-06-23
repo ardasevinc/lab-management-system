@@ -155,7 +155,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
       </Sidebar>
 
       <SidebarInset>
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-border border-b bg-background/94 px-4 backdrop-blur sm:h-14">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-border border-b bg-background/94 px-4 backdrop-blur sm:h-14 md:rounded-t-xl">
           <div className="flex min-w-0 items-center gap-3 sm:gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="hidden h-5 sm:block" />
