@@ -71,8 +71,8 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
   return (
     <SidebarProvider>
       <Sidebar variant="inset" collapsible="icon">
-        <SidebarHeader className="px-3 pt-3 pb-2">
-          <div className="flex items-center gap-2.5 rounded-lg px-1.5 py-1">
+        <SidebarHeader className="px-3 pt-3 pb-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
+          <div className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0">
             <BrandMark className="size-9 shrink-0 shadow-sm" />
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <div className="truncate font-semibold text-[0.92rem] leading-5">
@@ -85,13 +85,13 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-1.5 px-3 py-2">
-          <SidebarGroup className="gap-1 px-0 py-1">
+        <SidebarContent className="gap-1.5 px-3 py-2 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
+          <SidebarGroup className="gap-1 px-0 py-1 group-data-[collapsible=icon]:items-center">
             <SidebarGroupLabel className="h-6 px-2 text-[0.68rem] font-medium tracking-normal">
               Workspace
             </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
+              <SidebarMenu className="gap-0.5 group-data-[collapsible=icon]:items-center">
                 <NavItem
                   to="/schedule"
                   label="Schedule"
@@ -110,13 +110,13 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
 
           {isAdmin ? (
             <>
-              <SidebarSeparator className="my-1.5" />
-              <SidebarGroup className="gap-1 px-0 py-1">
+              <SidebarSeparator className="my-1.5 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:w-8" />
+              <SidebarGroup className="gap-1 px-0 py-1 group-data-[collapsible=icon]:items-center">
                 <SidebarGroupLabel className="h-6 px-2 text-[0.68rem] font-medium tracking-normal">
                   Admin
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu className="gap-0.5">
+                  <SidebarMenu className="gap-0.5 group-data-[collapsible=icon]:items-center">
                     <NavItem
                       to="/admin"
                       label="Overview"
@@ -148,7 +148,7 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
           ) : null}
         </SidebarContent>
 
-        <SidebarFooter className="px-3 pb-3">
+        <SidebarFooter className="px-3 pb-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
           <AccountMenu user={user} onLogout={onLogout} />
         </SidebarFooter>
         <SidebarRail />
@@ -269,7 +269,7 @@ function NavItem({
         asChild
         isActive={active}
         tooltip={label}
-        className="h-11 rounded-md px-2.5 font-normal text-base text-sidebar-foreground/70 transition-[background-color,color] hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8 md:px-2 md:text-[0.84rem] [&_svg]:text-sidebar-foreground/54 [&_svg]:transition-colors hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
+        className="h-11 rounded-md px-2.5 font-normal text-base text-sidebar-foreground/70 transition-[background-color,color] hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground md:h-8 md:px-2 md:text-[0.84rem] group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0! [&_svg]:text-sidebar-foreground/54 [&_svg]:transition-colors group-data-[collapsible=icon]:[&_svg]:size-5 hover:[&_svg]:text-sidebar-accent-foreground data-[active=true]:[&_svg]:text-primary"
       >
         <Link
           to={to}
@@ -280,7 +280,7 @@ function NavItem({
           }}
         >
           <Icon aria-hidden="true" />
-          <span className="truncate">{label}</span>
+          <span className="truncate group-data-[collapsible=icon]:sr-only">{label}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -289,22 +289,23 @@ function NavItem({
 
 function AccountMenu({ user, onLogout }: { user: User; onLogout: () => void }) {
   const initials = getInitials(user.name || user.email)
-  const { isMobile } = useSidebar()
+  const { isMobile, state } = useSidebar()
   const menuSide = isMobile ? "top" : "right"
   const displayName = user.name || user.email
   const roleLabel = user.role === "admin" ? "Admin" : "Member"
+  const triggerAvatarSize = state === "collapsed" && !isMobile ? "default" : "sm"
 
   return (
     <DropdownMenu>
-      <SidebarMenu>
+      <SidebarMenu className="group-data-[collapsible=icon]:items-center">
         <SidebarMenuItem>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
               aria-label={`Open account menu for ${displayName}`}
-              className="h-12 rounded-md px-2.5 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-10 md:px-2"
+              className="h-12 rounded-md px-2.5 text-sidebar-foreground/82 transition-[background-color,color] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground md:h-10 md:px-2 group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!"
             >
-              <Avatar size="sm">
+              <Avatar size={triggerAvatarSize}>
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="grid min-w-0 flex-1 gap-0.5 text-left leading-tight group-data-[collapsible=icon]:hidden">

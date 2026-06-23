@@ -931,6 +931,41 @@ test("admin responsive shell keeps navigation and account menu usable", async ({
   expect(consoleProblems).toEqual([])
 })
 
+test("desktop collapsed sidebar keeps rail chrome aligned", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop collapsed sidebar regression")
+
+  const consoleProblems = collectConsoleProblems(page)
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+
+  await page.locator("header").getByRole("button", { name: "Toggle Sidebar" }).click()
+  await expect(page.locator("div[data-slot='sidebar'][data-state='collapsed']")).toBeVisible()
+
+  const sidebar = page.locator("[data-slot='sidebar-container']")
+  await expect
+    .poll(async () => {
+      const box = await sidebar.boundingBox()
+      return box?.width ?? Number.POSITIVE_INFINITY
+    })
+    .toBeLessThanOrEqual(72)
+  const brandMark = sidebar.locator("[data-slot='brand-mark']")
+  const scheduleLink = sidebar.getByRole("link", { name: "Schedule" })
+  const overviewLink = sidebar.getByRole("link", { name: "Overview" })
+  const accountButton = sidebar.getByRole("button", { name: /Open account menu/ })
+  const accountAvatar = accountButton.locator("[data-slot='avatar']")
+
+  await expectSameCenterX([brandMark, scheduleLink, overviewLink, accountAvatar], 1.5)
+  await expectMinSize(brandMark, 36, 36)
+  await expectMinSize(scheduleLink, 36, 36)
+  await expectMinSize(scheduleLink.locator("svg"), 20, 20)
+  await expectMinSize(overviewLink.locator("svg"), 20, 20)
+  await expectMinSize(accountButton, 36, 36)
+  await expectMinSize(accountAvatar, 32, 32)
+  expect(consoleProblems).toEqual([])
+})
+
 test("member workspace refresh keeps admin navigation hidden", async ({ page }, testInfo) => {
   const consoleProblems = collectConsoleProblems(page)
   await loginAsMember(page)
@@ -1632,6 +1667,20 @@ async function expectSameHeight(first: Locator, second: Locator) {
   const firstBox = await first.boundingBox()
   const secondBox = await second.boundingBox()
   expect(Math.abs((firstBox?.height ?? 0) - (secondBox?.height ?? 0))).toBeLessThanOrEqual(1)
+}
+
+async function expectSameCenterX(locators: Locator[], tolerancePx: number) {
+  const centers: number[] = []
+  for (const locator of locators) {
+    await expect(locator).toBeVisible()
+    const box = await locator.boundingBox()
+    if (!box) {
+      throw new Error("Expected locator to have a bounding box.")
+    }
+    centers.push(box.x + box.width / 2)
+  }
+
+  expect(Math.max(...centers) - Math.min(...centers)).toBeLessThanOrEqual(tolerancePx)
 }
 
 async function expectRouteContentWithinViewport(page: Page) {
