@@ -1,5 +1,6 @@
 import { format } from "date-fns"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, Clock3 } from "lucide-react"
+import type * as React from "react"
 import { useEffect, useState } from "react"
 import { BookingAuditHistory } from "@/components/booking-audit-history"
 import { BookingDeleteDialog } from "@/components/booking-delete-dialog"
@@ -126,7 +127,7 @@ export function BookingDialog({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="flex flex-col overflow-y-auto overflow-x-hidden p-4 data-[side=bottom]:max-h-[calc(100dvh-1rem)] data-[side=right]:w-full sm:max-w-lg sm:p-6"
+        className="flex overflow-hidden p-0 data-[side=bottom]:max-h-[calc(100dvh-0.5rem)] data-[side=right]:w-full sm:max-w-lg"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -134,7 +135,7 @@ export function BookingDialog({
         }}
       >
         <form
-          className="flex min-h-full flex-1 flex-col gap-5"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             if (!canMutate) {
@@ -152,14 +153,14 @@ export function BookingDialog({
             })
           }}
         >
-          <SheetHeader className="px-0 pt-0">
+          <SheetHeader className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-6 sm:pt-6 sm:pb-4">
             <SheetTitle>{sheetTitle}</SheetTitle>
             <SheetDescription className={machine ? undefined : "sr-only"}>
               {machine ? machine.name : "Create or edit a machine reservation."}
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex flex-col gap-5 px-1 pb-4">
+          <div className="mobile-drawer-scroll flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-5 pb-5 sm:px-6">
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="title">Title</FieldLabel>
@@ -259,7 +260,7 @@ export function BookingDialog({
             ) : null}
           </div>
 
-          <SheetFooter className="-mx-4 -mb-4 sticky bottom-[-1rem] z-10 mt-auto shrink-0 border-border border-t bg-background/95 px-4 pt-3 pb-4 backdrop-blur sm:-mx-6 sm:-mb-6 sm:bottom-[-1.5rem] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-6">
+          <SheetFooter className="shrink-0 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-4">
             {mode === "edit" && canMutate ? (
               <BookingDeleteDialog pending={pending} reason={adminReason} onDelete={onDelete} />
             ) : (
@@ -329,20 +330,21 @@ function DateTimeField({
   const [pickerOpen, setPickerOpen] = useState(false)
   const selectedDate = new Date(`${dateValue}T12:00:00`)
   const formattedDate = format(selectedDate, "MMM d, yyyy")
+  const nativeFormattedDate = format(selectedDate, "d MMM yyyy")
 
   return (
     <Field>
       <FieldLabel htmlFor={dateId}>{label}</FieldLabel>
       <FieldGroup className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_5.75rem]">
         {useNativeInputs ? (
-          <Input
+          <NativePickerField
             id={dateId}
             type="date"
-            autoComplete="off"
             value={dateValue}
+            displayValue={nativeFormattedDate}
+            ariaLabel={`${label} date`}
+            icon={<CalendarDays aria-hidden="true" />}
             onChange={(event) => onDateChange(event.target.value)}
-            aria-label={`${label} date`}
-            required
           />
         ) : (
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
@@ -378,18 +380,71 @@ function DateTimeField({
             </PopoverContent>
           </Popover>
         )}
-        <Input
-          id={timeId}
-          type={useNativeInputs ? "time" : "text"}
-          inputMode={useNativeInputs ? undefined : "numeric"}
-          autoComplete="off"
-          value={timeValue}
-          onChange={(event) => onTimeChange(event.target.value)}
-          pattern="\d{2}:\d{2}"
-          aria-label={`${label} time`}
-          required
-        />
+        {useNativeInputs ? (
+          <NativePickerField
+            id={timeId}
+            type="time"
+            value={timeValue}
+            displayValue={timeValue}
+            ariaLabel={`${label} time`}
+            icon={<Clock3 aria-hidden="true" />}
+            onChange={(event) => onTimeChange(event.target.value)}
+          />
+        ) : (
+          <Input
+            id={timeId}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={timeValue}
+            onChange={(event) => onTimeChange(event.target.value)}
+            pattern="\d{2}:\d{2}"
+            aria-label={`${label} time`}
+            required
+          />
+        )}
       </FieldGroup>
     </Field>
+  )
+}
+
+function NativePickerField({
+  id,
+  type,
+  value,
+  displayValue,
+  ariaLabel,
+  icon,
+  onChange,
+}: {
+  id: string
+  type: "date" | "time"
+  value: string
+  displayValue: string
+  ariaLabel: string
+  icon: React.ReactNode
+  onChange: React.ChangeEventHandler<HTMLInputElement>
+}) {
+  return (
+    <div
+      data-native-picker-field
+      className="relative flex h-12 min-w-0 items-center justify-between gap-3 rounded-lg border border-input bg-background px-3 text-base shadow-xs transition-colors has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/50"
+    >
+      <span className="min-w-0 truncate font-normal tabular-nums">{displayValue}</span>
+      <span className="shrink-0 text-muted-foreground [&_svg:not([class*='size-'])]:size-4">
+        {icon}
+      </span>
+      <input
+        id={id}
+        data-native-picker-input
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        type={type}
+        autoComplete="off"
+        value={value}
+        onChange={onChange}
+        aria-label={ariaLabel}
+        required
+      />
+    </div>
   )
 }

@@ -38,7 +38,7 @@ body {
 html[data-auth-screen="true"],
 html[data-auth-screen="true"] body,
 html[data-auth-screen="true"] #root {
-  min-height: 100%;
+  min-height: 100lvh;
   background: #07100f;
 }
 
@@ -177,6 +177,18 @@ html[data-auth-screen="true"] body {
   textarea {
     touch-action: manipulation;
   }
+}
+
+.mobile-drawer-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+input[data-native-picker-input] {
+  max-width: 100%;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .calendar-frame {

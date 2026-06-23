@@ -63,7 +63,7 @@ export function InviteUserSheet({
     >
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="overflow-y-auto overflow-x-hidden p-4 data-[side=bottom]:max-h-[calc(100svh-1rem)] data-[side=right]:w-full sm:max-w-md sm:p-5"
+        className="flex overflow-hidden p-0 data-[side=bottom]:max-h-[calc(100dvh-0.5rem)] data-[side=right]:w-full sm:max-w-md"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -71,7 +71,7 @@ export function InviteUserSheet({
         }}
       >
         <form
-          className="flex flex-col gap-4"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -87,49 +87,50 @@ export function InviteUserSheet({
             onSubmit(form)
           }}
         >
-          <SheetHeader className="px-0 pt-0">
+          <SheetHeader className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-5 sm:pt-5 sm:pb-4">
             <SheetTitle>Invite user</SheetTitle>
             <SheetDescription className="sr-only">
               Invite a lab member and assign their access role.
             </SheetDescription>
           </SheetHeader>
 
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="invite-email">Email</FieldLabel>
-              <Input
-                id="invite-email"
-                name="email"
-                type="email"
-                placeholder="user@miralab.tr"
-                autoComplete="email"
-                spellCheck={false}
-                required
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="invite-name">Name</FieldLabel>
-              <Input id="invite-name" name="name" placeholder="Researcher name" required />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="invite-role">Role</FieldLabel>
-              <Select name="role" defaultValue="member">
-                <SelectTrigger id="invite-role" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectGroup>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          </FieldGroup>
+          <div className="mobile-drawer-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5">
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="invite-email">Email</FieldLabel>
+                <Input
+                  id="invite-email"
+                  name="email"
+                  type="email"
+                  placeholder="user@miralab.tr"
+                  autoComplete="email"
+                  spellCheck={false}
+                  required
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="invite-name">Name</FieldLabel>
+                <Input id="invite-name" name="name" placeholder="Researcher name" required />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="invite-role">Role</FieldLabel>
+                <Select name="role" defaultValue="member">
+                  <SelectTrigger id="invite-role" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectGroup>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              {error ? <FieldError>{error}</FieldError> : null}
+            </FieldGroup>
+          </div>
 
-          {error ? <FieldError>{error}</FieldError> : null}
-
-          <SheetFooter className="mt-0 px-0 pb-0">
+          <SheetFooter className="shrink-0 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
             <Button type="submit" disabled={pending}>
               <MailPlus data-icon="inline-start" aria-hidden="true" />
               {pending ? "Inviting" : "Send invite"}

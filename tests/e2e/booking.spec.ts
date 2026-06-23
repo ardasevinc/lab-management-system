@@ -278,11 +278,19 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
   if (testInfo.project.name === "mobile-chromium") {
     const startsDateInput = bookingSheet.getByLabel("Starts date")
     const startsTimeInput = bookingSheet.getByLabel("Starts time")
+    const nativePickerFields = bookingSheet.locator("[data-native-picker-field]")
+    await expect(nativePickerFields).toHaveCount(4)
     await expect(startsDateInput).toHaveAttribute("type", "date")
     await expect(startsTimeInput).toHaveAttribute("type", "time")
+    await expect(startsDateInput).toHaveCSS("opacity", "0")
+    await expect(startsTimeInput).toHaveCSS("opacity", "0")
     await expect(bookingSheet.getByRole("grid")).toHaveCount(0)
 
     await expectMinHeight(bookingSheet.getByLabel("Title"), 44)
+    for (let index = 0; index < 4; index += 1) {
+      await expectMinHeight(nativePickerFields.nth(index), 48)
+      await expectElementNoHorizontalOverflow(nativePickerFields.nth(index))
+    }
     await expectMinHeight(startsDateInput, 44)
     await expectMinHeight(startsTimeInput, 44)
     await expectElementNoHorizontalOverflow(bookingSheet)
@@ -950,6 +958,7 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   await expect(inviteSheet.getByLabel("Email")).toBeVisible()
   await expect(inviteSheet.getByRole("combobox", { name: "Role" })).toHaveText("Member")
   await expectElementWithinViewport(page, inviteSheet)
+  await expectElementNoHorizontalOverflow(inviteSheet)
   await page.keyboard.press("Escape")
   await expect(inviteSheet).toBeHidden()
 
@@ -965,6 +974,7 @@ test("admin tablet routes keep seeded data and admin sheets usable", async ({ pa
   await expect(machineSheet.getByLabel("Booking state")).toHaveText("Available")
   await expect(machineSheet.getByLabel("Access notes")).toBeVisible()
   await expectElementWithinViewport(page, machineSheet)
+  await expectElementNoHorizontalOverflow(machineSheet)
   await page.keyboard.press("Escape")
   await expect(machineSheet).toBeHidden()
 
@@ -1050,6 +1060,7 @@ test("admin route and sheet surfaces stay usable with mixed lab data", async ({
     await expect(inviteSheet).toBeVisible()
     await expect(inviteSheet.getByRole("combobox", { name: "Role" })).toHaveText("Member")
     await expectElementFullyWithinViewport(page, inviteSheet)
+    await expectElementNoHorizontalOverflow(inviteSheet)
     await page.keyboard.press("Escape")
     await expect(inviteSheet).toBeHidden()
 
@@ -1060,6 +1071,7 @@ test("admin route and sheet surfaces stay usable with mixed lab data", async ({
     await page.getByRole("button", { name: "New machine" }).click()
     const machineSheet = page.getByRole("dialog", { name: "New machine" })
     await expect(machineSheet).toBeVisible()
+    await expectElementNoHorizontalOverflow(machineSheet)
     await expect(machineSheet.getByLabel("Name")).toBeVisible()
     await expectElementFullyWithinViewport(page, machineSheet)
     await page.keyboard.press("Escape")

@@ -178,7 +178,7 @@ function MachineEditorSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={isMobile ? "bottom" : "right"}
-        className="overflow-y-auto overflow-x-hidden p-4 data-[side=bottom]:max-h-[calc(100svh-1rem)] data-[side=right]:w-full sm:max-w-lg sm:p-5"
+        className="flex overflow-hidden p-0 data-[side=bottom]:max-h-[calc(100dvh-0.5rem)] data-[side=right]:w-full sm:max-w-lg"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -187,7 +187,7 @@ function MachineEditorSheet({
       >
         <form
           key={`${mode}-${defaults.id}`}
-          className="grid gap-5"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -210,76 +210,77 @@ function MachineEditorSheet({
             onSubmit(value)
           }}
         >
-          <SheetHeader className="px-0 pt-0">
+          <SheetHeader className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-5 sm:pt-5 sm:pb-4">
             <SheetTitle>{mode === "create" ? "New machine" : "Edit machine"}</SheetTitle>
             <SheetDescription>
               {mode === "create" ? "Machine details" : defaults.slug}
             </SheetDescription>
           </SheetHeader>
 
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="machine-name">Name</FieldLabel>
-              <Input id="machine-name" name="name" defaultValue={defaults.name} required />
-            </Field>
-            {mode === "create" ? (
+          <div className="mobile-drawer-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5">
+            <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="machine-slug">Slug</FieldLabel>
-                <Input
-                  id="machine-slug"
-                  name="slug"
-                  defaultValue={defaults.slug}
-                  placeholder="gpu-2"
-                  spellCheck={false}
+                <FieldLabel htmlFor="machine-name">Name</FieldLabel>
+                <Input id="machine-name" name="name" defaultValue={defaults.name} required />
+              </Field>
+              {mode === "create" ? (
+                <Field>
+                  <FieldLabel htmlFor="machine-slug">Slug</FieldLabel>
+                  <Input
+                    id="machine-slug"
+                    name="slug"
+                    defaultValue={defaults.slug}
+                    placeholder="gpu-2"
+                    spellCheck={false}
+                  />
+                </Field>
+              ) : null}
+              <Field>
+                <FieldLabel htmlFor="machine-state">Booking state</FieldLabel>
+                <Select name="active" defaultValue={String(defaults.active)}>
+                  <SelectTrigger id="machine-state" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="true">Available</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="machine-description">Description</FieldLabel>
+                <Textarea
+                  id="machine-description"
+                  name="description"
+                  defaultValue={defaults.description}
+                  rows={4}
                 />
               </Field>
-            ) : null}
-            <Field>
-              <FieldLabel htmlFor="machine-state">Booking state</FieldLabel>
-              <Select name="active" defaultValue={String(defaults.active)}>
-                <SelectTrigger id="machine-state" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="true">Available</SelectItem>
-                    <SelectItem value="false">Inactive</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="machine-description">Description</FieldLabel>
-              <Textarea
-                id="machine-description"
-                name="description"
-                defaultValue={defaults.description}
-                rows={4}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="machine-specs">Specs</FieldLabel>
-              <Textarea
-                id="machine-specs"
-                name="specs"
-                defaultValue={defaults.specs.join("\n")}
-                rows={5}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="machine-access-notes">Access notes</FieldLabel>
-              <Textarea
-                id="machine-access-notes"
-                name="accessNotes"
-                defaultValue={defaults.accessNotes}
-                rows={4}
-              />
-            </Field>
-          </FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="machine-specs">Specs</FieldLabel>
+                <Textarea
+                  id="machine-specs"
+                  name="specs"
+                  defaultValue={defaults.specs.join("\n")}
+                  rows={5}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="machine-access-notes">Access notes</FieldLabel>
+                <Textarea
+                  id="machine-access-notes"
+                  name="accessNotes"
+                  defaultValue={defaults.accessNotes}
+                  rows={4}
+                />
+              </Field>
+              {error ? <FieldError>{error}</FieldError> : null}
+            </FieldGroup>
+          </div>
 
-          {error ? <FieldError>{error}</FieldError> : null}
-
-          <SheetFooter className="mt-0 gap-2 px-0 pb-0 sm:flex-row sm:items-center sm:justify-between">
+          <SheetFooter className="shrink-0 gap-2 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             {mode === "edit" && onDelete ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>

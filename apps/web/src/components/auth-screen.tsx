@@ -57,11 +57,11 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
   const isBusy = requestMutation.isPending || verifyMutation.isPending
 
   return (
-    <main className="relative min-h-[100dvh] overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#07100f] text-white">
+    <main className="relative min-h-[100lvh] overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#07100f] text-white">
       <div className="auth-background" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.72),rgba(3,7,9,0.42)_48%,rgba(3,7,9,0.62))]" />
 
-      <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
+      <section className="relative z-10 grid min-h-[100lvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
         <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
           <div className="flex items-center gap-3">
             <BrandMark className="size-9 shadow-sm" />
@@ -85,7 +85,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
           <div className="h-px max-w-xl bg-white/12" />
         </div>
 
-        <div className="grid min-h-[calc(100dvh-2rem)] place-items-center lg:min-h-full">
+        <div className="grid min-h-[calc(100lvh-2rem)] place-items-center lg:min-h-full">
           <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
@@ -222,11 +222,11 @@ export function AuthBootstrap() {
   useAuthViewportBackground()
 
   return (
-    <main className="relative min-h-[100dvh] overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#07100f] text-white">
+    <main className="relative min-h-[100lvh] overflow-y-auto overflow-x-hidden overscroll-y-contain bg-[#07100f] text-white">
       <div className="auth-background" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(3,7,9,0.72),rgba(3,7,9,0.42)_48%,rgba(3,7,9,0.62))]" />
 
-      <section className="relative z-10 grid min-h-[100dvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
+      <section className="relative z-10 grid min-h-[100lvh] p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_480px] lg:p-8">
         <div className="hidden min-h-0 flex-col justify-between py-2 pr-10 lg:flex">
           <div className="flex items-center gap-3">
             <BrandMark className="size-9 shadow-sm" />
@@ -244,7 +244,7 @@ export function AuthBootstrap() {
           <div className="h-px max-w-xl bg-white/12" />
         </div>
 
-        <div className="grid min-h-[calc(100dvh-2rem)] place-items-center lg:min-h-full">
+        <div className="grid min-h-[calc(100lvh-2rem)] place-items-center lg:min-h-full">
           <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
             <div className="mb-7 flex items-start justify-between gap-4">
               <div className="space-y-3">
