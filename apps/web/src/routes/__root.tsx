@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import { BrandMark } from "@/components/brand-mark"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export const Route = createRootRoute({
   component: Root,
@@ -13,10 +14,17 @@ export const Route = createRootRoute({
 })
 
 function Root() {
+  const isMobile = useIsMobile()
+
   return (
     <>
       <Outlet />
-      <Toaster closeButton offset={{ top: 16 }} position="top-center" richColors />
+      <Toaster
+        closeButton
+        offset={{ top: isMobile ? 12 : 16, right: 16, left: 16 }}
+        position={isMobile ? "top-center" : "top-right"}
+        richColors
+      />
     </>
   )
 }
