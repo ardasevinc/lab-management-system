@@ -7,6 +7,7 @@ import { WorkspaceContext, type WorkspaceContextValue } from "@/components/app-w
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
 import { useAdminWorkspaceActions } from "@/components/use-admin-workspace-actions"
 import {
+  ApiError,
   type AuditEvent,
   apiFetch,
   type Booking,
@@ -70,6 +71,8 @@ export function AppWorkspace() {
       ),
     enabled: Boolean(selectedMachine),
     placeholderData: (previousData) => previousData,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   })
 
   const usersQuery = useQuery({
@@ -96,12 +99,19 @@ export function AppWorkspace() {
   }
 
   const reportMutationError = (error: Error) => {
+    if (isScheduleFreshnessError(error)) {
+      invalidateBookings()
+      queryClient.invalidateQueries({ queryKey: ["booking-audit"] })
+    }
+
+    const message = bookingMutationErrorMessage(error)
+
     if (dialogState) {
-      setDialogError(error.message)
+      setDialogError(message)
       return
     }
 
-    setWorkspaceError(error.message)
+    setWorkspaceError(message)
   }
 
   const createBookingMutation = useMutation({
@@ -129,7 +139,15 @@ export function AppWorkspace() {
   })
 
   const updateBookingMutation = useMutation({
-    mutationFn: ({ id, value }: { id: string; value: BookingDialogValue }) =>
+    mutationFn: ({
+      id,
+      value,
+      expectedUpdatedAt,
+    }: {
+      id: string
+      value: BookingDialogValue
+      expectedUpdatedAt?: string
+    }) =>
       apiFetch<{ booking: Booking }>(`/bookings/${id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -140,6 +158,7 @@ export function AppWorkspace() {
           startsAt: value.startsAt,
           endsAt: value.endsAt,
           reason: value.reason || null,
+          expectedUpdatedAt,
         }),
       }),
     onSuccess: () => {
@@ -152,11 +171,22 @@ export function AppWorkspace() {
   })
 
   const deleteBookingMutation = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) => {
+    mutationFn: ({
+      id,
+      reason,
+      expectedUpdatedAt,
+    }: {
+      id: string
+      reason?: string
+      expectedUpdatedAt?: string
+    }) => {
       const params = new URLSearchParams()
 
       if (reason) {
         params.set("reason", reason)
+      }
+      if (expectedUpdatedAt) {
+        params.set("expectedUpdatedAt", expectedUpdatedAt)
       }
 
       const query = params.size ? `?${params.toString()}` : ""
@@ -273,6 +303,7 @@ export function AppWorkspace() {
       updateBookingMutation.mutate({
         id: booking.id,
         value: bookingToDialogValue(booking, range),
+        expectedUpdatedAt: booking.updatedAt,
       })
     },
     resizeBooking: (booking, range) => {
@@ -283,6 +314,7 @@ export function AppWorkspace() {
       updateBookingMutation.mutate({
         id: booking.id,
         value: bookingToDialogValue(booking, range),
+        expectedUpdatedAt: booking.updatedAt,
       })
     },
     canEditBooking,
@@ -327,7 +359,11 @@ export function AppWorkspace() {
         }}
         onSubmit={(formValue) => {
           if (dialogState?.mode === "edit" && dialogState.booking) {
-            updateBookingMutation.mutate({ id: dialogState.booking.id, value: formValue })
+            updateBookingMutation.mutate({
+              id: dialogState.booking.id,
+              value: formValue,
+              expectedUpdatedAt: dialogState.booking.updatedAt,
+            })
             return
           }
 
@@ -335,7 +371,11 @@ export function AppWorkspace() {
         }}
         onDelete={(reason) => {
           if (dialogState?.booking) {
-            deleteBookingMutation.mutate({ id: dialogState.booking.id, reason })
+            deleteBookingMutation.mutate({
+              id: dialogState.booking.id,
+              reason,
+              expectedUpdatedAt: dialogState.booking.updatedAt,
+            })
           }
         }}
       />
@@ -345,6 +385,30 @@ export function AppWorkspace() {
 
 function canMutateBooking(user: User, booking: Booking) {
   return user.role === "admin" || (booking.type === "normal" && booking.userId === user.id)
+}
+
+function isScheduleFreshnessError(error: Error) {
+  return error instanceof ApiError && [404, 409].includes(error.status)
+}
+
+function bookingMutationErrorMessage(error: Error) {
+  if (!(error instanceof ApiError)) {
+    return error.message
+  }
+
+  if (error.code === "booking_conflict") {
+    return "That slot was just taken. The schedule has been refreshed."
+  }
+
+  if (error.code === "stale_booking") {
+    return "This booking changed since you opened it. The schedule has been refreshed."
+  }
+
+  if (error.status === 404) {
+    return "This booking is no longer available. The schedule has been refreshed."
+  }
+
+  return error.message
 }
 
 function queryIsBooting(query: { data: unknown; isPending: boolean; isError: boolean }) {

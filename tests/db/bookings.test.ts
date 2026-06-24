@@ -3,6 +3,7 @@ import {
   createBooking,
   deleteBooking,
   listBookingsForMachine,
+  StaleBookingError,
   updateBooking,
 } from "@lab/db"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
@@ -68,6 +69,46 @@ describe("booking repository", () => {
     ).rejects.toBeInstanceOf(BookingConflictError)
   })
 
+  it("enforces non-overlap at the database boundary", async () => {
+    const now = Date.parse("2026-05-10T09:00:00.000Z")
+
+    await testDb.client.execute({
+      sql: `insert into bookings
+        (id, machine_id, user_id, title, type, starts_at, ends_at, created_at, updated_at)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        "raw-first",
+        "tohum",
+        "member-local",
+        "Raw first",
+        "normal",
+        Date.parse("2026-05-10T10:00:00.000Z"),
+        Date.parse("2026-05-10T11:00:00.000Z"),
+        now,
+        now,
+      ],
+    })
+
+    await expect(
+      testDb.client.execute({
+        sql: `insert into bookings
+          (id, machine_id, user_id, title, type, starts_at, ends_at, created_at, updated_at)
+          values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          "raw-overlap",
+          "tohum",
+          "member-local",
+          "Raw overlap",
+          "normal",
+          Date.parse("2026-05-10T10:30:00.000Z"),
+          Date.parse("2026-05-10T11:30:00.000Z"),
+          now,
+          now,
+        ],
+      }),
+    ).rejects.toThrow(/booking_overlap/)
+  })
+
   it("allows adjacent bookings", async () => {
     await createBooking(testDb.db, {
       machineId: "tohum",
@@ -116,6 +157,49 @@ describe("booking repository", () => {
         endsAt: new Date("2026-05-10T12:30:00.000Z"),
       }),
     ).rejects.toBeInstanceOf(BookingConflictError)
+  })
+
+  it("rejects stale update and delete version tokens", async () => {
+    const booking = await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Versioned run",
+      startsAt: new Date("2026-05-10T14:00:00.000Z"),
+      endsAt: new Date("2026-05-10T15:00:00.000Z"),
+    })
+
+    const updated = await updateBooking(testDb.db, booking.id, {
+      actorUserId: "admin-local",
+      title: "Versioned run updated",
+      expectedUpdatedAt: new Date(booking.updatedAt),
+    })
+
+    await expect(
+      updateBooking(testDb.db, booking.id, {
+        actorUserId: "admin-local",
+        title: "Stale update",
+        expectedUpdatedAt: new Date(booking.updatedAt),
+      }),
+    ).rejects.toBeInstanceOf(StaleBookingError)
+
+    await expect(
+      deleteBooking(
+        testDb.db,
+        booking.id,
+        "admin-local",
+        "stale delete",
+        new Date(booking.updatedAt),
+      ),
+    ).rejects.toBeInstanceOf(StaleBookingError)
+
+    await deleteBooking(
+      testDb.db,
+      booking.id,
+      "admin-local",
+      "fresh delete",
+      new Date(updated.updatedAt),
+    )
   })
 
   it("frees a booking range after deletion", async () => {

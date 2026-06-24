@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, isNull, lte } from "drizzle-orm"
+import { and, asc, eq, gt, isNull, lte, or } from "drizzle-orm"
 import type { Db } from "."
 import { bookings, machines, notificationDeliveries, users } from "./schema"
 
@@ -37,7 +37,7 @@ export async function getActiveBookingNotificationContext(db: Db, bookingId: str
     .from(bookings)
     .innerJoin(users, eq(bookings.userId, users.id))
     .innerJoin(machines, eq(bookings.machineId, machines.id))
-    .where(and(eq(bookings.id, bookingId), eq(users.active, true)))
+    .where(and(eq(bookings.id, bookingId), isNull(bookings.deletedAt), eq(users.active, true)))
     .limit(1)
 
   return rows[0] ?? null
@@ -92,6 +92,7 @@ export async function enqueueDueBookingReminders(
         bookingId: candidate.bookingId,
         recipientEmail: candidate.recipientEmail,
         scheduledFor: now,
+        reminderAt: candidate.reminderAt,
       }),
     ),
   )
@@ -104,6 +105,7 @@ export async function enqueueNotificationDelivery(
     bookingId: string
     recipientEmail: string
     scheduledFor: Date
+    reminderAt?: Date | null
     now?: Date
   },
 ) {
@@ -112,13 +114,19 @@ export async function enqueueNotificationDelivery(
     .insert(notificationDeliveries)
     .values({
       id: crypto.randomUUID(),
-      idempotencyKey: notificationIdempotencyKey(input.kind, input.bookingId, input.recipientEmail),
+      idempotencyKey: notificationIdempotencyKey(
+        input.kind,
+        input.bookingId,
+        input.recipientEmail,
+        input.reminderAt ?? null,
+      ),
       bookingId: input.bookingId,
       recipientEmail: input.recipientEmail,
       kind: input.kind,
       status: "pending",
       error: null,
       scheduledFor: input.scheduledFor,
+      reminderAt: input.reminderAt ?? null,
       sentAt: null,
       createdAt: now,
       updatedAt: now,
@@ -140,6 +148,54 @@ export async function listDueNotificationDeliveries(db: Db, now = new Date(), li
     .limit(limit)
 }
 
+export async function claimDueNotificationDeliveries(db: Db, now = new Date(), limit = 25) {
+  const staleProcessingBefore = new Date(now.getTime() - 10 * 60_000)
+  const candidates = await db
+    .select()
+    .from(notificationDeliveries)
+    .where(
+      and(
+        lte(notificationDeliveries.scheduledFor, now),
+        or(
+          eq(notificationDeliveries.status, "pending"),
+          and(
+            eq(notificationDeliveries.status, "processing"),
+            lte(notificationDeliveries.updatedAt, staleProcessingBefore),
+          ),
+        ),
+      ),
+    )
+    .orderBy(asc(notificationDeliveries.scheduledFor))
+    .limit(limit)
+
+  const claimed: NotificationDelivery[] = []
+  for (const candidate of candidates) {
+    const [delivery] = await db
+      .update(notificationDeliveries)
+      .set({ status: "processing", updatedAt: now })
+      .where(
+        and(
+          eq(notificationDeliveries.id, candidate.id),
+          lte(notificationDeliveries.scheduledFor, now),
+          or(
+            eq(notificationDeliveries.status, "pending"),
+            and(
+              eq(notificationDeliveries.status, "processing"),
+              lte(notificationDeliveries.updatedAt, staleProcessingBefore),
+            ),
+          ),
+        ),
+      )
+      .returning()
+
+    if (delivery) {
+      claimed.push(delivery)
+    }
+  }
+
+  return claimed
+}
+
 export async function markNotificationSent(db: Db, id: string, now = new Date()) {
   await db
     .update(notificationDeliveries)
@@ -151,6 +207,18 @@ export async function markNotificationFailed(db: Db, id: string, error: string, 
   await db
     .update(notificationDeliveries)
     .set({ status: "failed", error, updatedAt: now })
+    .where(eq(notificationDeliveries.id, id))
+}
+
+export async function markNotificationCanceled(
+  db: Db,
+  id: string,
+  error: string,
+  now = new Date(),
+) {
+  await db
+    .update(notificationDeliveries)
+    .set({ status: "canceled", error, updatedAt: now })
     .where(eq(notificationDeliveries.id, id))
 }
 
@@ -203,6 +271,7 @@ async function listReminderCandidates(
     .select({
       bookingId: bookings.id,
       recipientEmail: users.email,
+      reminderAt: targetColumn,
     })
     .from(bookings)
     .innerJoin(users, eq(bookings.userId, users.id))
@@ -222,6 +291,7 @@ function notificationIdempotencyKey(
   kind: NotificationKind,
   bookingId: string,
   recipientEmail: string,
+  reminderAt?: Date | null,
 ) {
-  return `${kind}:${bookingId}:${recipientEmail}`
+  return [kind, bookingId, recipientEmail, reminderAt?.toISOString()].filter(Boolean).join(":")
 }

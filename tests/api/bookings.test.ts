@@ -208,7 +208,7 @@ describe("booking API", () => {
 
     expect(first.status).toBe(201)
     expect(second.status).toBe(409)
-    expect(await second.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    await expectBookingConflict(second)
   })
 
   it("allows adjacent bookings but rejects update collisions", async () => {
@@ -248,7 +248,7 @@ describe("booking API", () => {
     expect(morning.status).toBe(201)
     expect(adjacent.status).toBe(201)
     expect(collision.status).toBe(409)
-    expect(await collision.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    await expectBookingConflict(collision)
   })
 
   it("rejects contained and enveloping overlaps while allowing gaps", async () => {
@@ -293,11 +293,11 @@ describe("booking API", () => {
     expect(middle.status).toBe(201)
     expect(late.status).toBe(201)
     expect(contained.status).toBe(409)
-    expect(await contained.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    await expectBookingConflict(contained)
     expect(enveloping.status).toBe(409)
-    expect(await enveloping.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    await expectBookingConflict(enveloping)
     expect(multiple.status).toBe(409)
-    expect(await multiple.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    await expectBookingConflict(multiple)
     expect(gap.status).toBe(201)
   })
 
@@ -360,7 +360,7 @@ describe("booking API", () => {
 
     expect(maintenance.status).toBe(201)
     expect(blocked.status).toBe(409)
-    expect(await blocked.json()).toEqual({ error: "Booking overlaps an existing booking" })
+    await expectBookingConflict(blocked)
     expect(deleteMaintenance.status).toBe(200)
     expect(afterDelete.status).toBe(201)
   })
@@ -396,6 +396,62 @@ describe("booking API", () => {
     expect(updateResponse.status).toBe(200)
     expect((await updateResponse.json()).booking.title).toBe("Updated")
     expect(deleteResponse.status).toBe(200)
+  })
+
+  it("returns structured stale errors for outdated booking updates and deletes", async () => {
+    const createResponse = await createBookingRequest({
+      title: "Versioned API run",
+      startsAt: "2026-05-10T12:00:00.000Z",
+      endsAt: "2026-05-10T13:00:00.000Z",
+    })
+    const { booking } = await createResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Versioned API run updated",
+        expectedUpdatedAt: booking.updatedAt,
+      }),
+    })
+    const { booking: updatedBooking } = await updateResponse.json()
+
+    const staleUpdateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "Stale browser edit",
+        expectedUpdatedAt: booking.updatedAt,
+      }),
+    })
+    const staleDeleteResponse = await app.request(
+      `/bookings/${booking.id}?expectedUpdatedAt=${encodeURIComponent(booking.updatedAt)}`,
+      {
+        method: "DELETE",
+        headers: authHeaders,
+      },
+    )
+    const freshDeleteResponse = await app.request(
+      `/bookings/${booking.id}?expectedUpdatedAt=${encodeURIComponent(updatedBooking.updatedAt)}`,
+      {
+        method: "DELETE",
+        headers: authHeaders,
+      },
+    )
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(200)
+    expect(staleUpdateResponse.status).toBe(409)
+    expect(await staleUpdateResponse.json()).toEqual({
+      error: "Booking changed since it was opened",
+      code: "stale_booking",
+    })
+    expect(staleDeleteResponse.status).toBe(409)
+    expect(await staleDeleteResponse.json()).toEqual({
+      error: "Booking changed since it was opened",
+      code: "stale_booking",
+    })
+    expect(freshDeleteResponse.status).toBe(200)
   })
 
   it("blocks rescheduling bookings while their machine is inactive", async () => {
@@ -961,4 +1017,11 @@ async function waitForBookingEmails(emails: BookingEmail[], count: number) {
 
     await new Promise((resolve) => setTimeout(resolve, 0))
   }
+}
+
+async function expectBookingConflict(response: Response) {
+  expect(await response.json()).toEqual({
+    error: "Booking overlaps an existing booking",
+    code: "booking_conflict",
+  })
 }

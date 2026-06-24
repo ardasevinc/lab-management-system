@@ -31,8 +31,19 @@ const bookingBodySchema = z.object({
 })
 
 const bookingPatchSchema = bookingBodySchema
+  .extend({
+    expectedUpdatedAt: z.string().datetime().optional(),
+  })
   .partial()
-  .refine((value) => Object.keys(value).length > 0, "At least one field is required")
+  .refine(
+    (value) => Object.keys(value).some((key) => key !== "expectedUpdatedAt"),
+    "At least one field is required",
+  )
+
+const deleteBookingQuerySchema = z.object({
+  reason: z.string().optional(),
+  expectedUpdatedAt: z.string().datetime().optional(),
+})
 
 export function registerBookingRoutes(
   app: BookingRouteApp,
@@ -103,6 +114,9 @@ export function registerBookingRoutes(
           ...body.data,
           startsAt: body.data.startsAt ? new Date(body.data.startsAt) : undefined,
           endsAt: body.data.endsAt ? new Date(body.data.endsAt) : undefined,
+          expectedUpdatedAt: body.data.expectedUpdatedAt
+            ? new Date(body.data.expectedUpdatedAt)
+            : undefined,
           actorUserId: user.id,
         })
         notifyBookingChange(db, mailer, publicAppUrl, booking.id, "booking_updated", booking.userId)
@@ -126,6 +140,15 @@ export function registerBookingRoutes(
   app.delete("/bookings/:id", async (c) =>
     handleApiResult(c, () =>
       enqueueBookingWrite(async () => {
+        const query = deleteBookingQuerySchema.safeParse({
+          reason: c.req.query("reason"),
+          expectedUpdatedAt: c.req.query("expectedUpdatedAt"),
+        })
+
+        if (!query.success) {
+          return c.json({ error: "Invalid booking delete", issues: query.error.issues }, 400)
+        }
+
         const user = c.get("user")
         const current = await getBooking(db, c.req.param("id"))
 
@@ -134,7 +157,13 @@ export function registerBookingRoutes(
         }
 
         assertCanWriteBooking(user, current)
-        await deleteBooking(db, c.req.param("id"), user.id, c.req.query("reason"))
+        await deleteBooking(
+          db,
+          c.req.param("id"),
+          user.id,
+          query.data.reason,
+          query.data.expectedUpdatedAt ? new Date(query.data.expectedUpdatedAt) : undefined,
+        )
         notifyBookingChange(db, mailer, publicAppUrl, current.id, "booking_deleted")
         return c.json({ ok: true })
       }),

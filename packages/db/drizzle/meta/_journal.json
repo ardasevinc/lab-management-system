@@ -29,6 +29,13 @@
       "when": 1781994786099,
       "tag": "0003_stale_supreme_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1782300000000,
+      "tag": "0004_battlefield_booking_guards",
+      "breakpoints": true
     }
   ]
 }

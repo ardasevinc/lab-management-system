@@ -31,6 +31,7 @@ export const bookingSchema = z.object({
   type: z.enum(["normal", "maintenance"]),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 })
 
 export type Booking = z.infer<typeof bookingSchema>

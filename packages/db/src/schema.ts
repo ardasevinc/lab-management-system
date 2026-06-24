@@ -151,12 +151,13 @@ export const notificationDeliveries = sqliteTable(
         "booking_ending_reminder",
       ],
     }).notNull(),
-    status: text("status", { enum: ["pending", "sent", "failed"] })
+    status: text("status", { enum: ["pending", "processing", "sent", "failed", "canceled"] })
       .notNull()
       .default("pending"),
     error: text("error"),
     attemptCount: integer("attempt_count").notNull().default(0),
     scheduledFor: integer("scheduled_for", { mode: "timestamp" }).notNull(),
+    reminderAt: integer("reminder_at", { mode: "timestamp" }),
     sentAt: integer("sent_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),

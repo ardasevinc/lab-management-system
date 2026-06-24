@@ -9,7 +9,7 @@ import {
   assertUserExists,
   assertValidBookingRange,
 } from "./booking-validation"
-import { NotFoundError } from "./errors"
+import { BookingConflictError, ForbiddenError, NotFoundError, StaleBookingError } from "./errors"
 import { mapBooking } from "./mappers"
 import { bookings } from "./schema"
 
@@ -34,6 +34,7 @@ export type UpdateBookingInput = Partial<
   >
 > & {
   actorUserId: string
+  expectedUpdatedAt?: Date
 }
 
 export { listBookingAuditEvents } from "./booking-audit"
@@ -61,7 +62,10 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
   return db.transaction(async (tx) => {
     await assertMachineBookable(tx, input.machineId)
     await assertActiveUserExists(tx, input.userId)
-    await assertUserExists(tx, input.actorUserId)
+    await assertActorCanWriteBooking(tx, input.actorUserId, {
+      userId: input.userId,
+      type: input.type ?? "normal",
+    })
     await assertNoBookingOverlap(tx, {
       machineId: input.machineId,
       startsAt: input.startsAt,
@@ -84,7 +88,7 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
       updatedAt: now,
     }
 
-    await tx.insert(bookings).values(values)
+    await insertBookingRow(tx, values)
     await insertBookingAudit(tx, {
       bookingId: id,
       actorUserId: input.actorUserId,
@@ -93,19 +97,30 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
       payload: values,
     })
 
-    return mapBooking(values)
+    const created = await tx.query.bookings.findFirst({ where: eq(bookings.id, id) })
+    if (!created) {
+      throw new NotFoundError("Booking not found")
+    }
+
+    return mapBooking(created)
   })
 }
 
 export async function updateBooking(db: Db, id: string, input: UpdateBookingInput) {
   return db.transaction(async (tx) => {
-    await assertUserExists(tx, input.actorUserId)
     const current = await tx.query.bookings.findFirst({
       where: and(eq(bookings.id, id), isNull(bookings.deletedAt)),
     })
 
     if (!current) {
       throw new NotFoundError("Booking not found")
+    }
+
+    if (
+      input.expectedUpdatedAt &&
+      current.updatedAt.getTime() !== input.expectedUpdatedAt.getTime()
+    ) {
+      throw new StaleBookingError()
     }
 
     const next = {
@@ -127,6 +142,14 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
     if (input.userId !== undefined) {
       await assertActiveUserExists(tx, next.userId)
     }
+    await assertActorCanWriteBooking(tx, input.actorUserId, {
+      userId: current.userId,
+      type: current.type,
+    })
+    await assertActorCanWriteBooking(tx, input.actorUserId, {
+      userId: next.userId,
+      type: next.type,
+    })
     await assertNoBookingOverlap(tx, {
       machineId: next.machineId,
       startsAt: next.startsAt,
@@ -134,16 +157,16 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
       excludeBookingId: id,
     })
 
-    const now = new Date()
-    await tx
-      .update(bookings)
-      .set({
-        ...next,
-        updatedAt: now,
-      })
-      .where(eq(bookings.id, id))
+    const now = nextVersionDate(current.updatedAt)
+    const [updated] = await updateBookingRow(tx, id, current.updatedAt, {
+      ...next,
+      updatedAt: now,
+    })
 
-    const updated = { ...current, ...next, updatedAt: now }
+    if (!updated) {
+      throw new StaleBookingError()
+    }
+
     await insertBookingAudit(tx, {
       bookingId: id,
       actorUserId: input.actorUserId,
@@ -161,9 +184,9 @@ export async function deleteBooking(
   id: string,
   actorUserId: string,
   reason?: string | null,
+  expectedUpdatedAt?: Date,
 ) {
   return db.transaction(async (tx) => {
-    await assertUserExists(tx, actorUserId)
     const current = await tx.query.bookings.findFirst({
       where: and(eq(bookings.id, id), isNull(bookings.deletedAt)),
     })
@@ -172,8 +195,29 @@ export async function deleteBooking(
       throw new NotFoundError("Booking not found")
     }
 
-    const now = new Date()
-    await tx.update(bookings).set({ deletedAt: now, updatedAt: now }).where(eq(bookings.id, id))
+    await assertActorCanWriteBooking(tx, actorUserId, current)
+
+    if (expectedUpdatedAt && current.updatedAt.getTime() !== expectedUpdatedAt.getTime()) {
+      throw new StaleBookingError()
+    }
+
+    const now = nextVersionDate(current.updatedAt)
+    const [deleted] = await tx
+      .update(bookings)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(bookings.id, id),
+          isNull(bookings.deletedAt),
+          eq(bookings.updatedAt, current.updatedAt),
+        ),
+      )
+      .returning()
+
+    if (!deleted) {
+      throw new StaleBookingError()
+    }
+
     await insertBookingAudit(tx, {
       bookingId: id,
       actorUserId,
@@ -193,4 +237,70 @@ export async function getBooking(db: Db, id: string) {
 
 function changesBookingPlacement(input: UpdateBookingInput) {
   return input.machineId !== undefined || input.startsAt !== undefined || input.endsAt !== undefined
+}
+
+type QueryDb = Pick<Db, "query">
+type WriteDb = Pick<Db, "insert" | "update">
+type BookingWriteTarget = { userId: string; type: BookingType }
+
+async function assertActorCanWriteBooking(
+  db: QueryDb,
+  actorUserId: string,
+  booking: BookingWriteTarget,
+) {
+  const actor = await assertUserExists(db, actorUserId)
+
+  if (actor.role === "admin") {
+    return
+  }
+
+  if (booking.type === "maintenance" || booking.userId !== actor.id) {
+    throw new ForbiddenError("Admins are required for this booking change")
+  }
+}
+
+async function insertBookingRow(tx: WriteDb, values: typeof bookings.$inferInsert) {
+  try {
+    await tx.insert(bookings).values(values)
+  } catch (error) {
+    throwBookingConflictForOverlapAbort(error)
+    throw error
+  }
+}
+
+async function updateBookingRow(
+  tx: WriteDb,
+  id: string,
+  currentUpdatedAt: Date,
+  values: Omit<typeof bookings.$inferInsert, "id" | "createdAt" | "deletedAt">,
+) {
+  try {
+    return await tx
+      .update(bookings)
+      .set(values)
+      .where(
+        and(
+          eq(bookings.id, id),
+          isNull(bookings.deletedAt),
+          eq(bookings.updatedAt, currentUpdatedAt),
+        ),
+      )
+      .returning()
+  } catch (error) {
+    throwBookingConflictForOverlapAbort(error)
+    throw error
+  }
+}
+
+function throwBookingConflictForOverlapAbort(error: unknown) {
+  if (String(error).includes("booking_overlap")) {
+    throw new BookingConflictError()
+  }
+}
+
+function nextVersionDate(previous: Date) {
+  const previousSecond = Math.floor(previous.getTime() / 1000)
+  const nowSecond = Math.floor(Date.now() / 1000)
+  const nextSecond = nowSecond <= previousSecond ? previousSecond + 1 : nowSecond
+  return new Date(nextSecond * 1000)
 }

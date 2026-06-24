@@ -1,11 +1,12 @@
 import { labConfig } from "@lab/config"
 import {
+  claimDueNotificationDeliveries,
   type Db,
   enqueueDueBookingReminders,
   getActiveBookingNotificationContext,
   getBookingNotificationContext,
   getBookingNotificationContextForUser,
-  listDueNotificationDeliveries,
+  markNotificationCanceled,
   markNotificationFailed,
   markNotificationRetryOrFailed,
   markNotificationSent,
@@ -62,7 +63,7 @@ export async function processBookingReminders(
     now,
   })
 
-  const dueDeliveries = await listDueNotificationDeliveries(db, now)
+  const dueDeliveries = await claimDueNotificationDeliveries(db, now)
   for (const delivery of dueDeliveries) {
     try {
       const context = delivery.bookingId
@@ -71,6 +72,11 @@ export async function processBookingReminders(
 
       if (!context) {
         await markNotificationFailed(db, delivery.id, "Booking reminder context not available", now)
+        continue
+      }
+
+      if (reminderWasSuperseded(delivery, context.booking)) {
+        await markNotificationCanceled(db, delivery.id, "Booking reminder superseded", now)
         continue
       }
 
@@ -85,6 +91,25 @@ export async function processBookingReminders(
       })
     }
   }
+}
+
+function reminderWasSuperseded(
+  delivery: { kind: NotificationKind; reminderAt: Date | null },
+  booking: BookingNotificationContext["booking"],
+) {
+  if (!delivery.reminderAt) {
+    return false
+  }
+
+  if (delivery.kind === "booking_start_reminder") {
+    return delivery.reminderAt.getTime() !== booking.startsAt.getTime()
+  }
+
+  if (delivery.kind === "booking_ending_reminder") {
+    return delivery.reminderAt.getTime() !== booking.endsAt.getTime()
+  }
+
+  return false
 }
 
 export function startNotificationWorker(

@@ -32,6 +32,7 @@ export function mapBooking(row: typeof bookings.$inferSelect) {
     type: row.type,
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   }
 }
 

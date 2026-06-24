@@ -1,4 +1,9 @@
-import { createBooking, enqueueNotificationDelivery, updateUserAccess } from "@lab/db"
+import {
+  createBooking,
+  enqueueNotificationDelivery,
+  updateBooking,
+  updateUserAccess,
+} from "@lab/db"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { BookingEmail } from "../../apps/api/src/mailer"
 import { processBookingReminders, startNotificationWorker } from "../../apps/api/src/notifications"
@@ -264,6 +269,119 @@ describe("booking notifications", () => {
         error: "Booking reminder context not available",
       }),
     )
+  })
+
+  it("cancels queued reminders after a booking is rescheduled and sends the new reminder later", async () => {
+    const sentSubjects: string[] = []
+    const booking = await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Rescheduled reminder run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+
+    await enqueueNotificationDelivery(testDb.db, {
+      kind: "booking_start_reminder",
+      bookingId: booking.id,
+      recipientEmail: "member@example.org",
+      scheduledFor: new Date("2026-05-10T10:00:00.000Z"),
+      reminderAt: new Date("2026-05-10T10:10:00.000Z"),
+    })
+    await updateBooking(testDb.db, booking.id, {
+      actorUserId: "admin-local",
+      startsAt: new Date("2026-05-10T10:20:00.000Z"),
+      endsAt: new Date("2026-05-10T11:20:00.000Z"),
+      expectedUpdatedAt: new Date(booking.updatedAt),
+    })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendInviteEmail() {},
+      async sendBookingEmail(email: { subject: string }) {
+        sentSubjects.push(email.subject)
+      },
+    }
+
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:05:00.000Z"),
+    })
+
+    const deliveries = await testDb.db.query.notificationDeliveries.findMany({
+      orderBy: (deliveries, { asc }) => [asc(deliveries.createdAt)],
+    })
+
+    expect(sentSubjects).toEqual(["Lab LMS booking starting soon: Rescheduled reminder run"])
+    expect(deliveries).toEqual([
+      expect.objectContaining({
+        status: "canceled",
+        error: "Booking reminder superseded",
+        reminderAt: new Date("2026-05-10T10:10:00.000Z"),
+      }),
+      expect.objectContaining({
+        status: "sent",
+        error: null,
+        reminderAt: new Date("2026-05-10T10:20:00.000Z"),
+      }),
+    ])
+  })
+
+  it("claims due reminders so concurrent worker runs do not send duplicates", async () => {
+    const sentSubjects: string[] = []
+    let releaseSend: (() => void) | null = null
+    let sendStarted: (() => void) | null = null
+    const sendStartedPromise = new Promise<void>((resolve) => {
+      sendStarted = resolve
+    })
+
+    await createBooking(testDb.db, {
+      machineId: "tohum",
+      userId: "member-local",
+      actorUserId: "admin-local",
+      title: "Claimed reminder run",
+      startsAt: new Date("2026-05-10T10:10:00.000Z"),
+      endsAt: new Date("2026-05-10T11:00:00.000Z"),
+    })
+
+    const mailer = {
+      async sendLoginOtp() {},
+      async sendInviteEmail() {},
+      async sendBookingEmail(email: { subject: string }) {
+        sentSubjects.push(email.subject)
+        sendStarted?.()
+        await new Promise<void>((resolve) => {
+          releaseSend = resolve
+        })
+      },
+    }
+
+    const firstRun = processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+    await sendStartedPromise
+    await processBookingReminders(testDb.db, mailer, {
+      startReminderMinutes: 15,
+      endingReminderMinutes: 15,
+      now: new Date("2026-05-10T10:00:00.000Z"),
+    })
+
+    expect(sentSubjects).toEqual(["Lab LMS booking starting soon: Claimed reminder run"])
+
+    releaseSend?.()
+    await firstRun
+
+    const delivery = await testDb.db.query.notificationDeliveries.findFirst()
+    expect(delivery).toEqual(expect.objectContaining({ status: "sent" }))
   })
 
   it("formats booking email details in the lab timezone", async () => {

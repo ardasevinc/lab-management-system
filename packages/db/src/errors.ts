@@ -5,6 +5,13 @@ export class BookingConflictError extends Error {
   }
 }
 
+export class StaleBookingError extends Error {
+  constructor(message = "Booking changed since it was opened") {
+    super(message)
+    this.name = "StaleBookingError"
+  }
+}
+
 export class ConflictError extends Error {
   constructor(message = "Resource conflict") {
     super(message)

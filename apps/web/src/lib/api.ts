@@ -25,6 +25,7 @@ export type Booking = {
   type: "normal" | "maintenance"
   startsAt: string
   endsAt: string
+  updatedAt: string
 }
 
 export type AuditEvent = {
@@ -57,6 +58,21 @@ export type ApiHealth = {
 
 type ApiErrorBody = {
   error?: string
+  code?: string
+}
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+  readonly body: ApiErrorBody
+
+  constructor(message: string, status: number, body: ApiErrorBody) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.code = body.code
+    this.body = body
+  }
 }
 
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ""
@@ -125,7 +141,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
   if (!response.ok) {
     const body = await readErrorBody(response)
-    throw new Error(body.error ?? `Request failed with ${response.status}`)
+    throw new ApiError(
+      body.error ?? `Request failed with ${response.status}`,
+      response.status,
+      body,
+    )
   }
 
   return response.json() as Promise<T>

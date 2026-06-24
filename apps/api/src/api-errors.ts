@@ -5,6 +5,7 @@ import {
   ForbiddenError,
   InvalidBookingRangeError,
   NotFoundError,
+  StaleBookingError,
 } from "@lab/db"
 import type { Context } from "hono"
 
@@ -18,7 +19,11 @@ export async function handleApiResult(c: Context, fn: () => Promise<Response>) {
 
 export function apiErrorResponse(c: Context, error: unknown) {
   if (error instanceof BookingConflictError) {
-    return c.json({ error: error.message }, 409)
+    return c.json({ error: error.message, code: "booking_conflict" }, 409)
+  }
+
+  if (error instanceof StaleBookingError) {
+    return c.json({ error: error.message, code: "stale_booking" }, 409)
   }
 
   if (error instanceof ConflictError) {
