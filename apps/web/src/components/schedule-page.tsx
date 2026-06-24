@@ -299,7 +299,7 @@ function WeekNavigation({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="max-w-[calc(100vw-2rem)] p-0"
+          className="w-auto max-w-[calc(100vw-2rem)] p-0"
           align="start"
           sideOffset={8}
           collisionPadding={16}

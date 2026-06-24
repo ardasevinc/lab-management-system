@@ -263,6 +263,10 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
     await expectSameHeight(previousWeek, weekPicker)
     await expectSameHeight(nextWeek, weekPicker)
     await expectSameHeight(today, weekPicker)
+
+    await weekPicker.click()
+    await expectPopoverFitsCalendar(page.locator("[data-slot='popover-content']"))
+    await page.keyboard.press("Escape")
   }
   const headerSidebarTrigger = page.locator("header").getByRole("button", {
     name: "Toggle Sidebar",
@@ -323,6 +327,7 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
     const dateGrid = page.getByRole("grid")
     await expect(dateGrid).toBeVisible()
     await expectElementFullyWithinViewport(page, dateGrid)
+    await expectPopoverFitsCalendar(page.locator("[data-slot='popover-content']"))
   }
 
   expect(consoleProblems).toEqual([])
@@ -1664,6 +1669,22 @@ async function expectMaxSize(locator: Locator, maxWidth: number, maxHeight: numb
   const box = await locator.boundingBox()
   expect(box?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxWidth)
   expect(box?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(maxHeight)
+}
+
+async function expectPopoverFitsCalendar(popover: Locator) {
+  await expect(popover).toBeVisible()
+  const calendar = popover.locator("[data-slot='calendar']")
+  await expect(calendar).toBeVisible()
+  await expect
+    .poll(async () => {
+      const [popoverBox, calendarBox] = await Promise.all([
+        popover.boundingBox(),
+        calendar.boundingBox(),
+      ])
+
+      return (popoverBox?.width ?? 0) - (calendarBox?.width ?? 0)
+    })
+    .toBeLessThanOrEqual(4)
 }
 
 async function expectMinBorderRadius(locator: Locator, minRadius: number) {
