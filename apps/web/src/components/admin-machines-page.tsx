@@ -9,6 +9,14 @@ import {
 } from "@/components/app-workspace-context"
 import { MachineInventory } from "@/components/machine-inventory"
 import {
+  ResponsiveSheet,
+  ResponsiveSheetContent,
+  ResponsiveSheetDescription,
+  ResponsiveSheetFooter,
+  ResponsiveSheetHeader,
+  ResponsiveSheetTitle,
+} from "@/components/responsive-sheet"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,14 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { Machine } from "@/lib/api"
@@ -175,10 +175,12 @@ function MachineEditorSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+    <ResponsiveSheet mobile={isMobile} open={open} onOpenChange={onOpenChange}>
+      <ResponsiveSheetContent
+        mobile={isMobile}
         side={isMobile ? "bottom" : "right"}
-        className="flex overflow-hidden p-0 data-[side=bottom]:max-h-[calc(100dvh-0.5rem)] data-[side=right]:w-full sm:max-w-lg"
+        className="flex overflow-hidden p-0"
+        desktopClassName="data-[side=right]:w-full sm:max-w-lg"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -210,12 +212,17 @@ function MachineEditorSheet({
             onSubmit(value)
           }}
         >
-          <SheetHeader className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-5 sm:pt-5 sm:pb-4">
-            <SheetTitle>{mode === "create" ? "New machine" : "Edit machine"}</SheetTitle>
-            <SheetDescription>
+          <ResponsiveSheetHeader
+            mobile={isMobile}
+            className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-5 sm:pt-5 sm:pb-4"
+          >
+            <ResponsiveSheetTitle mobile={isMobile}>
+              {mode === "create" ? "New machine" : "Edit machine"}
+            </ResponsiveSheetTitle>
+            <ResponsiveSheetDescription mobile={isMobile}>
               {mode === "create" ? "Machine details" : defaults.slug}
-            </SheetDescription>
-          </SheetHeader>
+            </ResponsiveSheetDescription>
+          </ResponsiveSheetHeader>
 
           <div className="mobile-drawer-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5">
             <FieldGroup>
@@ -280,7 +287,10 @@ function MachineEditorSheet({
             </FieldGroup>
           </div>
 
-          <SheetFooter className="shrink-0 gap-2 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <ResponsiveSheetFooter
+            mobile={isMobile}
+            className="shrink-0 gap-2 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:flex-row sm:items-center sm:justify-between"
+          >
             {mode === "edit" && onDelete ? (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -311,10 +321,10 @@ function MachineEditorSheet({
               <Save data-icon="inline-start" aria-hidden="true" />
               {pending ? "Saving" : mode === "create" ? "Create machine" : "Save machine"}
             </Button>
-          </SheetFooter>
+          </ResponsiveSheetFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </ResponsiveSheetContent>
+    </ResponsiveSheet>
   )
 }
 

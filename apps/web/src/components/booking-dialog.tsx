@@ -4,6 +4,14 @@ import type * as React from "react"
 import { useEffect, useState } from "react"
 import { BookingAuditHistory } from "@/components/booking-audit-history"
 import { BookingDeleteDialog } from "@/components/booking-delete-dialog"
+import {
+  ResponsiveSheet,
+  ResponsiveSheetContent,
+  ResponsiveSheetDescription,
+  ResponsiveSheetFooter,
+  ResponsiveSheetHeader,
+  ResponsiveSheetTitle,
+} from "@/components/responsive-sheet"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -17,14 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { AuditEvent, Booking, Machine, User } from "@/lib/api"
@@ -124,10 +124,12 @@ export function BookingDialog({
   const ownerOptions = getOwnerOptions(users, currentUser, booking?.userId)
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+    <ResponsiveSheet mobile={isMobile} open={open} onOpenChange={onOpenChange}>
+      <ResponsiveSheetContent
+        mobile={isMobile}
         side={isMobile ? "bottom" : "right"}
-        className="flex overflow-hidden p-0 data-[side=bottom]:max-h-[calc(100dvh-0.5rem)] data-[side=right]:w-full sm:max-w-lg"
+        className="flex overflow-hidden p-0"
+        desktopClassName="data-[side=right]:w-full sm:max-w-lg"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -153,12 +155,18 @@ export function BookingDialog({
             })
           }}
         >
-          <SheetHeader className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-6 sm:pt-6 sm:pb-4">
-            <SheetTitle>{sheetTitle}</SheetTitle>
-            <SheetDescription className={machine ? undefined : "sr-only"}>
+          <ResponsiveSheetHeader
+            mobile={isMobile}
+            className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-6 sm:pt-6 sm:pb-4"
+          >
+            <ResponsiveSheetTitle mobile={isMobile}>{sheetTitle}</ResponsiveSheetTitle>
+            <ResponsiveSheetDescription
+              mobile={isMobile}
+              className={machine ? undefined : "sr-only"}
+            >
               {machine ? machine.name : "Create or edit a machine reservation."}
-            </SheetDescription>
-          </SheetHeader>
+            </ResponsiveSheetDescription>
+          </ResponsiveSheetHeader>
 
           <div className="mobile-drawer-scroll flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-5 pb-5 sm:px-6">
             <FieldGroup>
@@ -260,7 +268,10 @@ export function BookingDialog({
             ) : null}
           </div>
 
-          <SheetFooter className="shrink-0 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-4">
+          <ResponsiveSheetFooter
+            mobile={isMobile}
+            className="shrink-0 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pb-4"
+          >
             {mode === "edit" && canMutate ? (
               <BookingDeleteDialog pending={pending} reason={adminReason} onDelete={onDelete} />
             ) : (
@@ -276,10 +287,10 @@ export function BookingDialog({
                 </Button>
               ) : null}
             </div>
-          </SheetFooter>
+          </ResponsiveSheetFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </ResponsiveSheetContent>
+    </ResponsiveSheet>
   )
 }
 

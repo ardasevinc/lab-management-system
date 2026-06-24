@@ -1,6 +1,14 @@
 import { MailPlus } from "lucide-react"
 import { useState } from "react"
 import {
+  ResponsiveSheet,
+  ResponsiveSheetContent,
+  ResponsiveSheetDescription,
+  ResponsiveSheetFooter,
+  ResponsiveSheetHeader,
+  ResponsiveSheetTitle,
+} from "@/components/responsive-sheet"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -21,14 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export function InviteUserSheet({
@@ -52,7 +52,8 @@ export function InviteUserSheet({
   } | null>(null)
 
   return (
-    <Sheet
+    <ResponsiveSheet
+      mobile={isMobile}
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
@@ -61,9 +62,11 @@ export function InviteUserSheet({
         onOpenChange(nextOpen)
       }}
     >
-      <SheetContent
+      <ResponsiveSheetContent
+        mobile={isMobile}
         side={isMobile ? "bottom" : "right"}
-        className="flex overflow-hidden p-0 data-[side=bottom]:max-h-[calc(100dvh-0.5rem)] data-[side=right]:w-full sm:max-w-md"
+        className="flex overflow-hidden p-0"
+        desktopClassName="data-[side=right]:w-full sm:max-w-md"
         onOpenAutoFocus={(event) => {
           if (isMobile) {
             event.preventDefault()
@@ -87,12 +90,15 @@ export function InviteUserSheet({
             onSubmit(form)
           }}
         >
-          <SheetHeader className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-5 sm:pt-5 sm:pb-4">
-            <SheetTitle>Invite user</SheetTitle>
-            <SheetDescription className="sr-only">
+          <ResponsiveSheetHeader
+            mobile={isMobile}
+            className="shrink-0 px-5 pt-6 pr-16 pb-4 sm:px-5 sm:pt-5 sm:pb-4"
+          >
+            <ResponsiveSheetTitle mobile={isMobile}>Invite user</ResponsiveSheetTitle>
+            <ResponsiveSheetDescription mobile={isMobile} className="sr-only">
               Invite a lab member and assign their access role.
-            </SheetDescription>
-          </SheetHeader>
+            </ResponsiveSheetDescription>
+          </ResponsiveSheetHeader>
 
           <div className="mobile-drawer-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-5">
             <FieldGroup>
@@ -130,12 +136,15 @@ export function InviteUserSheet({
             </FieldGroup>
           </div>
 
-          <SheetFooter className="shrink-0 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur">
+          <ResponsiveSheetFooter
+            mobile={isMobile}
+            className="shrink-0 border-border border-t bg-background/95 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur"
+          >
             <Button type="submit" disabled={pending}>
               <MailPlus data-icon="inline-start" aria-hidden="true" />
               {pending ? "Inviting" : "Send invite"}
             </Button>
-          </SheetFooter>
+          </ResponsiveSheetFooter>
         </form>
         <AlertDialog
           open={pendingAdminInvite !== null}
@@ -165,7 +174,7 @@ export function InviteUserSheet({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </SheetContent>
-    </Sheet>
+      </ResponsiveSheetContent>
+    </ResponsiveSheet>
   )
 }
