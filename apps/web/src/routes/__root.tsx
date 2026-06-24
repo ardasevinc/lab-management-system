@@ -4,12 +4,22 @@ import { AlertTriangle, ArrowLeft, Home, RotateCcw } from "lucide-react"
 import type { ReactNode } from "react"
 import { BrandMark } from "@/components/brand-mark"
 import { Button } from "@/components/ui/button"
+import { Toaster } from "@/components/ui/sonner"
 
 export const Route = createRootRoute({
-  component: Outlet,
+  component: Root,
   errorComponent: RootError,
   notFoundComponent: NotFound,
 })
+
+function Root() {
+  return (
+    <>
+      <Outlet />
+      <Toaster closeButton offset={{ top: 16 }} position="top-center" richColors />
+    </>
+  )
+}
 
 function RootError({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter()

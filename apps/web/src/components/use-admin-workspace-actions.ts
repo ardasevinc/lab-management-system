@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query"
 import { useMutation } from "@tanstack/react-query"
+import { toast } from "sonner"
 import type { MachineCreateValue, MachineUpdateValue } from "@/components/app-workspace-context"
 import { apiFetch, type Machine, type User } from "@/lib/api"
 
@@ -28,9 +29,11 @@ export function useAdminWorkspaceActions({
       setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+      toast.success("Invite sent")
     },
     onError: (error: Error) => {
       setAdminSheetError(error.message)
+      toast.error(error.message)
     },
   })
 
@@ -43,9 +46,11 @@ export function useAdminWorkspaceActions({
     onSuccess: () => {
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+      toast.success("User access updated")
     },
     onError: (error: Error) => {
       setWorkspaceError(error.message)
+      toast.error(error.message)
     },
   })
 
@@ -67,10 +72,12 @@ export function useAdminWorkspaceActions({
       setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["machines"] })
+      toast.success("Machine updated")
       onSuccess?.()
     },
     onError: (error: Error) => {
       setAdminSheetError(error.message)
+      toast.error(error.message)
     },
   })
 
@@ -84,10 +91,12 @@ export function useAdminWorkspaceActions({
       setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["machines"] })
+      toast.success("Machine created")
       onSuccess?.()
     },
     onError: (error: Error) => {
       setAdminSheetError(error.message)
+      toast.error(error.message)
     },
   })
 
@@ -101,10 +110,12 @@ export function useAdminWorkspaceActions({
       setAdminSheetError(null)
       setWorkspaceError(null)
       queryClient.invalidateQueries({ queryKey: ["machines"] })
+      toast.success("Machine deleted")
       onSuccess?.()
     },
     onError: (error: Error) => {
       setAdminSheetError(error.message)
+      toast.error(error.message)
     },
   })
 

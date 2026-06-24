@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Navigate, useLocation } from "@tanstack/react-router"
 import { addWeeks, isSameDay } from "date-fns"
 import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
 import { AppShell, WorkspaceBootstrap } from "@/components/app-shell"
 import { WorkspaceContext, type WorkspaceContextValue } from "@/components/app-workspace-context"
 import { BookingDialog, type BookingDialogValue } from "@/components/booking-dialog"
@@ -105,6 +106,13 @@ export function AppWorkspace() {
     }
 
     const message = bookingMutationErrorMessage(error)
+    const shouldToastDialogError = error instanceof ApiError && error.status === 409
+
+    if (shouldToastDialogError) {
+      toast.warning(message)
+    } else if (!dialogState) {
+      toast.error(message)
+    }
 
     if (dialogState) {
       setDialogError(message)
@@ -134,6 +142,7 @@ export function AppWorkspace() {
       setDialogError(null)
       setWorkspaceError(null)
       invalidateBookings()
+      toast.success("Booking created")
     },
     onError: reportMutationError,
   })
@@ -166,6 +175,7 @@ export function AppWorkspace() {
       setDialogError(null)
       setWorkspaceError(null)
       invalidateBookings()
+      toast.success("Booking updated")
     },
     onError: reportMutationError,
   })
@@ -197,6 +207,7 @@ export function AppWorkspace() {
       setDialogError(null)
       setWorkspaceError(null)
       invalidateBookings()
+      toast.success("Booking deleted")
     },
     onError: reportMutationError,
   })
