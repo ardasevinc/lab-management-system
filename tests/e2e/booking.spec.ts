@@ -150,6 +150,53 @@ test("admin can sign in and manage a tohum booking", async ({ page }, testInfo) 
   expect(consoleProblems).toEqual([])
 })
 
+test("admin can inspect and open booking audit entries", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop admin audit flow")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E audit feed ${Date.now()}`
+  const updateReason = "E2E audit feed reason"
+  let createdBooking: { id: string } | null = null
+  await loginAsAdmin(page)
+
+  try {
+    createdBooking = await createBookingFromPage(page, {
+      title: bookingTitle,
+      startsAt: "2026-06-25T09:00:00.000Z",
+      endsAt: "2026-06-25T10:00:00.000Z",
+      userId: "member-local",
+    })
+    await updateBookingFromPage(page, createdBooking.id, {
+      title: `${bookingTitle} updated`,
+      reason: updateReason,
+    })
+
+    await page.goto("/admin/audit")
+    await expect(page.getByRole("heading", { name: "Booking audit" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Audit" })).toBeVisible()
+    await expect(page.getByText(`${bookingTitle} updated`).first()).toBeVisible()
+    await expect(page.getByText(updateReason).first()).toBeVisible()
+    await expect(page.getByText("Lab Member").first()).toBeVisible()
+
+    await page.getByLabel("Search audit").fill(`${bookingTitle} updated`)
+    const auditRow = page
+      .getByRole("row")
+      .filter({ hasText: `${bookingTitle} updated` })
+      .first()
+    await expect(auditRow).toBeVisible()
+    await expect(auditRow.getByText("Updated", { exact: true })).toBeVisible()
+    await auditRow.getByRole("button", { name: "Open" }).click()
+    await expect(page.getByRole("heading", { name: "Edit booking" })).toBeVisible()
+    await expect(page.getByLabel("Title")).toHaveValue(`${bookingTitle} updated`)
+
+    expect(consoleProblems).toEqual([])
+  } finally {
+    if (createdBooking) {
+      await deleteBookingFromPage(page, createdBooking.id)
+    }
+  }
+})
+
 test("admin can drag an empty desktop range to create a booking", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop drag-create flow")
 
@@ -1188,19 +1235,19 @@ test("admin route and sheet surfaces stay usable with mixed lab data", async ({
   for (const booking of [
     {
       title: `E2E mixed admin ${suffix}`,
-      startsAt: "2026-06-18T07:00:00.000Z",
-      endsAt: "2026-06-18T08:00:00.000Z",
+      startsAt: "2026-06-25T07:00:00.000Z",
+      endsAt: "2026-06-25T08:00:00.000Z",
     },
     {
       title: `E2E mixed member ${suffix}`,
-      startsAt: "2026-06-18T09:00:00.000Z",
-      endsAt: "2026-06-18T10:00:00.000Z",
+      startsAt: "2026-06-25T09:00:00.000Z",
+      endsAt: "2026-06-25T10:00:00.000Z",
       userId: "member-local",
     },
     {
       title: `E2E mixed maintenance ${suffix}`,
-      startsAt: "2026-06-19T11:00:00.000Z",
-      endsAt: "2026-06-19T12:00:00.000Z",
+      startsAt: "2026-06-26T11:00:00.000Z",
+      endsAt: "2026-06-26T12:00:00.000Z",
       type: "maintenance" as const,
     },
   ]) {
@@ -1212,7 +1259,9 @@ test("admin route and sheet surfaces stay usable with mixed lab data", async ({
     await page.goto("/schedule")
     await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
     if (isDesktopProject(testInfo.project.name)) {
-      await expect(page.getByText(`E2E mixed admin ${suffix}`)).toBeVisible()
+      await expect(
+        page.getByRole("button", { name: new RegExp(`E2E mixed admin ${suffix}`) }),
+      ).toBeVisible()
     } else {
       await expect(page.getByText("Day agenda")).toBeVisible()
     }
@@ -1262,6 +1311,11 @@ test("admin route and sheet surfaces stay usable with mixed lab data", async ({
     await expectElementFullyWithinViewport(page, machineSheet)
     await page.keyboard.press("Escape")
     await expect(machineSheet).toBeHidden()
+
+    await page.goto("/admin/audit")
+    await expect(page.getByRole("heading", { name: "Booking audit" })).toBeVisible()
+    await expectVisibleText(page.locator("main"), `E2E mixed admin ${suffix}`)
+    await expectRouteContentWithinViewport(page)
 
     await page.goto("/admin/maintenance")
     await expect(page.getByRole("heading", { name: "Maintenance", exact: true })).toBeVisible()
@@ -1523,6 +1577,39 @@ async function createBookingFromPage(
       return (await response.json()) as { booking: { id: string } }
     }, booking)
     .then((body) => body.booking)
+}
+
+async function updateBookingFromPage(
+  page: Page,
+  id: string,
+  booking: {
+    title?: string
+    startsAt?: string
+    endsAt?: string
+    userId?: string
+    type?: "normal" | "maintenance"
+    reason?: string
+  },
+) {
+  return page.evaluate(
+    async ({ bookingId, value }) => {
+      const response = await window.fetch(`/bookings/${bookingId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(value),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update booking: ${response.status} ${await response.text()}`)
+      }
+
+      return (await response.json()) as { booking: { id: string } }
+    },
+    { bookingId: id, value: booking },
+  )
 }
 
 async function findBookingFromPage(

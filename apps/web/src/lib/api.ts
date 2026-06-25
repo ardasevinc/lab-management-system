@@ -40,6 +40,15 @@ export type AuditEvent = {
   createdAt: string
 }
 
+export type AdminBookingAuditEvent = AuditEvent & {
+  actor: User
+  owner: User
+  machine: Machine
+  booking: Booking & {
+    deletedAt: string | null
+  }
+}
+
 export type ApiHealth = {
   ok: boolean
   service: string

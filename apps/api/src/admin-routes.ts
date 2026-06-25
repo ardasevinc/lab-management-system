@@ -5,6 +5,7 @@ import {
   deleteMachine,
   ForbiddenError,
   type getSessionUser,
+  listAdminBookingAuditEvents,
   listUsers,
   updateMachine,
   updateUserAccess,
@@ -50,6 +51,10 @@ const machineCreateSchema = z.object({
   active: z.boolean().optional(),
 })
 
+const bookingAuditQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+})
+
 export function registerAdminRoutes(
   app: AdminRouteApp,
   options: {
@@ -68,6 +73,7 @@ export function registerAdminRoutes(
     "/admin/machines",
     "/admin/machines/*",
     "/admin/invites",
+    "/admin/booking-audit",
   ]) {
     app.use(path, requireAuth)
     app.use(path, async (c, next) => {
@@ -77,6 +83,18 @@ export function registerAdminRoutes(
   }
 
   app.get("/admin/users", async (c) => c.json({ users: await listUsers(db) }))
+
+  app.get("/admin/booking-audit", async (c) => {
+    const query = bookingAuditQuerySchema.safeParse(c.req.query())
+
+    if (!query.success) {
+      return c.json({ error: "Invalid audit query", issues: query.error.issues }, 400)
+    }
+
+    return c.json({
+      events: await listAdminBookingAuditEvents(db, { limit: query.data.limit }),
+    })
+  })
 
   app.post("/admin/machines", async (c) => {
     const body = machineCreateSchema.safeParse(await c.req.json())

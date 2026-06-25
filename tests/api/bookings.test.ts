@@ -543,11 +543,16 @@ describe("booking API", () => {
       headers: authHeaders,
     })
     const { events } = await auditResponse.json()
+    const adminAuditResponse = await app.request("/admin/booking-audit?limit=10", {
+      headers: authHeaders,
+    })
+    const adminAuditBody = await adminAuditResponse.json()
 
     expect(createResponse.status).toBe(201)
     expect(updateResponse.status).toBe(200)
     expect(deleteResponse.status).toBe(200)
     expect(auditResponse.status).toBe(200)
+    expect(adminAuditResponse.status).toBe(200)
     expect(events.map((event: { eventType: string }) => event.eventType)).toEqual([
       "created",
       "updated",
@@ -585,6 +590,33 @@ describe("booking API", () => {
         }),
       }),
     ])
+    expect(adminAuditBody.events).toHaveLength(3)
+    expect(adminAuditBody.events.map((event: { eventType: string }) => event.eventType)).toEqual([
+      "deleted",
+      "updated",
+      "created",
+    ])
+    expect(adminAuditBody.events[0]).toEqual(
+      expect.objectContaining({
+        actor: expect.objectContaining({
+          email: "admin@example.org",
+          name: "Lab Admin",
+        }),
+        owner: expect.objectContaining({
+          email: "member@example.org",
+          name: "Lab Member",
+        }),
+        machine: expect.objectContaining({
+          id: "tohum",
+          name: "tohum",
+        }),
+        booking: expect.objectContaining({
+          id: booking.id,
+          deletedAt: expect.any(String),
+          title: "Audited run updated",
+        }),
+      }),
+    )
   })
 
   it("sends booking change emails for create, update, and delete", async () => {
@@ -967,10 +999,15 @@ describe("booking API", () => {
     const memberAuditResponse = await app.request(`/bookings/${booking.id}/audit`, {
       headers: memberHeaders,
     })
+    const memberAdminAuditResponse = await app.request("/admin/booking-audit", {
+      headers: memberHeaders,
+    })
 
     expect(createResponse.status).toBe(201)
     expect(memberAuditResponse.status).toBe(403)
     expect(await memberAuditResponse.json()).toEqual({ error: "Admin role required" })
+    expect(memberAdminAuditResponse.status).toBe(403)
+    expect(await memberAdminAuditResponse.json()).toEqual({ error: "Admin role required" })
   })
 })
 

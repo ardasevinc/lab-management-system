@@ -18,6 +18,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
 import { Route as AuthenticatedAdminMaintenanceRouteImport } from './routes/_authenticated.admin.maintenance'
 import { Route as AuthenticatedAdminMachinesRouteImport } from './routes/_authenticated.admin.machines'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated.admin.audit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -65,6 +66,11 @@ const AuthenticatedAdminMachinesRoute =
     path: '/machines',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/machines': typeof AuthenticatedMachinesRoute
   '/schedule': typeof AuthenticatedScheduleRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/machines': typeof AuthenticatedAdminMachinesRoute
   '/admin/maintenance': typeof AuthenticatedAdminMaintenanceRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/machines': typeof AuthenticatedMachinesRoute
   '/schedule': typeof AuthenticatedScheduleRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/machines': typeof AuthenticatedAdminMachinesRoute
   '/admin/maintenance': typeof AuthenticatedAdminMaintenanceRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/machines': typeof AuthenticatedMachinesRoute
   '/_authenticated/schedule': typeof AuthenticatedScheduleRoute
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/machines': typeof AuthenticatedAdminMachinesRoute
   '/_authenticated/admin/maintenance': typeof AuthenticatedAdminMaintenanceRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/machines'
     | '/schedule'
+    | '/admin/audit'
     | '/admin/machines'
     | '/admin/maintenance'
     | '/admin/users'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/machines'
     | '/schedule'
+    | '/admin/audit'
     | '/admin/machines'
     | '/admin/maintenance'
     | '/admin/users'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/machines'
     | '/_authenticated/schedule'
+    | '/_authenticated/admin/audit'
     | '/_authenticated/admin/machines'
     | '/_authenticated/admin/maintenance'
     | '/_authenticated/admin/users'
@@ -203,16 +215,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMachinesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminMachinesRoute: typeof AuthenticatedAdminMachinesRoute
   AuthenticatedAdminMaintenanceRoute: typeof AuthenticatedAdminMaintenanceRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
   AuthenticatedAdminMachinesRoute: AuthenticatedAdminMachinesRoute,
   AuthenticatedAdminMaintenanceRoute: AuthenticatedAdminMaintenanceRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,

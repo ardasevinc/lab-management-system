@@ -37,7 +37,7 @@ export type UpdateBookingInput = Partial<
   expectedUpdatedAt?: Date
 }
 
-export { listBookingAuditEvents } from "./booking-audit"
+export { listAdminBookingAuditEvents, listBookingAuditEvents } from "./booking-audit"
 
 export async function listBookingsForMachine(db: Db, machineId: string, start: Date, end: Date) {
   const rows = await db
@@ -96,6 +96,7 @@ export async function createBooking(db: Db, input: CreateBookingInput) {
       eventType: "created",
       reason: input.reason ?? null,
       payload: values,
+      createdAt: now,
     })
 
     const created = await tx.query.bookings.findFirst({ where: eq(bookings.id, id) })
@@ -174,6 +175,7 @@ export async function updateBooking(db: Db, id: string, input: UpdateBookingInpu
       eventType: "updated",
       reason: input.reason ?? null,
       payload: { before: current, after: updated },
+      createdAt: updated.updatedAt,
     })
 
     return mapBooking(updated)
@@ -225,6 +227,7 @@ export async function deleteBooking(
       eventType: "deleted",
       reason: reason ?? null,
       payload: current,
+      createdAt: deleted.updatedAt,
     })
   })
 }

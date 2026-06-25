@@ -3,6 +3,7 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router"
 import {
   CalendarDays,
   ChevronsUpDown,
+  History,
   Home,
   LogOut,
   MonitorCog,
@@ -140,6 +141,12 @@ export function AppShell({ user, onLogout }: { user: User; onLogout: () => void 
                       label="Maintenance"
                       icon={Wrench}
                       active={pathname.startsWith("/admin/maintenance")}
+                    />
+                    <NavItem
+                      to="/admin/audit"
+                      label="Audit"
+                      icon={History}
+                      active={pathname.startsWith("/admin/audit")}
                     />
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -421,6 +428,9 @@ function getRouteInfo(pathname: string): RouteInfo {
   }
   if (pathname.startsWith("/admin/maintenance")) {
     return { section: "Admin", sectionTo: "/admin", page: "Maintenance" }
+  }
+  if (pathname.startsWith("/admin/audit")) {
+    return { section: "Admin", sectionTo: "/admin", page: "Audit" }
   }
   if (pathname === "/admin") {
     return { section: "Admin", sectionTo: "/admin", page: "Overview" }
