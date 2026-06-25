@@ -227,6 +227,39 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
   expect(consoleProblems).toEqual([])
 })
 
+test("desktop week calendar keeps multi-day booking cards inset on hover", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop calendar event geometry")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E event inset ${Date.now()}`
+  await loginAsAdmin(page)
+
+  const createdBooking = await createBookingFromPage(page, {
+    title: bookingTitle,
+    startsAt: "2026-06-25T09:30:00.000Z",
+    endsAt: "2026-06-28T10:30:00.000Z",
+    userId: "member-local",
+  })
+
+  try {
+    await page.goto("/schedule")
+    await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+    await expect(page.getByText("Week board")).toBeVisible()
+
+    const bookingCards = page.locator(`[data-booking-id="${createdBooking.id}"]`).filter({
+      visible: true,
+    })
+    await expect(bookingCards).toHaveCount(4)
+    await bookingCards.nth(1).hover()
+    await expectBookingCardsInsetFromColumns(bookingCards, 2)
+    expect(consoleProblems).toEqual([])
+  } finally {
+    await deleteBookingFromPage(page, createdBooking.id)
+  }
+})
+
 test("booking date picker closes when reselecting the selected day", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop booking date-picker regression")
 
@@ -1630,6 +1663,34 @@ async function expectElementNoHorizontalOverflow(locator: Locator) {
     .poll(() =>
       locator.evaluate(
         (element) => Math.ceil(element.scrollWidth) <= Math.ceil(element.clientWidth) + 1,
+      ),
+    )
+    .toBe(true)
+}
+
+async function expectBookingCardsInsetFromColumns(locator: Locator, minInsetPx: number) {
+  await expect(locator.first()).toBeVisible()
+  await expect
+    .poll(() =>
+      locator.evaluateAll(
+        (elements, inset) =>
+          elements.every((element) => {
+            const parent = element.offsetParent
+            if (!(element instanceof HTMLElement) || !(parent instanceof HTMLElement)) {
+              return false
+            }
+
+            const rightInset = parent.clientWidth - element.offsetLeft - element.offsetWidth
+            const bottomInset = parent.clientHeight - element.offsetTop - element.offsetHeight
+
+            return (
+              element.offsetLeft >= inset &&
+              element.offsetTop >= inset &&
+              rightInset >= inset &&
+              bottomInset >= inset
+            )
+          }),
+        minInsetPx,
       ),
     )
     .toBe(true)

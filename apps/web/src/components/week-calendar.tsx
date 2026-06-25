@@ -292,14 +292,14 @@ function DayColumn({
           <button
             key={booking.id}
             type="button"
-            className="group absolute overflow-hidden rounded-[6px] border px-2 py-1 text-left text-xs shadow-sm transition-[box-shadow,transform,opacity] duration-150 hover:shadow-md hover:ring-2 hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
+            className="group absolute overflow-hidden rounded-[6px] border px-2 py-1 text-left text-xs shadow-sm transition-[box-shadow,transform,opacity] duration-150 hover:shadow-md hover:ring-2 hover:ring-inset hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring active:scale-[0.99]"
             data-booking-id={booking.id}
             data-pending={pendingBookingId === booking.id || undefined}
             style={{
-              top: style.top,
-              height: style.height,
-              left: `calc(${style.left}% + 2px)`,
-              width: `calc(${style.width}% - 4px)`,
+              top: style.top + 2,
+              height: Math.max(20, style.height - 4),
+              left: `calc(${style.left}% + 4px)`,
+              width: `calc(${style.width}% - 8px)`,
               background:
                 booking.type === "maintenance" ? "var(--color-muted)" : "var(--color-card)",
               borderColor: conflicts
