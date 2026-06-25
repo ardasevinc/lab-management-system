@@ -821,6 +821,42 @@ test("researchers can create and delete a booking from the responsive day agenda
   expect(consoleProblems).toEqual([])
 })
 
+test("mobile day agenda shows multi-day bookings on later days", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "mobile multi-day agenda regression")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E multi-day mobile ${Date.now()}`
+  await loginAsMember(page)
+
+  const createdBooking = await createBookingFromPage(page, {
+    title: bookingTitle,
+    startsAt: "2026-06-25T09:30:00.000Z",
+    endsAt: "2026-06-28T10:30:00.000Z",
+    userId: "member-local",
+  })
+
+  try {
+    await page.goto("/schedule")
+    await expect(page.getByText("Day agenda")).toBeVisible()
+    const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+    await expect(booking).toBeVisible()
+    await expect(booking).toContainText("12:30 - 24:00")
+    await expect(booking).toContainText("continues")
+
+    for (let index = 0; index < 3; index += 1) {
+      await page.getByRole("button", { name: "Next day" }).click()
+    }
+
+    const finalDayBooking = page.getByRole("button", { name: new RegExp(bookingTitle) })
+    await expect(finalDayBooking).toBeVisible()
+    await expect(finalDayBooking).toContainText("starts earlier")
+    await expect(finalDayBooking).toContainText("00:00 - 13:30")
+    await expect(consoleProblems).toEqual([])
+  } finally {
+    await deleteBookingFromPage(page, createdBooking.id)
+  }
+})
+
 test("mobile day agenda scroll does not open a booking sheet", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-chromium", "mobile scroll ergonomics")
 

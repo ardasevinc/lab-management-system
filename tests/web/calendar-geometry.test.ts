@@ -6,6 +6,8 @@ import {
   buildWeekDays,
   dateAtMinutes,
   defaultRangeAtMinutes,
+  displayEndTimeValue,
+  displayStartTimeValue,
   hasConflict,
   hourHeightPx,
   minutesSinceDayStart,
@@ -216,7 +218,55 @@ describe("calendar geometry", () => {
     const monday = new Date("2026-05-11T12:00:00.000Z")
 
     expect(bookingsForDay([lateNightBooking], sunday)).toEqual([])
-    expect(bookingsForDay([lateNightBooking], monday)).toEqual([lateNightBooking])
+    expect(bookingsForDay([lateNightBooking], monday)[0]).toMatchObject({
+      id: lateNightBooking.id,
+      startsAt: lateNightBooking.startsAt,
+      endsAt: lateNightBooking.endsAt,
+    })
+  })
+
+  it("clips multi-day bookings into every lab day they overlap", () => {
+    const days = buildWeekDays(day)
+    const multiDayBooking = booking(
+      "multi-day",
+      dateAtMinutes(days[0], 12 * 60 + 30).toISOString(),
+      dateAtMinutes(days[3], 13 * 60 + 30).toISOString(),
+    )
+
+    const firstDay = bookingsForDay([multiDayBooking], days[0])[0]
+    const middleDay = bookingsForDay([multiDayBooking], days[1])[0]
+    const finalDay = bookingsForDay([multiDayBooking], days[3])[0]
+
+    expect(bookingsForDay([multiDayBooking], days[4])).toEqual([])
+    expect(firstDay).toMatchObject({
+      id: "multi-day",
+      displayStartsAt: multiDayBooking.startsAt,
+      displayEndsAt: dateAtMinutes(days[0], 24 * 60).toISOString(),
+      startsBeforeDay: false,
+      endsAfterDay: true,
+    })
+    expect(middleDay).toMatchObject({
+      id: "multi-day",
+      displayStartsAt: dateAtMinutes(days[1], 0).toISOString(),
+      displayEndsAt: dateAtMinutes(days[1], 24 * 60).toISOString(),
+      startsBeforeDay: true,
+      endsAfterDay: true,
+    })
+    expect(finalDay).toMatchObject({
+      id: "multi-day",
+      displayStartsAt: dateAtMinutes(days[3], 0).toISOString(),
+      displayEndsAt: multiDayBooking.endsAt,
+      startsBeforeDay: true,
+      endsAfterDay: false,
+    })
+    expect(displayStartTimeValue(middleDay)).toBe("00:00")
+    expect(displayEndTimeValue(middleDay)).toBe("24:00")
+    expect(bookingStyle(packOverlaps([middleDay])[0])).toEqual({
+      top: 0,
+      height: 24 * hourHeightPx,
+      left: 0,
+      width: 100,
+    })
   })
 
   it("places bookings by lab-time minutes", () => {

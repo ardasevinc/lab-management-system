@@ -14,6 +14,10 @@ export type CalendarRange = {
 }
 
 export type PackedBooking = Booking & {
+  displayStartsAt?: string
+  displayEndsAt?: string
+  startsBeforeDay?: boolean
+  endsAfterDay?: boolean
   column: number
   columnCount: number
 }
@@ -145,21 +149,37 @@ export function hasConflict(range: CalendarRange, bookings: Booking[], excludeBo
 }
 
 export function bookingsForDay(bookings: Booking[], day: Date) {
-  const dayKey = toLabDateValue(day)
-  return bookings.filter((booking) => toLabDateValue(booking.startsAt) === dayKey)
+  const dayRange = dayBounds(day)
+
+  return bookings
+    .filter((booking) => rangesOverlap(booking, dayRange))
+    .map((booking) => {
+      const startsAt = new Date(booking.startsAt)
+      const endsAt = new Date(booking.endsAt)
+      const dayStartsAt = new Date(dayRange.startsAt)
+      const dayEndsAt = new Date(dayRange.endsAt)
+
+      return {
+        ...booking,
+        displayStartsAt: startsAt > dayStartsAt ? booking.startsAt : dayRange.startsAt,
+        displayEndsAt: endsAt < dayEndsAt ? booking.endsAt : dayRange.endsAt,
+        startsBeforeDay: startsAt < dayStartsAt,
+        endsAfterDay: endsAt > dayEndsAt,
+      }
+    })
 }
 
-export function packOverlaps(bookings: Booking[]): PackedBooking[] {
+export function packOverlaps<T extends Booking>(bookings: T[]): Array<T & PackedBooking> {
   const sorted = [...bookings].sort(
-    (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
+    (a, b) => new Date(displayStartsAt(a)).getTime() - new Date(displayStartsAt(b)).getTime(),
   )
-  const active: PackedBooking[] = []
-  const packed: PackedBooking[] = []
+  const active: Array<T & PackedBooking> = []
+  const packed: Array<T & PackedBooking> = []
 
   for (const booking of sorted) {
-    const startsAt = new Date(booking.startsAt)
+    const startsAt = new Date(displayStartsAt(booking))
     for (let index = active.length - 1; index >= 0; index -= 1) {
-      if (new Date(active[index].endsAt) <= startsAt) {
+      if (new Date(displayEndsAt(active[index])) <= startsAt) {
         active.splice(index, 1)
       }
     }
@@ -170,7 +190,7 @@ export function packOverlaps(bookings: Booking[]): PackedBooking[] {
       column += 1
     }
 
-    const packedBooking: PackedBooking = {
+    const packedBooking: T & PackedBooking = {
       ...booking,
       column,
       columnCount: Math.max(1, active.length + 1),
@@ -188,8 +208,8 @@ export function packOverlaps(bookings: Booking[]): PackedBooking[] {
 }
 
 export function bookingStyle(booking: PackedBooking) {
-  const start = new Date(booking.startsAt)
-  const end = new Date(booking.endsAt)
+  const start = new Date(displayStartsAt(booking))
+  const end = new Date(displayEndsAt(booking))
   const startMinutes = minutesSinceDayStart(start)
   const endMinutes =
     toLabDateValue(end) === toLabDateValue(start) ? minutesSinceDayStart(end) : dayEndHour * 60
@@ -203,6 +223,33 @@ export function bookingStyle(booking: PackedBooking) {
     height,
     left,
     width,
+  }
+}
+
+export function displayStartsAt(booking: CalendarRange & { displayStartsAt?: string }) {
+  return booking.displayStartsAt ?? booking.startsAt
+}
+
+export function displayEndsAt(booking: CalendarRange & { displayEndsAt?: string }) {
+  return booking.displayEndsAt ?? booking.endsAt
+}
+
+export function displayStartTimeValue(
+  booking: CalendarRange & { displayStartsAt?: string; startsBeforeDay?: boolean },
+) {
+  return booking.startsBeforeDay ? "00:00" : toLabTimeValue(displayStartsAt(booking))
+}
+
+export function displayEndTimeValue(
+  booking: CalendarRange & { displayEndsAt?: string; endsAfterDay?: boolean },
+) {
+  return booking.endsAfterDay ? "24:00" : toLabTimeValue(displayEndsAt(booking))
+}
+
+function dayBounds(day: Date): CalendarRange {
+  return {
+    startsAt: dateAtMinutes(day, dayStartHour * 60).toISOString(),
+    endsAt: dateAtMinutes(day, dayEndHour * 60).toISOString(),
   }
 }
 

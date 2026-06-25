@@ -15,11 +15,13 @@ import {
   dayEndHour,
   dayStartHour,
   defaultVisibleStartHour,
+  displayEndTimeValue,
+  displayStartTimeValue,
   hourHeightPx,
   packOverlaps,
 } from "@/lib/calendar-geometry"
 import { dayAgendaDefaultRange } from "@/lib/schedule-defaults"
-import { formatDate, formatTime, toLabDateValue } from "@/lib/time"
+import { formatDate, toLabDateValue } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
 export function SchedulePage() {
@@ -448,7 +450,9 @@ function MobileDayTimeline({
               >
                 <div className="truncate font-medium leading-tight">{booking.title}</div>
                 <div className="truncate text-muted-foreground tabular-nums">
-                  {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
+                  {booking.startsBeforeDay ? "starts earlier · " : ""}
+                  {displayStartTimeValue(booking)} - {displayEndTimeValue(booking)}
+                  {booking.endsAfterDay ? " · continues" : ""}
                 </div>
               </button>
             )

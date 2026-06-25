@@ -11,6 +11,8 @@ import {
   dayStartHour,
   defaultRangeAtMinutes,
   defaultVisibleStartHour,
+  displayEndTimeValue,
+  displayStartTimeValue,
   hasConflict,
   hourHeightPx,
   minutesSinceDayStart,
@@ -21,7 +23,6 @@ import {
   resizeRangeStart,
   yToMinutes,
 } from "@/lib/calendar-geometry"
-import { formatTime } from "@/lib/time"
 
 type WeekCalendarProps = {
   bookings: Booking[]
@@ -323,7 +324,7 @@ function DayColumn({
                 originStartMinutes: minutesSinceDayStart(start),
               })
             }}
-            title={`${booking.title}, ${formatTime(booking.startsAt)} - ${formatTime(booking.endsAt)}`}
+            title={`${booking.title}, ${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}`}
           >
             {canEdit ? (
               <span
@@ -347,7 +348,9 @@ function DayColumn({
             ) : null}
             <div className="line-clamp-2 font-medium leading-tight">{booking.title}</div>
             <div className="truncate text-muted-foreground tabular-nums">
-              {formatTime(booking.startsAt)} - {formatTime(booking.endsAt)}
+              {booking.startsBeforeDay ? "starts earlier · " : ""}
+              {displayStartTimeValue(booking)} - {displayEndTimeValue(booking)}
+              {booking.endsAfterDay ? " · continues" : ""}
             </div>
             {canEdit ? (
               <span
