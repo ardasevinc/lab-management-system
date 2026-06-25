@@ -21,8 +21,8 @@ function Root() {
       <Outlet />
       <Toaster
         closeButton
-        offset={{ top: isMobile ? 12 : 16, right: 16, left: 16 }}
-        position={isMobile ? "top-center" : "top-right"}
+        offset={isMobile ? { top: 12, right: 16, left: 16 } : { right: 16, bottom: 16, left: 16 }}
+        position={isMobile ? "top-center" : "bottom-right"}
         richColors
       />
     </>

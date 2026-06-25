@@ -227,6 +227,42 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
   expect(consoleProblems).toEqual([])
 })
 
+test("desktop booking toasts appear bottom-right", async ({ page }, testInfo) => {
+  test.skip(!isDesktopProject(testInfo.project.name), "desktop toast placement")
+
+  const consoleProblems = collectConsoleProblems(page)
+  const bookingTitle = `E2E toast ${Date.now()}`
+  await loginAsAdmin(page)
+
+  await page.goto("/schedule")
+  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
+  await expect(page.getByText("Week board")).toBeVisible()
+
+  const thirdDayColumn = page.locator("[data-calendar-day]").nth(2)
+  await expect(thirdDayColumn).toBeVisible()
+  const dayBox = await thirdDayColumn.boundingBox()
+
+  if (!dayBox) {
+    throw new Error("Calendar day column did not produce a bounding box.")
+  }
+
+  await thirdDayColumn.click({
+    position: {
+      x: dayBox.width / 2,
+      y: 196,
+    },
+  })
+
+  await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
+  await page.getByLabel("Title").fill(bookingTitle)
+  await page.getByRole("button", { name: "Create" }).click()
+  await expectToastInCorner(page, "Booking created", "bottom-right")
+
+  const createdBooking = await findBookingFromPage(page, bookingTitle)
+  await deleteBookingFromPage(page, createdBooking.id)
+  expect(consoleProblems).toEqual([])
+})
+
 test("desktop week calendar keeps multi-day booking cards inset on hover", async ({
   page,
 }, testInfo) => {
@@ -1693,6 +1729,32 @@ async function expectBookingCardsInsetFromColumns(locator: Locator, minInsetPx: 
         minInsetPx,
       ),
     )
+    .toBe(true)
+}
+
+async function expectToastInCorner(
+  page: Page,
+  text: string,
+  corner: "bottom-right" | "top-center",
+) {
+  const toast = page.locator("[data-sonner-toast]").filter({ hasText: text }).last()
+  await expect(toast).toBeVisible()
+  await expect
+    .poll(async () => {
+      const box = await toast.boundingBox()
+      const viewport = page.viewportSize()
+
+      if (!box || !viewport) {
+        return false
+      }
+
+      if (corner === "bottom-right") {
+        return box.x + box.width / 2 > viewport.width * 0.6 && box.y > viewport.height * 0.6
+      }
+
+      const toastCenter = box.x + box.width / 2
+      return Math.abs(toastCenter - viewport.width / 2) <= 24 && box.y < viewport.height * 0.25
+    })
     .toBe(true)
 }
 
