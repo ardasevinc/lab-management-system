@@ -8,7 +8,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { WeekCalendar } from "@/components/week-calendar"
-import type { Booking } from "@/lib/api"
+import type { Booking, User } from "@/lib/api"
+import { bookingOwnerLabel } from "@/lib/booking-display"
 import {
   bookingStyle,
   bookingsForDay,
@@ -29,6 +30,7 @@ export function SchedulePage() {
     bookings,
     dashboardStats,
     pendingBookingId,
+    users,
     selectedMachine,
     weekRange,
     createRange,
@@ -173,6 +175,7 @@ export function SchedulePage() {
           day={selectedDay}
           bookings={selectedDayBookings}
           pendingBookingId={pendingBookingId}
+          users={users}
           onEditBooking={editBooking}
         />
       </section>
@@ -191,6 +194,7 @@ export function SchedulePage() {
         <div className="calendar-frame">
           <WeekCalendar
             bookings={bookings}
+            users={users}
             weekDate={new Date(weekRange.start)}
             pendingBookingId={pendingBookingId}
             onCreateRange={createRange}
@@ -346,11 +350,13 @@ function MobileDayTimeline({
   day,
   bookings,
   pendingBookingId,
+  users,
   onEditBooking,
 }: {
   day: Date
   bookings: Booking[]
   pendingBookingId?: string | null
+  users: User[]
   onEditBooking: ReturnType<typeof useWorkspace>["editBooking"]
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -424,6 +430,8 @@ function MobileDayTimeline({
           ))}
           {packedBookings.map((booking) => {
             const style = bookingStyle(booking)
+            const ownerLabel = bookingOwnerLabel(booking, users)
+            const timeLabel = `${booking.startsBeforeDay ? "starts earlier · " : ""}${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}${booking.endsAfterDay ? " · continues" : ""}`
             return (
               <button
                 key={booking.id}
@@ -447,12 +455,11 @@ function MobileDayTimeline({
                 onClick={() => {
                   onEditBooking(booking)
                 }}
+                title={`${booking.title}, ${ownerLabel}, ${timeLabel}`}
               >
                 <div className="truncate font-medium leading-tight">{booking.title}</div>
                 <div className="truncate text-muted-foreground tabular-nums">
-                  {booking.startsBeforeDay ? "starts earlier · " : ""}
-                  {displayStartTimeValue(booking)} - {displayEndTimeValue(booking)}
-                  {booking.endsAfterDay ? " · continues" : ""}
+                  {ownerLabel} · {timeLabel}
                 </div>
               </button>
             )

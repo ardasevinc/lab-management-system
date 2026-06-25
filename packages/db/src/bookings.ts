@@ -11,7 +11,7 @@ import {
 } from "./booking-validation"
 import { BookingConflictError, ForbiddenError, NotFoundError, StaleBookingError } from "./errors"
 import { mapBooking } from "./mappers"
-import { bookings } from "./schema"
+import { bookings, users } from "./schema"
 
 export type BookingType = "normal" | "maintenance"
 
@@ -41,8 +41,9 @@ export { listBookingAuditEvents } from "./booking-audit"
 
 export async function listBookingsForMachine(db: Db, machineId: string, start: Date, end: Date) {
   const rows = await db
-    .select()
+    .select({ booking: bookings, owner: users })
     .from(bookings)
+    .innerJoin(users, eq(bookings.userId, users.id))
     .where(
       and(
         eq(bookings.machineId, machineId),
@@ -53,7 +54,7 @@ export async function listBookingsForMachine(db: Db, machineId: string, start: D
     )
     .orderBy(asc(bookings.startsAt))
 
-  return rows.map(mapBooking)
+  return rows.map(({ booking, owner }) => mapBooking(booking, owner))
 }
 
 export async function createBooking(db: Db, input: CreateBookingInput) {

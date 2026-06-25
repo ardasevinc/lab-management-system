@@ -42,8 +42,10 @@ describe("booking repository", () => {
       id: booking.id,
       machineId: "tohum",
       title: "Training run",
+      userEmail: "member@example.org",
       startsAt: "2026-05-10T10:00:00.000Z",
       endsAt: "2026-05-10T12:00:00.000Z",
+      userName: "Lab Member",
     })
   })
 

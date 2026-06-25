@@ -20,6 +20,8 @@ export type Booking = {
   id: string
   machineId: string
   userId: string
+  userEmail: string | null
+  userName: string | null
   title: string
   notes: string | null
   type: "normal" | "maintenance"

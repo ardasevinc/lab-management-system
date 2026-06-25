@@ -22,11 +22,16 @@ export function mapMachine(row: typeof machines.$inferSelect) {
   }
 }
 
-export function mapBooking(row: typeof bookings.$inferSelect) {
+export function mapBooking(
+  row: typeof bookings.$inferSelect,
+  owner?: Pick<typeof users.$inferSelect, "email" | "name"> | null,
+) {
   return {
     id: row.id,
     machineId: row.machineId,
     userId: row.userId,
+    userEmail: owner?.email ?? null,
+    userName: owner?.name ?? null,
     title: row.title,
     notes: row.notes,
     type: row.type,

@@ -219,6 +219,7 @@ test("admin can assign a booking to a researcher from the booking sheet", async 
 
   const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
   await expect(booking).toBeVisible()
+  await expect(booking).toContainText("Lab Member")
 
   const createdBooking = await findBookingFromPage(page, bookingTitle)
   expect(createdBooking).toEqual(expect.objectContaining({ userId: "member-local" }))
@@ -840,6 +841,7 @@ test("mobile day agenda shows multi-day bookings on later days", async ({ page }
     await expect(page.getByText("Day agenda")).toBeVisible()
     const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
     await expect(booking).toBeVisible()
+    await expect(booking).toContainText("Lab Member")
     await expect(booking).toContainText("12:30 - 24:00")
     await expect(booking).toContainText("continues")
 
@@ -1460,7 +1462,7 @@ async function findBookingFromPage(
 ): Promise<{ id: string; type: "normal" | "maintenance"; userId: string }> {
   return page.evaluate(async (bookingTitle) => {
     const response = await window.fetch(
-      "/machines/tohum/bookings?start=2026-06-15T00%3A00%3A00.000Z&end=2026-06-22T00%3A00%3A00.000Z",
+      "/machines/tohum/bookings?start=2026-01-01T00%3A00%3A00.000Z&end=2027-01-01T00%3A00%3A00.000Z",
       {
         credentials: "include",
       },

@@ -1,6 +1,7 @@
 import { format } from "date-fns"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import type { Booking } from "@/lib/api"
+import type { Booking, User } from "@/lib/api"
+import { bookingOwnerLabel } from "@/lib/booking-display"
 import {
   bookingStyle,
   bookingsForDay,
@@ -26,6 +27,7 @@ import {
 
 type WeekCalendarProps = {
   bookings: Booking[]
+  users: User[]
   weekDate: Date
   pendingBookingId?: string | null
   onCreateRange: (range: CalendarRange) => void
@@ -73,6 +75,7 @@ const hours = Array.from(
 
 export function WeekCalendar({
   bookings,
+  users,
   weekDate,
   pendingBookingId,
   onCreateRange,
@@ -181,7 +184,7 @@ export function WeekCalendar({
           ))}
         </div>
 
-        <div ref={scrollRef} className="max-h-[calc(100dvh-18rem)] min-h-[520px] overflow-y-auto">
+        <div ref={scrollRef} className="max-h-[calc(100dvh-15rem)] min-h-[520px] overflow-y-auto">
           <div
             className="grid grid-cols-[52px_repeat(7,minmax(92px,1fr))]"
             style={{ height: (dayEndHour - dayStartHour) * hourHeightPx }}
@@ -207,6 +210,7 @@ export function WeekCalendar({
                 bookings={bookings}
                 draft={draft}
                 pendingBookingId={pendingBookingId}
+                users={users}
                 suppressClickRef={suppressClickRef}
                 canEditBooking={canEditBooking}
                 onDraft={setDraft}
@@ -225,6 +229,7 @@ function DayColumn({
   bookings,
   draft,
   pendingBookingId,
+  users,
   suppressClickRef,
   canEditBooking,
   onDraft,
@@ -234,6 +239,7 @@ function DayColumn({
   bookings: Booking[]
   draft: Draft | null
   pendingBookingId?: string | null
+  users: User[]
   suppressClickRef: React.MutableRefObject<boolean>
   canEditBooking: (booking: Booking) => boolean
   onDraft: (draft: Draft) => void
@@ -280,6 +286,8 @@ function DayColumn({
         const style = bookingStyle(booking)
         const conflicts = hasConflict(booking, bookings, booking.id)
         const canEdit = canEditBooking(booking)
+        const ownerLabel = bookingOwnerLabel(booking, users)
+        const timeLabel = `${booking.startsBeforeDay ? "starts earlier · " : ""}${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}${booking.endsAfterDay ? " · continues" : ""}`
         return (
           <button
             key={booking.id}
@@ -324,7 +332,7 @@ function DayColumn({
                 originStartMinutes: minutesSinceDayStart(start),
               })
             }}
-            title={`${booking.title}, ${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}`}
+            title={`${booking.title}, ${ownerLabel}, ${timeLabel}`}
           >
             {canEdit ? (
               <span
@@ -346,11 +354,9 @@ function DayColumn({
                 <span className="h-0.5 w-8 rounded-full bg-muted-foreground/35 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
               </span>
             ) : null}
-            <div className="line-clamp-2 font-medium leading-tight">{booking.title}</div>
+            <div className="truncate font-medium leading-tight">{booking.title}</div>
             <div className="truncate text-muted-foreground tabular-nums">
-              {booking.startsBeforeDay ? "starts earlier · " : ""}
-              {displayStartTimeValue(booking)} - {displayEndTimeValue(booking)}
-              {booking.endsAfterDay ? " · continues" : ""}
+              {ownerLabel} · {timeLabel}
             </div>
             {canEdit ? (
               <span

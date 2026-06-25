@@ -158,6 +158,8 @@ describe("booking API", () => {
         machineId: "tohum",
         userId: "member-local",
         title: "API training run",
+        userEmail: "member@example.org",
+        userName: "Lab Member",
         startsAt: "2026-05-10T10:00:00.000Z",
         endsAt: "2026-05-10T12:00:00.000Z",
       }),
