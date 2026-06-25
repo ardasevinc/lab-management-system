@@ -21,8 +21,8 @@ describe("schedule defaults", () => {
     )
 
     expect(range).toEqual({
-      startsAt: "2026-06-20T10:30:00.000Z",
-      endsAt: "2026-06-20T11:30:00.000Z",
+      startsAt: "2026-06-20T11:00:00.000Z",
+      endsAt: "2026-06-20T12:00:00.000Z",
     })
   })
 })

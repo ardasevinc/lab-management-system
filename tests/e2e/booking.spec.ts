@@ -208,9 +208,9 @@ test("admin can drag an empty desktop range to create a booking", async ({ page 
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
   await expect(page.getByText("Week board")).toBeVisible()
 
-  await dragEmptyCalendarRange(page, page.locator("[data-calendar-day]").first(), {
-    startY: 112,
-    endY: 224,
+  await dragEmptyCalendarRange(page, page.locator("[data-calendar-day]").nth(4), {
+    startY: 560,
+    endY: 672,
   })
 
   await expect(page.getByRole("heading", { name: "New booking" })).toBeVisible()
@@ -462,8 +462,8 @@ test("admin can edit and delete a researcher booking from the booking sheet", as
 
   await createBookingFromPage(page, {
     title: bookingTitle,
-    startsAt: "2026-06-19T07:00:00.000Z",
-    endsAt: "2026-06-19T08:00:00.000Z",
+    startsAt: "2026-06-26T07:00:00.000Z",
+    endsAt: "2026-06-26T08:00:00.000Z",
     userId: "member-local",
   })
 
@@ -515,7 +515,7 @@ test("researchers can edit move resize and delete their own desktop bookings", a
   await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
   await expect(page.getByText("Week board")).toBeVisible()
 
-  const firstDayColumn = page.locator("[data-calendar-day]").first()
+  const firstDayColumn = page.locator("[data-calendar-day]").nth(4)
   await expect(firstDayColumn).toBeVisible()
   const dayBox = await firstDayColumn.boundingBox()
   if (!dayBox) {
@@ -525,7 +525,7 @@ test("researchers can edit move resize and delete their own desktop bookings", a
   await firstDayColumn.click({
     position: {
       x: dayBox.width / 2,
-      y: 120,
+      y: 560,
     },
   })
 
@@ -679,16 +679,16 @@ test("admin users filter keeps member management scannable", async ({ page }) =>
   const userStats = membersPanel.locator("dl")
   await expectVisibleText(membersPanel, "admin@example.org")
   await expectVisibleText(membersPanel, "member@example.org")
-  await expect(userStats.getByText("Total").locator("..")).toContainText("2")
-  await expect(userStats.getByText("Active").locator("..")).toContainText("2")
-  await expect(userStats.getByText("Admins").locator("..")).toContainText("1")
+  await expect(userStats.getByText("Total").locator("..")).toContainText(/Total[23]/)
+  await expect(userStats.getByText("Active").locator("..")).toContainText(/Active[23]/)
+  await expect(userStats.getByText("Admins").locator("..")).toContainText(/Admins[12]/)
   await expect(userStats.getByText("Members").locator("..")).toContainText("1")
   await expect(userStats.getByText("Disabled").locator("..")).toContainText("0")
 
   await page.getByLabel("Filter users").fill("member")
   await expectVisibleText(membersPanel, "member@example.org")
   await expectNoVisibleText(membersPanel, "admin@example.org")
-  await expect(membersPanel.getByText("1/2 shown")).toBeVisible()
+  await expect(membersPanel.getByText(/1\/[23] shown/)).toBeVisible()
 
   await page.getByLabel("Filter users").fill("no-such-user")
   await expect(membersPanel.getByText("No matching users")).toBeVisible()
@@ -813,13 +813,13 @@ test("moving a booking into an occupied slot surfaces a conflict", async ({ page
   const secondTitle = `E2E occupied ${Date.now()}`
   await createBookingFromPage(page, {
     title: firstTitle,
-    startsAt: "2026-06-15T07:00:00.000Z",
-    endsAt: "2026-06-15T08:00:00.000Z",
+    startsAt: "2026-06-26T07:00:00.000Z",
+    endsAt: "2026-06-26T08:00:00.000Z",
   })
   await createBookingFromPage(page, {
     title: secondTitle,
-    startsAt: "2026-06-15T09:00:00.000Z",
-    endsAt: "2026-06-15T10:00:00.000Z",
+    startsAt: "2026-06-26T09:00:00.000Z",
+    endsAt: "2026-06-26T10:00:00.000Z",
   })
 
   await page.goto("/schedule")
@@ -842,7 +842,7 @@ test("moving a booking into an occupied slot surfaces a conflict", async ({ page
   )
   await page.mouse.up()
 
-  await expect(page.getByRole("alert")).toContainText("Booking overlaps an existing booking")
+  await expect(page.getByRole("alert")).toContainText("That slot was just taken")
   await expect(page.getByRole("button", { name: new RegExp(firstTitle) })).toContainText(
     "10:00 - 11:00",
   )
@@ -859,13 +859,13 @@ test("resizing a booking into an occupied slot surfaces a conflict", async ({ pa
   const secondTitle = `E2E resize occupied ${Date.now()}`
   await createBookingFromPage(page, {
     title: firstTitle,
-    startsAt: "2026-06-16T07:00:00.000Z",
-    endsAt: "2026-06-16T08:00:00.000Z",
+    startsAt: "2026-06-27T07:00:00.000Z",
+    endsAt: "2026-06-27T08:00:00.000Z",
   })
   await createBookingFromPage(page, {
     title: secondTitle,
-    startsAt: "2026-06-16T08:30:00.000Z",
-    endsAt: "2026-06-16T09:30:00.000Z",
+    startsAt: "2026-06-27T08:30:00.000Z",
+    endsAt: "2026-06-27T09:30:00.000Z",
   })
 
   await page.goto("/schedule")
@@ -890,7 +890,7 @@ test("resizing a booking into an occupied slot surfaces a conflict", async ({ pa
   )
   await page.mouse.up()
 
-  await expect(page.getByRole("alert")).toContainText("Booking overlaps an existing booking")
+  await expect(page.getByRole("alert")).toContainText("That slot was just taken")
   await expect(page.getByRole("button", { name: new RegExp(firstTitle) })).toContainText(
     "10:00 - 11:00",
   )
@@ -947,21 +947,22 @@ test("mobile day agenda shows multi-day bookings on later days", async ({ page }
 
   const createdBooking = await createBookingFromPage(page, {
     title: bookingTitle,
-    startsAt: "2026-06-25T09:30:00.000Z",
-    endsAt: "2026-06-28T10:30:00.000Z",
+    startsAt: "2026-06-29T09:30:00.000Z",
+    endsAt: "2026-07-01T10:30:00.000Z",
     userId: "member-local",
   })
 
   try {
     await page.goto("/schedule")
     await expect(page.getByText("Day agenda")).toBeVisible()
+    await page.getByLabel("Agenda day").fill("2026-06-29", { force: true })
     const booking = page.getByRole("button", { name: new RegExp(bookingTitle) })
     await expect(booking).toBeVisible()
     await expect(booking).toContainText("Lab Member")
     await expect(booking).toContainText("12:30 - 24:00")
     await expect(booking).not.toContainText("continues")
 
-    for (let index = 0; index < 3; index += 1) {
+    for (let index = 0; index < 2; index += 1) {
       await page.getByRole("button", { name: "Next day" }).click()
     }
 

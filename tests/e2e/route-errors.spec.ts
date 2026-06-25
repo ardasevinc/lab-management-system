@@ -5,7 +5,7 @@ test("unknown routes render the app not-found surface", async ({ page }) => {
 
   await page.goto("/definitely-missing")
 
-  await expect(page.getByText("Lab LMS")).toBeVisible()
+  await expect(page.getByText("MIRALAB").first()).toBeVisible()
   await expect(page.getByRole("heading", { name: "Page not found." })).toBeVisible()
   await expect(page.getByRole("button", { name: "Back" })).toBeVisible()
   await expect(page.getByRole("link", { name: "Schedule" })).toHaveAttribute("href", "/schedule")

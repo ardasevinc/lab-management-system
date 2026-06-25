@@ -47,16 +47,16 @@ describe("booking dialog defaults", () => {
     expect(defaults).toMatchObject({
       type: "normal",
       startsDate: "2026-06-20",
-      startsTime: "13:00",
+      startsTime: "14:00",
       endsDate: "2026-06-20",
-      endsTime: "14:00",
+      endsTime: "15:00",
     })
   })
 
-  it("rounds explicit action ranges to the current hour", () => {
+  it("rounds fallback ranges up to the next bookable slot", () => {
     expect(getRoundedOneHourRange(new Date("2026-06-20T10:34:12.000Z"))).toEqual({
-      startsAt: "2026-06-20T10:00:00.000Z",
-      endsAt: "2026-06-20T11:00:00.000Z",
+      startsAt: "2026-06-20T11:00:00.000Z",
+      endsAt: "2026-06-20T12:00:00.000Z",
     })
   })
 })

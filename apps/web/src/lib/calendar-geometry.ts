@@ -59,6 +59,10 @@ export function snapMinutes(minutes: number, step = snapStepMinutes) {
   return Math.round(minutes / step) * step
 }
 
+export function snapMinutesUp(minutes: number, step = snapStepMinutes) {
+  return Math.ceil(minutes / step) * step
+}
+
 export function clampMinutesToDay(minutes: number) {
   return Math.min(dayEndHour * 60, Math.max(dayStartHour * 60, minutes))
 }

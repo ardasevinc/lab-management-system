@@ -1,4 +1,5 @@
 import type { Booking } from "./api"
+import { snapMinutesUp } from "./calendar-geometry"
 import { toLabDateValue, toLabTimeValue } from "./time"
 
 export type BookingDialogDefaults = {
@@ -13,7 +14,8 @@ export type BookingDialogDefaults = {
 
 export function getRoundedOneHourRange(now = new Date()) {
   const startsAt = new Date(now)
-  startsAt.setMinutes(0, 0, 0)
+  const startMinutes = snapMinutesUp(startsAt.getHours() * 60 + startsAt.getMinutes())
+  startsAt.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0)
   const endsAt = new Date(startsAt.getTime() + 60 * 60_000)
 
   return {
