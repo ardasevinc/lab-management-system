@@ -184,6 +184,21 @@ html[data-auth-screen="true"] body {
   -webkit-overflow-scrolling: touch;
 }
 
+[data-slot="drawer-content"][data-vaul-drawer-direction="bottom"] {
+  --mobile-drawer-viewport-height: 100svh;
+  max-height: calc(
+    var(--mobile-drawer-viewport-height) -
+    max(env(safe-area-inset-top), 0px) -
+    0.5rem
+  );
+}
+
+@supports (height: 100dvh) {
+  [data-slot="drawer-content"][data-vaul-drawer-direction="bottom"] {
+    --mobile-drawer-viewport-height: min(100dvh, 100svh);
+  }
+}
+
 input[data-native-picker-input] {
   max-width: 100%;
   min-width: 0;

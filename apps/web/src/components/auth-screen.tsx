@@ -1,7 +1,7 @@
 import { labConfig } from "@lab/config"
 import { useMutation } from "@tanstack/react-query"
 import { ArrowLeft, KeyRound, Mail } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useLayoutEffect, useState } from "react"
 import { BrandMark } from "@/components/brand-mark"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,11 @@ type AuthScreenProps = {
   onLoggedIn: (user: User) => void
 }
 
+const authPanelClassName =
+  "auth-panel w-full max-w-[408px] min-h-[316px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6"
+
 function useAuthViewportBackground() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.authScreen = "true"
 
     return () => {
@@ -86,7 +89,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
         </div>
 
         <div className="grid min-h-[calc(100lvh-2rem)] place-items-center lg:min-h-full">
-          <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
+          <div className={authPanelClassName}>
             <div className="mb-7 flex items-start justify-between gap-4">
               <div>
                 <BrandMark className="mb-4 size-10 shadow-sm lg:hidden" />
@@ -121,7 +124,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                       />
                       <Input
                         id="email"
-                        className="pl-9"
+                        className="pl-9 md:pl-9"
                         type="email"
                         name="email"
                         placeholder="you@lab.edu"
@@ -173,7 +176,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                       />
                       <Input
                         id="code"
-                        className="pl-9 font-mono tracking-[0.18em]"
+                        className="pl-9 font-mono tracking-[0.18em] md:pl-9"
                         name="code"
                         inputMode="numeric"
                         autoComplete="one-time-code"
@@ -245,7 +248,7 @@ export function AuthBootstrap() {
         </div>
 
         <div className="grid min-h-[calc(100lvh-2rem)] place-items-center lg:min-h-full">
-          <div className="auth-panel w-full max-w-[408px] rounded-xl border p-5 text-card-foreground shadow-2xl sm:p-6">
+          <div className={authPanelClassName}>
             <div className="mb-7 flex items-start justify-between gap-4">
               <div className="space-y-3">
                 <BrandMark className="size-10 shadow-sm lg:hidden" />

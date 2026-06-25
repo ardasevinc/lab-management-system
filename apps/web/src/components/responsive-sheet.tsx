@@ -1,6 +1,5 @@
 import { XIcon } from "lucide-react"
 import type * as React from "react"
-import { useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Drawer,
@@ -28,7 +27,7 @@ function ResponsiveSheet({
   mobile: boolean
 }) {
   if (mobile) {
-    return <Drawer autoFocus={false} direction="bottom" repositionInputs {...props} />
+    return <Drawer {...props} autoFocus={false} direction="bottom" repositionInputs={false} />
   }
 
   return <Sheet {...props} />
@@ -49,52 +48,10 @@ function ResponsiveSheetContent({
   mobileClassName?: string
   desktopClassName?: string
 }) {
-  const mobileContentRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!mobile) {
-      return
-    }
-
-    const activeControlSelector = "input, textarea, select, [contenteditable='true']"
-    const clearKeyboardHeight = () => {
-      if (document.activeElement?.matches(activeControlSelector)) {
-        return
-      }
-
-      const drawerContent = mobileContentRef.current
-      if (!drawerContent) {
-        return
-      }
-
-      drawerContent.style.height = ""
-      drawerContent.style.bottom = ""
-    }
-    const scheduleClear = () => {
-      window.setTimeout(clearKeyboardHeight, 80)
-      window.setTimeout(clearKeyboardHeight, 320)
-    }
-
-    document.addEventListener("focusout", scheduleClear, true)
-    window.addEventListener("resize", scheduleClear)
-    window.visualViewport?.addEventListener("resize", scheduleClear)
-
-    return () => {
-      document.removeEventListener("focusout", scheduleClear, true)
-      window.removeEventListener("resize", scheduleClear)
-      window.visualViewport?.removeEventListener("resize", scheduleClear)
-    }
-  }, [mobile])
-
   if (mobile) {
     return (
       <DrawerContent
-        ref={mobileContentRef}
-        className={cn(
-          "mobile-drawer-scroll flex max-h-[calc(100lvh-0.5rem)] overflow-hidden p-0",
-          mobileClassName,
-          className,
-        )}
+        className={cn("mobile-drawer-scroll flex overflow-hidden p-0", mobileClassName, className)}
         {...props}
       >
         {children}

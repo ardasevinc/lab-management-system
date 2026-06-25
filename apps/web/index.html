@@ -5,6 +5,11 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lab Management System</title>
+    <script>
+      if (location.pathname === "/login") {
+        document.documentElement.dataset.authScreen = "true"
+      }
+    </script>
     <style>
       html,
       body,
@@ -12,6 +17,12 @@
         min-height: 100%;
         margin: 0;
         background: oklch(0.976 0.006 230);
+      }
+
+      html[data-auth-screen="true"],
+      html[data-auth-screen="true"] body,
+      html[data-auth-screen="true"] #root {
+        background: #07100f;
       }
     </style>
   </head>
