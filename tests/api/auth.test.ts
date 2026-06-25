@@ -272,6 +272,43 @@ describe("auth and invites", () => {
     expect(await limitedRequest.json()).toEqual({ error: "Too many login code requests" })
   })
 
+  it("rate-limits repeated OTP verification attempts for the same email", async () => {
+    app = createApiApp({
+      db: testDb.db,
+      config: {
+        otpRateLimitMaxRequests: 2,
+        otpRateLimitWindowSeconds: 60,
+      },
+    })
+    const request = await app.request("/auth/request-otp", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "member@example.org" }),
+    })
+    const { devCode } = await request.json()
+    const verify = (code: string) =>
+      app.request("/auth/verify-otp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "member@example.org", code }),
+      })
+
+    const firstWrong = await verify("000000")
+    const secondWrong = await verify("111111")
+    const limitedVerify = await verify(devCode)
+    const retryAfter = Number(limitedVerify.headers.get("Retry-After"))
+
+    expect(request.status).toBe(200)
+    expect(firstWrong.status).toBe(401)
+    expect(secondWrong.status).toBe(401)
+    expect(limitedVerify.status).toBe(429)
+    expect(retryAfter).toBeGreaterThan(0)
+    expect(retryAfter).toBeLessThanOrEqual(60)
+    expect(await limitedVerify.json()).toEqual({
+      error: "Too many login verification attempts",
+    })
+  })
+
   it("lets admins deactivate and reactivate users", async () => {
     const adminHeaders = await login("admin@example.org")
     const memberHeaders = await login("member@example.org")

@@ -31,6 +31,10 @@ import type { AuditEvent, Booking, Machine, User } from "@/lib/api"
 import { getBookingDialogDefaults } from "@/lib/booking-dialog-defaults"
 import { fromLabDateTimeParts, toLabDateValue } from "@/lib/time"
 
+const bookingTitleMaxLength = 120
+const bookingNotesMaxLength = 2000
+const bookingReasonMaxLength = 240
+
 export type BookingDialogValue = {
   title: string
   notes: string
@@ -172,7 +176,13 @@ export function BookingDialog({
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="title">Title</FieldLabel>
-                <Input id="title" name="title" defaultValue={defaults.title} required />
+                <Input
+                  id="title"
+                  name="title"
+                  defaultValue={defaults.title}
+                  maxLength={bookingTitleMaxLength}
+                  required
+                />
               </Field>
 
               <FieldGroup className="grid gap-4">
@@ -240,7 +250,12 @@ export function BookingDialog({
 
               <Field>
                 <FieldLabel htmlFor="notes">Notes</FieldLabel>
-                <Textarea id="notes" name="notes" defaultValue={defaults.notes} />
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  defaultValue={defaults.notes}
+                  maxLength={bookingNotesMaxLength}
+                />
               </Field>
 
               {isAdmin ? (
@@ -251,6 +266,7 @@ export function BookingDialog({
                     name="reason"
                     placeholder="Optional note for the booking history"
                     value={adminReason}
+                    maxLength={bookingReasonMaxLength}
                     onChange={(event) => setAdminReason(event.target.value)}
                   />
                 </Field>
@@ -297,6 +313,10 @@ export function BookingDialog({
 function getOwnerOptions(users: User[], currentUser: User, selectedUserId?: string) {
   const byId = new Map<string, User>()
   for (const user of [currentUser, ...users]) {
+    if (!user.active && user.id !== selectedUserId) {
+      continue
+    }
+
     byId.set(user.id, user)
   }
 

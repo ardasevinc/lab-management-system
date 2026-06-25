@@ -6,10 +6,11 @@ import { createTestDb } from "../helpers/db"
 let testDb: Awaited<ReturnType<typeof createTestDb>>
 let app: ReturnType<typeof createApiApp>
 let authHeaders: HeadersInit
+const testNow = new Date("2026-05-10T09:00:00.000Z")
 
 beforeEach(async () => {
   testDb = await createTestDb()
-  app = createApiApp({ db: testDb.db })
+  app = createApiApp({ db: testDb.db, now: () => testNow })
   authHeaders = await login("admin@example.org")
 })
 
@@ -814,6 +815,156 @@ describe("booking API", () => {
     expect(updateResponse.status).toBe(200)
     expect((await updateResponse.json()).booking.title).toBe("Member run updated")
     expect(deleteResponse.status).toBe(200)
+  })
+
+  it("prevents members from creating or moving bookings into the past", async () => {
+    const memberHeaders = await login("member@example.org")
+    const pastCreateResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Past member run",
+        startsAt: "2026-05-10T08:00:00.000Z",
+        endsAt: "2026-05-10T08:30:00.000Z",
+      }),
+    })
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        title: "Future member run",
+        startsAt: "2026-05-10T16:00:00.000Z",
+        endsAt: "2026-05-10T17:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const pastMoveResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        startsAt: "2026-05-10T08:30:00.000Z",
+        endsAt: "2026-05-10T09:30:00.000Z",
+      }),
+    })
+
+    expect(pastCreateResponse.status).toBe(403)
+    expect(await pastCreateResponse.json()).toEqual({
+      error: "Bookings cannot start in the past",
+    })
+    expect(createResponse.status).toBe(201)
+    expect(pastMoveResponse.status).toBe(403)
+    expect(await pastMoveResponse.json()).toEqual({
+      error: "Bookings cannot start in the past",
+    })
+  })
+
+  it("lets members change and delete already-started bookings during the 24 hour window", async () => {
+    const memberHeaders = await login("member@example.org")
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Started member run",
+        startsAt: "2026-05-10T08:00:00.000Z",
+        endsAt: "2026-05-10T10:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const titleEditResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ title: "Started member run edited" }),
+    })
+    const moveLaterResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        startsAt: "2026-05-10T10:00:00.000Z",
+        endsAt: "2026-05-10T11:00:00.000Z",
+      }),
+    })
+    const deleteResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "DELETE",
+      headers: memberHeaders,
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(titleEditResponse.status).toBe(200)
+    expect((await titleEditResponse.json()).booking.title).toBe("Started member run edited")
+    expect(moveLaterResponse.status).toBe(200)
+    expect(deleteResponse.status).toBe(200)
+  })
+
+  it("prevents members from changing or deleting bookings more than 24 hours after start", async () => {
+    app = createApiApp({
+      db: testDb.db,
+      now: () => new Date("2026-05-11T09:01:00.000Z"),
+    })
+    authHeaders = await login("admin@example.org")
+    const memberHeaders = await login("member@example.org")
+    const createResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Old member run",
+        startsAt: "2026-05-10T08:00:00.000Z",
+        endsAt: "2026-05-10T09:00:00.000Z",
+      }),
+    })
+    const { booking } = await createResponse.json()
+
+    const updateResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "PATCH",
+      headers: { ...memberHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ title: "Too late" }),
+    })
+    const deleteResponse = await app.request(`/bookings/${booking.id}`, {
+      method: "DELETE",
+      headers: memberHeaders,
+    })
+
+    expect(createResponse.status).toBe(201)
+    expect(updateResponse.status).toBe(403)
+    expect(await updateResponse.json()).toEqual({
+      error: "Bookings can only be changed within 24 hours after they start",
+    })
+    expect(deleteResponse.status).toBe(403)
+    expect(await deleteResponse.json()).toEqual({
+      error: "Bookings can only be changed within 24 hours after they start",
+    })
+  })
+
+  it("validates booking text field lengths", async () => {
+    const longTitleResponse = await createBookingRequest({
+      title: "x".repeat(121),
+      startsAt: "2026-05-10T16:00:00.000Z",
+      endsAt: "2026-05-10T17:00:00.000Z",
+    })
+    const longNotesResponse = await app.request("/bookings", {
+      method: "POST",
+      headers: { ...authHeaders, "content-type": "application/json" },
+      body: JSON.stringify({
+        machineId: "tohum",
+        userId: "member-local",
+        title: "Long notes",
+        notes: "x".repeat(2001),
+        startsAt: "2026-05-10T16:00:00.000Z",
+        endsAt: "2026-05-10T17:00:00.000Z",
+      }),
+    })
+
+    expect(longTitleResponse.status).toBe(400)
+    expect((await longTitleResponse.json()).error).toBe("Invalid booking")
+    expect(longNotesResponse.status).toBe(400)
+    expect((await longNotesResponse.json()).error).toBe("Invalid booking")
   })
 
   it("prevents members from managing another user's bookings", async () => {

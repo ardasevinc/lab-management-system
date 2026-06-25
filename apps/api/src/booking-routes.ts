@@ -22,12 +22,12 @@ type BookingRouteApp = Hono<{ Variables: { user: CurrentUser } }>
 const bookingBodySchema = z.object({
   machineId: z.string().min(1),
   userId: z.string().min(1).optional(),
-  title: z.string().min(1),
-  notes: z.string().nullable().optional(),
+  title: z.string().trim().min(1).max(120),
+  notes: z.string().max(2000).nullable().optional(),
   type: z.enum(["normal", "maintenance"]).default("normal"),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime(),
-  reason: z.string().nullable().optional(),
+  reason: z.string().max(240).nullable().optional(),
 })
 
 const bookingPatchSchema = bookingBodySchema
@@ -41,9 +41,12 @@ const bookingPatchSchema = bookingBodySchema
   )
 
 const deleteBookingQuerySchema = z.object({
-  reason: z.string().optional(),
+  reason: z.string().max(240).optional(),
   expectedUpdatedAt: z.string().datetime().optional(),
 })
+
+const memberPastStartGraceMs = 2 * 60 * 1000
+const memberStartedMutationWindowMs = 24 * 60 * 60 * 1000
 
 export function registerBookingRoutes(
   app: BookingRouteApp,
@@ -51,9 +54,10 @@ export function registerBookingRoutes(
     db: Db
     mailer: Mailer
     publicAppUrl: ApiRuntimeConfig["publicAppUrl"]
+    now?: () => Date
   },
 ) {
-  const { db, mailer, publicAppUrl } = options
+  const { db, mailer, publicAppUrl, now = () => new Date() } = options
   const enqueueBookingWrite = createSerialQueue()
 
   app.post("/bookings", async (c) => {
@@ -68,6 +72,10 @@ export function registerBookingRoutes(
         const user = c.get("user")
         const userId = body.data.userId ?? user.id
         assertCanWriteBooking(user, { userId, type: body.data.type })
+        assertMemberBookingPolicy(user, {
+          nextStartsAt: new Date(body.data.startsAt),
+          now: now(),
+        })
         const booking = await createBooking(db, {
           ...body.data,
           userId,
@@ -108,6 +116,11 @@ export function registerBookingRoutes(
         assertCanWriteBooking(user, {
           userId: nextUserId,
           type: nextType,
+        })
+        assertMemberBookingPolicy(user, {
+          currentStartsAt: new Date(current.startsAt),
+          nextStartsAt: body.data.startsAt ? new Date(body.data.startsAt) : undefined,
+          now: now(),
         })
 
         const booking = await updateBooking(db, c.req.param("id"), {
@@ -157,6 +170,10 @@ export function registerBookingRoutes(
         }
 
         assertCanWriteBooking(user, current)
+        assertMemberBookingPolicy(user, {
+          currentStartsAt: new Date(current.startsAt),
+          now: now(),
+        })
         await deleteBooking(
           db,
           c.req.param("id"),
@@ -188,6 +205,33 @@ function assertCanWriteBooking(
 
   if (booking.type === "maintenance" || booking.userId !== user.id) {
     throw new ForbiddenError("Admins are required for this booking change")
+  }
+}
+
+function assertMemberBookingPolicy(
+  user: CurrentUser,
+  input: {
+    currentStartsAt?: Date
+    nextStartsAt?: Date
+    now: Date
+  },
+) {
+  if (user.role === "admin") {
+    return
+  }
+
+  if (
+    input.currentStartsAt &&
+    input.currentStartsAt.getTime() < input.now.getTime() - memberStartedMutationWindowMs
+  ) {
+    throw new ForbiddenError("Bookings can only be changed within 24 hours after they start")
+  }
+
+  if (
+    input.nextStartsAt &&
+    input.nextStartsAt.getTime() < input.now.getTime() - memberPastStartGraceMs
+  ) {
+    throw new ForbiddenError("Bookings cannot start in the past")
   }
 }
 

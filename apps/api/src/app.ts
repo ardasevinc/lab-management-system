@@ -47,6 +47,7 @@ export type ApiAppOptions = {
   mailer?: Mailer
   assetMiddleware?: MiddlewareHandler
   webMiddleware?: MiddlewareHandler
+  now?: () => Date
 }
 
 const defaultRuntimeConfig: ApiRuntimeConfig = {
@@ -81,12 +82,14 @@ export function createApiApp({
   mailer,
   assetMiddleware,
   webMiddleware,
+  now,
 }: ApiAppOptions) {
   const app = new Hono<{ Variables: { user: CurrentUser } }>()
   const runtimeConfig = { ...defaultRuntimeConfig, ...config }
   const notificationWorkerConfig = notificationWorker ?? defaultNotificationWorkerConfig
   const emailSender = mailer ?? createConsoleMailer()
   const otpRateLimits = new Map<string, OtpRateLimitBucket>()
+  const otpVerifyRateLimits = new Map<string, OtpRateLimitBucket>()
 
   app.onError((error, c) => apiErrorResponse(c, error))
 
@@ -156,8 +159,15 @@ export function createApiApp({
       return c.json({ error: "Email domain is not allowed" }, 403)
     }
 
+    const rateLimit = consumeOtpRateLimit(otpVerifyRateLimits, body.data.email, runtimeConfig)
+    if (!rateLimit.allowed) {
+      c.header("Retry-After", String(rateLimit.retryAfterSeconds))
+      return c.json({ error: "Too many login verification attempts" }, 429)
+    }
+
     return handleApiResult(c, async () => {
       const session = await verifyLoginOtp(db, body.data.email, body.data.code)
+      otpVerifyRateLimits.delete(body.data.email.trim().toLowerCase())
       setSessionCookie(c, session.token, session.expiresAt, runtimeConfig)
       return c.json({ user: session.user, token: session.token, expiresAt: session.expiresAt })
     })
@@ -219,7 +229,12 @@ export function createApiApp({
 
   app.use("/bookings", requireAuth(db))
   app.use("/bookings/*", requireAuth(db))
-  registerBookingRoutes(app, { db, mailer: emailSender, publicAppUrl: runtimeConfig.publicAppUrl })
+  registerBookingRoutes(app, {
+    db,
+    mailer: emailSender,
+    publicAppUrl: runtimeConfig.publicAppUrl,
+    now,
+  })
 
   registerAdminRoutes(app, {
     db,
