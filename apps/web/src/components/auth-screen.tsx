@@ -6,7 +6,7 @@ import { BrandMark } from "@/components/brand-mark"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { requestOtp, type User, verifyOtp } from "@/lib/api"
 
@@ -117,14 +117,12 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                 <FieldGroup>
                   <Field data-invalid={error ? true : undefined}>
                     <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <div className="relative">
-                      <Mail
-                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <Input
+                    <InputGroup>
+                      <InputGroupAddon>
+                        <Mail aria-hidden="true" />
+                      </InputGroupAddon>
+                      <InputGroupInput
                         id="email"
-                        className="pl-9 md:pl-9"
                         type="email"
                         name="email"
                         placeholder="you@lab.edu"
@@ -138,7 +136,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                         required
                         aria-invalid={error ? true : undefined}
                       />
-                    </div>
+                    </InputGroup>
                     {error ? <FieldError>{error}</FieldError> : null}
                   </Field>
                 </FieldGroup>
@@ -169,14 +167,13 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                   </Field>
 
                   <Field data-invalid={error ? true : undefined}>
-                    <div className="relative">
-                      <KeyRound
-                        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      <Input
+                    <InputGroup>
+                      <InputGroupAddon>
+                        <KeyRound aria-hidden="true" />
+                      </InputGroupAddon>
+                      <InputGroupInput
                         id="code"
-                        className="pl-9 font-mono tracking-[0.18em] md:pl-9"
+                        className="font-mono tracking-[0.18em]"
                         name="code"
                         inputMode="numeric"
                         autoComplete="one-time-code"
@@ -189,7 +186,7 @@ export function AuthScreen({ initialEmail = "", onLoggedIn }: AuthScreenProps) {
                         required
                         aria-invalid={error ? true : undefined}
                       />
-                    </div>
+                    </InputGroup>
                     {error ? <FieldError>{error}</FieldError> : null}
                   </Field>
                 </FieldGroup>

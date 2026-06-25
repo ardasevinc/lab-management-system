@@ -7,7 +7,7 @@ import { useWorkspace } from "@/components/app-workspace-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
@@ -90,22 +90,19 @@ export function AdminBookingAuditPage() {
         <div className="flex flex-col gap-3 border-border border-b px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <h2 className="font-medium text-base">Audit trail</h2>
-            <p className="mt-1 text-muted-foreground text-sm">Who changed what, when, and why.</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px] lg:w-[560px]">
-            <div className="relative min-w-0">
-              <Search
-                className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <Input
+            <InputGroup>
+              <InputGroupAddon>
+                <Search aria-hidden="true" />
+              </InputGroupAddon>
+              <InputGroupInput
                 aria-label="Search audit"
-                className="pl-9"
                 placeholder="Search title, owner, actor, machine, reason"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
-            </div>
+            </InputGroup>
             <Select
               value={eventFilter}
               onValueChange={(value) => setEventFilter(value as AuditEventFilter)}
