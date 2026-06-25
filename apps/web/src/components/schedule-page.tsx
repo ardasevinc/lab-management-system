@@ -431,7 +431,7 @@ function MobileDayTimeline({
           {packedBookings.map((booking) => {
             const style = bookingStyle(booking)
             const ownerLabel = bookingOwnerLabel(booking, users)
-            const timeLabel = `${booking.startsBeforeDay ? "starts earlier · " : ""}${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}${booking.endsAfterDay ? " · continues" : ""}`
+            const timeLabel = `${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}`
             return (
               <button
                 key={booking.id}

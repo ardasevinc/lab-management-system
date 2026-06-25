@@ -843,7 +843,7 @@ test("mobile day agenda shows multi-day bookings on later days", async ({ page }
     await expect(booking).toBeVisible()
     await expect(booking).toContainText("Lab Member")
     await expect(booking).toContainText("12:30 - 24:00")
-    await expect(booking).toContainText("continues")
+    await expect(booking).not.toContainText("continues")
 
     for (let index = 0; index < 3; index += 1) {
       await page.getByRole("button", { name: "Next day" }).click()
@@ -851,7 +851,7 @@ test("mobile day agenda shows multi-day bookings on later days", async ({ page }
 
     const finalDayBooking = page.getByRole("button", { name: new RegExp(bookingTitle) })
     await expect(finalDayBooking).toBeVisible()
-    await expect(finalDayBooking).toContainText("starts earlier")
+    await expect(finalDayBooking).not.toContainText("starts earlier")
     await expect(finalDayBooking).toContainText("00:00 - 13:30")
     await expect(consoleProblems).toEqual([])
   } finally {

@@ -287,7 +287,7 @@ function DayColumn({
         const conflicts = hasConflict(booking, bookings, booking.id)
         const canEdit = canEditBooking(booking)
         const ownerLabel = bookingOwnerLabel(booking, users)
-        const timeLabel = `${booking.startsBeforeDay ? "starts earlier · " : ""}${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}${booking.endsAfterDay ? " · continues" : ""}`
+        const timeLabel = `${displayStartTimeValue(booking)} - ${displayEndTimeValue(booking)}`
         return (
           <button
             key={booking.id}
