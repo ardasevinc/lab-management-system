@@ -28,7 +28,7 @@ function ResponsiveSheet({
   mobile: boolean
 }) {
   if (mobile) {
-    return <Drawer autoFocus={false} direction="bottom" fixed repositionInputs {...props} />
+    return <Drawer autoFocus={false} direction="bottom" repositionInputs {...props} />
   }
 
   return <Sheet {...props} />
@@ -57,72 +57,29 @@ function ResponsiveSheetContent({
     }
 
     const activeControlSelector = "input, textarea, select, [contenteditable='true']"
-    const viewportBaselineHeight = window.visualViewport?.height ?? window.innerHeight
-    let keyboardMonitorId: number | undefined
-    const isKeyboardViewportRestored = () => {
-      const currentHeight = window.visualViewport?.height ?? window.innerHeight
-      return currentHeight >= viewportBaselineHeight - 8
-    }
-    const activeControlIsFocused = () => document.activeElement?.matches(activeControlSelector)
     const clearKeyboardHeight = () => {
-      if (activeControlIsFocused() && !isKeyboardViewportRestored()) {
+      if (document.activeElement?.matches(activeControlSelector)) {
         return
       }
 
-      const drawerContent =
-        mobileContentRef.current ??
-        document.querySelector<HTMLElement>("[data-slot='drawer-content'][data-vaul-drawer]")
+      const drawerContent = mobileContentRef.current
       if (!drawerContent) {
         return
       }
 
-      drawerContent.setAttribute("data-vaul-animate", "false")
       drawerContent.style.height = ""
       drawerContent.style.bottom = ""
-      drawerContent.style.transform = ""
-      window.setTimeout(() => {
-        drawerContent.removeAttribute("data-vaul-animate")
-      }, 120)
-    }
-    const stopKeyboardMonitor = () => {
-      if (keyboardMonitorId === undefined) {
-        return
-      }
-
-      window.clearInterval(keyboardMonitorId)
-      keyboardMonitorId = undefined
-    }
-    const startKeyboardMonitor = () => {
-      if (!activeControlIsFocused() || keyboardMonitorId !== undefined) {
-        return
-      }
-
-      keyboardMonitorId = window.setInterval(() => {
-        if (!activeControlIsFocused()) {
-          stopKeyboardMonitor()
-          return
-        }
-
-        if (isKeyboardViewportRestored()) {
-          clearKeyboardHeight()
-        }
-      }, 80)
     }
     const scheduleClear = () => {
-      window.requestAnimationFrame(clearKeyboardHeight)
       window.setTimeout(clearKeyboardHeight, 80)
       window.setTimeout(clearKeyboardHeight, 320)
-      window.setTimeout(clearKeyboardHeight, 640)
     }
 
-    document.addEventListener("focusin", startKeyboardMonitor, true)
     document.addEventListener("focusout", scheduleClear, true)
     window.addEventListener("resize", scheduleClear)
     window.visualViewport?.addEventListener("resize", scheduleClear)
 
     return () => {
-      stopKeyboardMonitor()
-      document.removeEventListener("focusin", startKeyboardMonitor, true)
       document.removeEventListener("focusout", scheduleClear, true)
       window.removeEventListener("resize", scheduleClear)
       window.visualViewport?.removeEventListener("resize", scheduleClear)

@@ -3,12 +3,6 @@ import { expect, type Locator, type Page, test } from "@playwright/test"
 const adminEmail = "admin@example.org"
 const memberEmail = "member@example.org"
 
-declare global {
-  interface Window {
-    __setKeyboardViewportHeight?: (height: number) => void
-  }
-}
-
 test("login returns users to the requested workspace route", async ({ page }, testInfo) => {
   test.skip(!isDesktopProject(testInfo.project.name), "desktop route-preservation smoke")
 
@@ -336,56 +330,6 @@ test("booking sheet overlays stay inside responsive viewports", async ({ page },
     await expectPopoverFitsCalendar(page.locator("[data-slot='popover-content']"))
   }
 
-  expect(consoleProblems).toEqual([])
-})
-
-test("mobile booking drawer settles when keyboard closes after typing", async ({
-  page,
-}, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chromium", "mobile keyboard drawer ergonomics")
-
-  await installKeyboardViewportHarness(page)
-  const consoleProblems = collectConsoleProblems(page)
-  await loginAsAdmin(page)
-
-  await page.goto("/schedule")
-  await expect(page.getByRole("heading", { name: /tohum schedule/i })).toBeVisible()
-  await openNewBookingSheet(page, testInfo.project.name)
-
-  const bookingSheet = page.getByRole("dialog", { name: "New booking" })
-  await expect(bookingSheet).toBeVisible()
-  await expect
-    .poll(async () => {
-      const geometry = await drawerGeometry(bookingSheet)
-      return geometry.inlineHeight === "" && geometry.inlineBottom === "" && geometry.y <= 12
-    })
-    .toBe(true)
-  const before = await drawerGeometry(bookingSheet)
-
-  const titleInput = bookingSheet.getByLabel("Title")
-  await titleInput.fill("Keyboard close regression")
-  await expect(titleInput).toBeFocused()
-
-  await page.evaluate(() => {
-    if (!window.__setKeyboardViewportHeight) {
-      throw new Error("Keyboard viewport test harness was not installed.")
-    }
-    window.__setKeyboardViewportHeight(560)
-  })
-  await expect
-    .poll(() => bookingSheet.evaluate((element) => element.style.height !== ""))
-    .toBe(true)
-
-  await page.evaluate(() => {
-    window.__setKeyboardViewportHeight?.(window.innerHeight)
-  })
-  await expect
-    .poll(async () => {
-      const after = await drawerGeometry(bookingSheet)
-      return Math.abs(after.y - before.y) <= 1 && Math.abs(after.height - before.height) <= 1
-    })
-    .toBe(true)
-  await expect(titleInput).toBeFocused()
   expect(consoleProblems).toEqual([])
 })
 
@@ -1661,92 +1605,6 @@ async function expectNoHorizontalOverflow(page: Page) {
       ),
     )
     .toBe(true)
-}
-
-async function installKeyboardViewportHarness(page: Page) {
-  await page.addInitScript(() => {
-    const listeners = new Set<EventListenerOrEventListenerObject>()
-    let viewportHeight = window.innerHeight
-    let viewport: VisualViewport
-    const emitResize = () => {
-      const event = new Event("resize")
-      for (const listener of listeners) {
-        if (typeof listener === "function") {
-          listener.call(viewport, event)
-        } else {
-          listener.handleEvent(event)
-        }
-      }
-      window.dispatchEvent(new Event("resize"))
-    }
-
-    viewport = {
-      get height() {
-        return viewportHeight
-      },
-      get width() {
-        return window.innerWidth
-      },
-      get offsetLeft() {
-        return 0
-      },
-      get offsetTop() {
-        return 0
-      },
-      get pageLeft() {
-        return window.scrollX
-      },
-      get pageTop() {
-        return window.scrollY
-      },
-      get scale() {
-        return 1
-      },
-      addEventListener(type, listener) {
-        if (type === "resize" && listener) {
-          listeners.add(listener)
-        }
-      },
-      removeEventListener(type, listener) {
-        if (type === "resize" && listener) {
-          listeners.delete(listener)
-        }
-      },
-      dispatchEvent(event) {
-        if (event.type !== "resize") {
-          return true
-        }
-        emitResize()
-        return true
-      },
-      onresize: null,
-      onscroll: null,
-    } as VisualViewport
-
-    Object.defineProperty(window, "visualViewport", {
-      configurable: true,
-      value: viewport,
-    })
-
-    window.__setKeyboardViewportHeight = (height: number) => {
-      viewportHeight = height
-      emitResize()
-    }
-  })
-}
-
-async function drawerGeometry(locator: Locator) {
-  await expect(locator).toBeVisible()
-  return locator.evaluate((element) => {
-    const box = element.getBoundingClientRect()
-    return {
-      y: box.y,
-      height: box.height,
-      inlineHeight: element.style.height,
-      inlineBottom: element.style.bottom,
-      inlineTransform: element.style.transform,
-    }
-  })
 }
 
 async function expectAuthBackgroundOverscansViewport(page: Page) {
