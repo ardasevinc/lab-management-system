@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table"
 import { type AdminBookingAuditEvent, apiFetch } from "@/lib/api"
 import { formatDate, formatDateTime, formatTime } from "@/lib/time"
+import { cn } from "@/lib/utils"
 
 type AuditEventFilter = AdminBookingAuditEvent["eventType"] | "all"
 
@@ -186,7 +187,7 @@ function AuditTableRow({ event, onOpen }: { event: AdminBookingAuditEvent; onOpe
   return (
     <TableRow>
       <TableCell>
-        <AuditBadge eventType={event.eventType} />
+        <AuditEventLabel eventType={event.eventType} />
       </TableCell>
       <TableCell className="min-w-0">
         <BookingSummary event={event} />
@@ -210,7 +211,7 @@ function AuditTableRow({ event, onOpen }: { event: AdminBookingAuditEvent; onOpe
             Open
           </Button>
         ) : (
-          <Badge variant="outline">Deleted</Badge>
+          <span className="text-muted-foreground text-sm">Deleted</span>
         )}
       </TableCell>
     </TableRow>
@@ -224,9 +225,7 @@ function AuditListItem({ event, onOpen }: { event: AdminBookingAuditEvent; onOpe
     <article className="flex flex-col gap-3 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-1">
-            <AuditBadge eventType={event.eventType} />
-          </div>
+          <AuditListHeadline event={event} />
           <BookingSummary event={event} />
         </div>
         {canOpen ? (
@@ -235,10 +234,10 @@ function AuditListItem({ event, onOpen }: { event: AdminBookingAuditEvent; onOpe
             Open
           </Button>
         ) : (
-          <Badge variant="outline">Deleted</Badge>
+          <span className="shrink-0 pt-1 text-muted-foreground text-xs">Deleted record</span>
         )}
       </div>
-      <ChangeSummary event={event} />
+      <ChangeSummary event={event} surface="list" />
       <div className="flex flex-col gap-1 text-muted-foreground text-xs">
         <span className="truncate">
           {event.actor.name} · {event.actor.email}
@@ -254,13 +253,12 @@ function BookingSummary({ event }: { event: AdminBookingAuditEvent }) {
 
   return (
     <div className="min-w-0">
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="min-w-0">
         <span className="truncate font-medium text-sm">{snapshot.title}</span>
-        <Badge variant={snapshot.type === "maintenance" ? "outline" : "secondary"}>
-          {snapshot.type === "maintenance" ? "maintenance" : "booking"}
-        </Badge>
       </div>
       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-xs">
+        <span>{snapshot.type === "maintenance" ? "Maintenance" : "Booking"}</span>
+        <span aria-hidden="true">·</span>
         <span className="truncate">{event.owner.name}</span>
         <span aria-hidden="true">·</span>
         <span className="truncate">{event.machine.name}</span>
@@ -274,17 +272,29 @@ function BookingSummary({ event }: { event: AdminBookingAuditEvent }) {
   )
 }
 
-function ChangeSummary({ event }: { event: AdminBookingAuditEvent }) {
+function ChangeSummary({
+  event,
+  surface = "table",
+}: {
+  event: AdminBookingAuditEvent
+  surface?: "table" | "list"
+}) {
   const summary = describeAuditEvent(event)
+  const showSummary =
+    surface === "table" || event.eventType === "updated" || event.eventType === "admin_override"
+
+  if (!showSummary && !event.reason) {
+    return null
+  }
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <span className="text-sm">{summary}</span>
+      {showSummary ? <span className="text-sm">{summary}</span> : null}
       {event.reason ? (
         <span className="line-clamp-2 text-muted-foreground text-xs">Reason: {event.reason}</span>
-      ) : (
+      ) : showSummary ? (
         <span className="text-muted-foreground text-xs">No audit reason</span>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -312,12 +322,29 @@ function AuditMetric({
   )
 }
 
-function AuditBadge({ eventType }: { eventType: AdminBookingAuditEvent["eventType"] }) {
+function AuditEventLabel({ eventType }: { eventType: AdminBookingAuditEvent["eventType"] }) {
   const label = auditEventLabel(eventType)
   const variant =
     eventType === "deleted" ? "destructive" : eventType === "updated" ? "secondary" : "outline"
 
   return <Badge variant={variant}>{label}</Badge>
+}
+
+function AuditListHeadline({ event }: { event: AdminBookingAuditEvent }) {
+  const label = auditEventSentence(event)
+  const accentClass =
+    event.eventType === "deleted"
+      ? "bg-destructive"
+      : event.eventType === "updated"
+        ? "bg-primary"
+        : "bg-muted-foreground"
+
+  return (
+    <div className="mb-2 flex items-center gap-2 text-muted-foreground text-xs">
+      <span className={cn("size-2 rounded-full", accentClass)} aria-hidden="true" />
+      <span>{label}</span>
+    </div>
+  )
 }
 
 function AuditSkeleton() {
@@ -404,6 +431,22 @@ function auditEventLabel(eventType: AdminBookingAuditEvent["eventType"]) {
       return "Deleted"
     case "admin_override":
       return "Override"
+  }
+}
+
+function auditEventSentence(event: AdminBookingAuditEvent) {
+  const snapshot = getEventBookingSnapshot(event)
+  const noun = snapshot.type === "maintenance" ? "maintenance block" : "booking"
+
+  switch (event.eventType) {
+    case "created":
+      return `Created ${noun}`
+    case "updated":
+      return `Updated ${noun}`
+    case "deleted":
+      return `Removed ${noun}`
+    case "admin_override":
+      return `Admin override for ${noun}`
   }
 }
 

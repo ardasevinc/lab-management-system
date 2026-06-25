@@ -1316,6 +1316,19 @@ test("admin route and sheet surfaces stay usable with mixed lab data", async ({
     await expect(page.getByRole("heading", { name: "Booking audit" })).toBeVisible()
     await expectVisibleText(page.locator("main"), `E2E mixed admin ${suffix}`)
     await expectRouteContentWithinViewport(page)
+    if (testInfo.project.name === "mobile-chromium") {
+      const auditCard = page
+        .getByRole("article")
+        .filter({ hasText: `E2E mixed admin ${suffix}` })
+        .first()
+      await expect(auditCard).toBeVisible()
+      await expect(auditCard.getByText("Created booking")).toBeVisible()
+      await expect(
+        auditCard.locator("[data-slot='badge']").filter({ hasText: /booking/i }),
+      ).toHaveCount(0)
+      await expect(auditCard.getByText("No audit reason")).toHaveCount(0)
+      await expectElementNoHorizontalOverflow(auditCard)
+    }
 
     await page.goto("/admin/maintenance")
     await expect(page.getByRole("heading", { name: "Maintenance", exact: true })).toBeVisible()
